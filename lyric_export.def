@@ -1,0 +1,4 @@
+LIBRARY
+EXPORTS
+	lyric_parse
+	lyric_free

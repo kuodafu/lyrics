@@ -13,17 +13,35 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="d2d">
+      <UniqueIdentifier>{127ebc57-ead0-41d5-951a-ac60e440406e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="targetver.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="test_lyrics.h">
+    <ClInclude Include="lyric_exe_header.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\cpp\_git_works\CommonCode\d2d\Color.h">
+      <Filter>d2d</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\cpp\_git_works\CommonCode\d2d\d2d.h">
+      <Filter>d2d</Filter>
+    </ClInclude>
+    <ClInclude Include="lyric_wnd.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="test_lyrics.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\cpp\_git_works\CommonCode\d2d\d2d.cpp">
+      <Filter>d2d</Filter>
+    </ClCompile>
+    <ClCompile Include="lyric_wnd.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

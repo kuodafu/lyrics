@@ -24,12 +24,24 @@
     <ClInclude Include="kuodafu_lyric.h">
       <Filter>源文件</Filter>
     </ClInclude>
+    <ClInclude Include="lyric_typedef.h">
+      <Filter>源文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="pch.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="lyric_parse.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="lyric_calc.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="lyric_assist.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

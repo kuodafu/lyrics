@@ -1,4 +1,8 @@
 LIBRARY
 EXPORTS
 	lyric_parse
-	lyric_free
+	lyric_destroy
+	lyric_calc
+	lyric_get_line_count
+	lyric_get_line
+	lyric_calc_text_width

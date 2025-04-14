@@ -135,10 +135,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\cpp\_git_works\CommonCode\d2d\Color.h" />
+    <ClInclude Include="..\..\..\cpp\_git_works\CommonCode\d2d\d2d.h" />
+    <ClInclude Include="lyric_wnd.h" />
     <ClInclude Include="targetver.h" />
-    <ClInclude Include="test_lyrics.h" />
+    <ClInclude Include="lyric_exe_header.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\cpp\_git_works\CommonCode\d2d\d2d.cpp" />
+    <ClCompile Include="lyric_wnd.cpp" />
     <ClCompile Include="test_lyrics.cpp" />
   </ItemGroup>
   <ItemGroup>

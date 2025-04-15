@@ -7,6 +7,7 @@
 #include "../kuodafu_lyric.h"
 #include <control/WndBase.h>
 #include "lyric_wnd.h"
+#include <WaitObject.h>
 
 #include "bass.h"
 
@@ -157,13 +158,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         //LPCWSTR file = LR"(I:\音乐\The Tech Thieves - Fake.mp3)";
         //LPCWSTR file = LR"(I:\音乐\音乐\低调组合 - 终点起点.mp3)";
         //LPCWSTR file = LR"(I:\音乐\音乐\低调组合 - 夜空中最亮的星.mp3)";
-        //LPCWSTR file = LR"(I:\音乐\陈奕迅 - 淘汰.mp3)";
-        LPCWSTR file = LR"(I:\音乐\周杰伦\10-2006-依然范特西\周杰伦 - 本草纲目.mp3)";
+        LPCWSTR file = LR"(I:\音乐\陈奕迅 - 淘汰.mp3)";
+        //LPCWSTR file = LR"(I:\音乐\周杰伦\10-2006-依然范特西\周杰伦 - 本草纲目.mp3)";
         m_hStream = BASS_StreamCreateFile(FALSE, file, 0, 0, BASS_SAMPLE_FLOAT);
         if (m_hStream)
         {
             BASS_ChannelPlay(m_hStream, FALSE);
-            //BASS_ChannelSetPosition(m_hStream, BASS_ChannelSeconds2Bytes(m_hStream, 40.), BASS_POS_BYTE);
+            BASS_ChannelSetPosition(m_hStream, BASS_ChannelSeconds2Bytes(m_hStream, 40.), BASS_POS_BYTE);
         }
         SetTimer(hWnd, 100, 1000, 0);
         SetTimer(hWnd, 200, 10, 0);
@@ -182,12 +183,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         //LPCWSTR krc1 = LR"(T:\tool盘\KuGou\Lyric\The Tech Thieves - Fake-cf6d70385ebd673a9f423ed466bd200d-125671670-00000000.krc)";
         //LPCWSTR krc1 = LR"(T:\tool盘\KuGou\Lyric\低调组合 - 终点起点-6257a78a9df6fb551f2324dbc08b4cf7-121741063-00000000.krc)";
         //LPCWSTR krc1 = LR"(T:\移动机械硬盘\E源码备份\易语言备份\1自己写的源码\实用工具\播放器\lrc\低调组合 - 夜空中最亮的星.krc)";
-        //LPCWSTR krc1 = LR"(T:\tool盘\KuGou\Lyric\陈奕迅 - 淘汰-ea514c1f8eaee9f24dcd1f26575bac4f-135600792-00000000.krc)";
-        LPCWSTR krc1 = LR"(I:\Kugou\Lyric\周杰伦 - 本草纲目-50f657c1d53e3acb1381ef97e5cfabd2-108581021-00000000.krc)";
+        LPCWSTR krc1 = LR"(T:\tool盘\KuGou\Lyric\陈奕迅 - 淘汰-ea514c1f8eaee9f24dcd1f26575bac4f-135600792-00000000.krc)";
+        //LPCWSTR krc1 = LR"(I:\Kugou\Lyric\周杰伦 - 本草纲目-50f657c1d53e3acb1381ef97e5cfabd2-108581021-00000000.krc)";
         std::string data;
         read_file(krc1, data);
         m_hLyricWindow = lyric_wnd_create();
-        //MoveWindow(m_hLyricWindow, 400, 1100, 1700, 200, true);
+        MoveWindow(m_hLyricWindow, 400, 1100, 1700, 200, true);
         lyric_wnd_load_krc(m_hLyricWindow, data.c_str(), (int)data.size());
         break;
     }

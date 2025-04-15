@@ -85,9 +85,11 @@ bool LYRICCALL lyric_get_line(HLYRIC hLyric, int indexLine, PLYRIC_LINE_STRUCT p
     auto pLyric = (PINSIDE_LYRIC_INFO)hLyric;
     if (pLyric && pRet)
     {
+        memset(pRet, 0, sizeof(*pRet));
         pRet->pText = L"";
         pRet->pTranslate1 = L"";
         pRet->pTranslate2 = L"";
+
         std::vector<std::wstring>* pTranslate1 = nullptr, *pTranslate2 = nullptr;
         size_t language_size = pLyric->language.size();
         if (language_size > 2)
@@ -111,14 +113,17 @@ bool LYRICCALL lyric_get_line(HLYRIC hLyric, int indexLine, PLYRIC_LINE_STRUCT p
         {
             auto& line = pLyric->lines[indexLine];
             pRet->pText = line.text.c_str();
-            if (pTranslate1)
-                pRet->pTranslate1 = (*pTranslate1)[indexLine].c_str();
-            if (pTranslate2)
-                pRet->pTranslate2 = (*pTranslate2)[indexLine].c_str();
+            pRet->nLength = (int)line.text.size();
 
-            pRet->nStart = line.start;
-            pRet->nEnd = line.start + line.duration;
-            pRet->nWordCount = (int)line.words.size();
+            if (pTranslate1)
+                pRet->pTranslate1 = (*pTranslate1)[indexLine].c_str(), pRet->nTranslate1 = (int)(*pTranslate1)[indexLine].size();
+            if (pTranslate2)
+                pRet->pTranslate2 = (*pTranslate2)[indexLine].c_str(), pRet->nTranslate2 = (int)(*pTranslate2)[indexLine].size();;
+
+            pRet->nStart        = line.start;
+            pRet->nEnd          = line.start + line.duration;
+            pRet->nWordCount    = (int)line.words.size();
+            pRet->nWidth        = line.width;
             return true;
         }
     }
@@ -130,15 +135,22 @@ bool LYRICCALL lyric_get_word(HLYRIC hLyric, int indexLine, int indexWord, PLYRI
     auto pLyric = (PINSIDE_LYRIC_INFO)hLyric;
     if (pLyric && pRet)
     {
+        memset(pRet, 0, sizeof(*pRet));
+        pRet->pText = L"";
         if (indexLine >= 0 && indexLine < (int)pLyric->lines.size())
         {
             auto& line = pLyric->lines[indexLine];
             if (indexWord >= 0 && indexWord < (int)line.words.size())
             {
                 auto& word = line.words[indexWord];
-                pRet->pText = word.text;
-                pRet->nStart = word.start;
-                pRet->nEnd = word.start + word.duration;
+                pRet->pText     = word.text;
+                pRet->nLength   = word.size;
+                pRet->nStart    = word.start;
+                pRet->nEnd      = word.start + word.duration;
+
+                pRet->nLeft     = word.left;
+                pRet->nWidth    = word.width;
+                pRet->nHeight   = word.height;
                 return true;
             }
         }

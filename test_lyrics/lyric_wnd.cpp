@@ -48,7 +48,7 @@ typedef struct LYRIC_WND_INFU
 static std::unordered_map<HWND, LYRIC_WND_INFU> m_map;
 
 HWND lyric_create_layered_window();
-void lyric_wnd_draw(LYRIC_WND_INFU& wnd_info, int pos, const RECT& rcWindow, LYRIC_CALC_STRUCT& arg, LYRIC_LINE_STRUCT& line);
+void lyric_wnd_draw(LYRIC_WND_INFU& wnd_info, int pos, const RECT& rcWindow, LYRIC_CALC_STRUCT& arg);
 LRESULT CALLBACK lyric_wnd_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 
@@ -118,7 +118,6 @@ bool lyric_wnd_update(HWND hWindowLyric, int nCurrentTimeMS)
         return false;
 
     LYRIC_CALC_STRUCT arg{};
-    LYRIC_LINE_STRUCT line{};
     // 这个函数百万次调用也就100多毫秒不到200, release在100毫秒以内
     // 完全支撑得起100帧的刷新率
     lyric_calc(wnd_info.hLyric, nCurrentTimeMS, &arg);
@@ -128,10 +127,8 @@ bool lyric_wnd_update(HWND hWindowLyric, int nCurrentTimeMS)
     wnd_info.prevIndexLine = arg.indexLine;
     wnd_info.prevWidth = arg.nWidthWord;
 
-    lyric_get_line(wnd_info.hLyric, arg.indexLine, &line);
-
 #ifdef _DEBUG
-    if (!arg.pWordText || !*arg.pWordText)
+    if (!arg.word.pText || !*arg.word.pText)
         __debugbreak();
 #endif
 
@@ -148,7 +145,7 @@ bool lyric_wnd_update(HWND hWindowLyric, int nCurrentTimeMS)
     hCanvas->BeginDraw();
     hCanvas->clear(0);
 
-    lyric_wnd_draw(wnd_info, nCurrentTimeMS, rc, arg, line);
+    lyric_wnd_draw(wnd_info, nCurrentTimeMS, rc, arg);
     HDC hdcD2D = hCanvas->GetDC();
     UpdateLayered(wnd_info.hWnd, cxClient, cyClient, hdcD2D);
     hCanvas->ReleaseDC();
@@ -192,9 +189,11 @@ HWND lyric_create_layered_window()
 
 
 // 绘画相关的内容
-void lyric_wnd_draw(LYRIC_WND_INFU& wnd_info, int pos, const RECT& rcWindow, LYRIC_CALC_STRUCT& arg, LYRIC_LINE_STRUCT& line)
+void lyric_wnd_draw(LYRIC_WND_INFU& wnd_info, int pos, const RECT& rcWindow, LYRIC_CALC_STRUCT& arg)
 {
     LPCANVAS hCanvas = wnd_info.hCanvas;
+    LYRIC_LINE_STRUCT& line = arg.line;
+    LYRIC_WORD_STRUCT& word = arg.word;
 
 
     //static int prev_width, prev_index;
@@ -209,15 +208,15 @@ void lyric_wnd_draw(LYRIC_WND_INFU& wnd_info, int pos, const RECT& rcWindow, LYR
     float left = 10.f;
     float height = 100.f;
 
-    if (arg.nLineWidth)
+    if (line.nWidth)
     {
-        int width = arg.nWidth + arg.nWidthWord;
-        rcText = { left, top, left + (float)arg.nLineWidth, top + height };
+        int width = word.nLeft + arg.nWidthWord;
+        rcText = { left, top, left + (float)line.nWidth, top + height };
         rcText2 = { left, top, left + (float)width, top + height };
     }
     else
     {
-        rcText = { left, top, left + (float)arg.nLineWidth, top + height };
+        rcText = { left, top, left + (float)line.nWidth, top + height };
         rcText2 = rcText;
     }
     RECT_F rcBack(0.F, 0.F, (float)(rcWindow.right - rcWindow.left), (float)(rcWindow.bottom - rcWindow.top));
@@ -227,10 +226,10 @@ void lyric_wnd_draw(LYRIC_WND_INFU& wnd_info, int pos, const RECT& rcWindow, LYR
 
     const int fmt = DT_LEFT | DT_TOP | DT_NOPREFIX | DT_SINGLELINE;
     hCanvas->SetClip(rcText2.right, rcText2.top, rcText.right, rcText2.bottom);
-    hCanvas->drawtext(wnd_info.hFont, wnd_info.hbrNormal, arg.pLineText, arg.nLineText, fmt, &rcText);
+    hCanvas->drawtext(wnd_info.hFont, wnd_info.hbrNormal, line.pText, line.nLength, fmt, &rcText);
     hCanvas->ResetClip();
 
-    hCanvas->drawtext(wnd_info.hFont, wnd_info.hbrHighlight, arg.pLineText, arg.nLineText, fmt, &rcText2);
+    hCanvas->drawtext(wnd_info.hFont, wnd_info.hbrHighlight, line.pText, line.nLength, fmt, &rcText2);
 
 }
 

@@ -88,20 +88,12 @@ bool LYRICCALL lyric_calc(HLYRIC hLyric, int time, LYRIC_CALC_STRUCT* pRet)
 
     pRet->indexLine     = pLyric->index;
     pRet->indexWord     = index_word;
-    pRet->nLineStart    = line.start;
-    pRet->nLineEnd      = line.start + line.duration;
-    pRet->nWordStart    = word.start;
-    pRet->nWordEnd      = word.start + word.duration;
-    pRet->pLineText     = line.text.c_str();
-    pRet->nLineText     = (int)line.text.size();
-    pRet->pWordText     = word.text;
-    pRet->nWordCount    = (int)line.words.size();
+
+    lyric_get_line(hLyric, pRet->indexLine, &pRet->line);
+    lyric_get_word(hLyric, pRet->indexLine, pRet->indexWord, &pRet->word);
 
     if (word.width > 0)
     {
-        // 高亮字前面所有字的宽度
-        pRet->nWidth += word.left;
-
         // 下来这里是字的高亮宽度, 先计算时间百分比, 然后乘以字的宽度
         int nStartTime = 0;
         int nEndTime = word.duration ? word.duration : 1;
@@ -114,8 +106,7 @@ bool LYRICCALL lyric_calc(HLYRIC hLyric, int time, LYRIC_CALC_STRUCT* pRet)
             result = bili;
 
         pRet->nWidthWord += result;
-        pRet->nLineWidth = line.width;
-        pRet->nHeight = word.height;
+
     }
 
     return true;

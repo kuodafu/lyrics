@@ -5,42 +5,48 @@ DECLARE_HANDLE(HLYRIC);
 
 #define LYRICCALL __stdcall
 
-// 计算指定时间在那一行歌词的哪一个字上
-struct LYRIC_CALC_STRUCT
-{
-    int             indexLine;  // 当前时间在整体歌词的那一行上, 从0开始
-    int             indexWord;  // 当前时间在这一行歌词的哪一个字上, 从0开始
-    int             nLineStart; // 歌词行的开始时间, 单位是毫秒
-    int             nLineEnd;   // 歌词行的结束时间, 单位是毫秒
-    int             nWordStart; // 歌词字的开始时间, 单位是毫秒, 这个开始时间是相对歌词行的
-    int             nWordEnd;   // 歌词字的结束时间, 单位是毫秒
-    int             nWordCount; // 歌词行的字数, 英文是单词数, 这里的字不是字符也不是字节, 是根据歌词内容决定的
-    int             nLineWidth; // 这一行歌词占用的宽度
-    int             nWidth;     // 指定时间里的行歌词到高亮这一个字占用的宽度, 不包括高亮这个字
-    int             nHeight;    // 歌词占用的高度, 一般来说整行都是一样的高度, 目前只处理这种
-    int             nWidthWord; // 高亮这个字占用的宽度, nWidth + nWidthWord 就是实际高亮的位置
-    int             nLineText;  // 歌词行的文本长度
-    const wchar_t*  pLineText;  // 行歌词
-    const wchar_t*  pWordText;  // 这一行里的哪个字
-};
-
 
 struct LYRIC_LINE_STRUCT
 {
     const wchar_t*  pText;      // 行歌词文本
     const wchar_t*  pTranslate1;// 行歌词翻译文本
     const wchar_t*  pTranslate2;// 行歌词音译文本
+    int             nLength;    // 字符数
+    int             nTranslate1;// 字符数
+    int             nTranslate2;// 字符数
+
     int             nStart;     // 行歌词开始时间, 单位是毫秒
     int             nEnd;       // 行歌词结束时间, 单位是毫秒
     int             nWordCount; // 这一行歌词的字数, 英文是单词数, 这里的字不是字符也不是字节, 是根据歌词内容决定的
+    
+    int             nWidth;     // 这一行文本占用的宽度, 单位是像素, 没有设置计算文本回调时值为0
 };
 
 struct LYRIC_WORD_STRUCT
 {
     const wchar_t*  pText;      // 字歌词文本
-    int             nStart;     // 字歌词开始时间, 单位是毫秒
-    int             nEnd;       // 字歌词结束时间, 单位是毫秒
+    int             nLength;    // 字符数
+    int             nStart;     // 字的开始时间, 单位是毫秒, 这个开始时间是相对歌词行的
+    int             nEnd;       // 字的结束时间, 单位是毫秒
+
+    int             nLeft;      // 这个字在这一行歌词里的左边位置, 如果没有设置计算文本回调, 下面这几个值会返回0
+    int             nWidth;     // 字占用的宽度
+    int             nHeight;    // 字占用的高度, 一般来说整行都是一样的高度, 目前只处理这种
+
 };
+
+
+// 计算指定时间在那一行歌词的哪一个字上
+struct LYRIC_CALC_STRUCT
+{
+    int                 indexLine;  // 当前时间在整体歌词的那一行上, 从0开始
+    int                 indexWord;  // 当前时间在这一行歌词的哪一个字上, 从0开始
+    int                 nWidthWord; // 传递这个时间字索引高亮占用的宽度, 用来确定高亮位置
+    LYRIC_LINE_STRUCT   line;       // 歌词行信息
+    LYRIC_WORD_STRUCT   word;       // 歌词字信息
+
+};
+
 
 // 整个歌词的基础信息
 struct LYRIC_INFO_STRUCT

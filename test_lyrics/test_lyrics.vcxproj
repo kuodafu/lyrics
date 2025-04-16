@@ -136,13 +136,19 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\cpp\_git_works\CommonCode\d2d\Color.h" />
-    <ClInclude Include="..\..\..\cpp\_git_works\CommonCode\d2d\d2d.h" />
+    <ClInclude Include="CD2DBrush.h" />
+    <ClInclude Include="CD2DFont.h" />
+    <ClInclude Include="CD2DRender.h" />
+    <ClInclude Include="d2d.h" />
     <ClInclude Include="lyric_wnd.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="lyric_exe_header.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\cpp\_git_works\CommonCode\d2d\d2d.cpp" />
+    <ClCompile Include="CD2DBrush.cpp" />
+    <ClCompile Include="CD2DFont.cpp" />
+    <ClCompile Include="CD2DRender.cpp" />
+    <ClCompile Include="d2d.cpp" />
     <ClCompile Include="lyric_wnd.cpp" />
     <ClCompile Include="test_lyrics.cpp" />
   </ItemGroup>

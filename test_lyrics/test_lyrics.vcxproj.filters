@@ -27,10 +27,19 @@
     <ClInclude Include="..\..\..\cpp\_git_works\CommonCode\d2d\Color.h">
       <Filter>d2d</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\cpp\_git_works\CommonCode\d2d\d2d.h">
+    <ClInclude Include="lyric_wnd.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="d2d.h">
       <Filter>d2d</Filter>
     </ClInclude>
-    <ClInclude Include="lyric_wnd.h">
+    <ClInclude Include="CD2DFont.h">
+      <Filter>d2d</Filter>
+    </ClInclude>
+    <ClInclude Include="CD2DBrush.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="CD2DRender.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
@@ -38,10 +47,19 @@
     <ClCompile Include="test_lyrics.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\cpp\_git_works\CommonCode\d2d\d2d.cpp">
+    <ClCompile Include="lyric_wnd.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="d2d.cpp">
       <Filter>d2d</Filter>
     </ClCompile>
-    <ClCompile Include="lyric_wnd.cpp">
+    <ClCompile Include="CD2DFont.cpp">
+      <Filter>d2d</Filter>
+    </ClCompile>
+    <ClCompile Include="CD2DBrush.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="CD2DRender.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

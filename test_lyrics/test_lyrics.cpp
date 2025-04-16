@@ -23,6 +23,7 @@ BOOL                InitInstance(HINSTANCE, int);
 bool init_dpi();
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 bool OnCommand(HWND hWnd, WPARAM wParam, LPARAM lParam);
+int CALLBACK OnLyricCommand(HWND hWindowLyric, int id, LPARAM lParam);
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -187,8 +188,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         //LPCWSTR krc1 = LR"(I:\Kugou\Lyric\周杰伦 - 本草纲目-50f657c1d53e3acb1381ef97e5cfabd2-108581021-00000000.krc)";
         std::string data;
         read_file(krc1, data);
-        m_hLyricWindow = lyric_wnd_create();
-        MoveWindow(m_hLyricWindow, 400, 1100, 1700, 200, true);
+        LYRIC_WND_ARG arg{};
+        arg.rcWindow = { 400, 1100, 2100, 1300 };
+        m_hLyricWindow = lyric_wnd_create(&arg, OnLyricCommand, 0);
         lyric_wnd_load_krc(m_hLyricWindow, data.c_str(), (int)data.size());
         break;
     }
@@ -225,6 +227,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         break;
     }
     case WM_DESTROY:
+        DestroyWindow(m_hLyricWindow);
         PostQuitMessage(0);
         break;
     case WM_CTLCOLOR:
@@ -335,4 +338,8 @@ bool OnCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
     return true;
 }
 
+int CALLBACK OnLyricCommand(HWND hWindowLyric, int id, LPARAM lParam)
+{
 
+    return 0;
+}

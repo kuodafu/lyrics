@@ -21,7 +21,7 @@ CD2DRender::CD2DRender(int width, int height):
     }
 
     d2dInfo.bp_proper.bitmapOptions = D2D1_BITMAP_OPTIONS_TARGET | D2D1_BITMAP_OPTIONS_GDI_COMPATIBLE;
-    D2D1_SIZE_U size = { width, height };
+    D2D1_SIZE_U size = { (UINT)width, (UINT)height };
     hr = m_pRenderTarget->CreateBitmap(size, 0, 0, &d2dInfo.bp_proper, &m_pBitmap);
     m_pRenderTarget->SetTarget(m_pBitmap);
 }
@@ -34,12 +34,30 @@ CD2DRender::~CD2DRender()
 }
 
 
+bool CD2DRender::getsize(int* width, int* height)
+{
+    if (!m_pBitmap)
+        return false;
+    D2D1_SIZE_U si = m_pBitmap->GetPixelSize();
+    if (width) *width = si.width;
+    if (height) *height = si.height;
+    return true;
+}
 bool CD2DRender::resize(int width, int height)
 {
+    if (!m_pBitmap)
+        return false;
+
+    D2D1_SIZE_U si = m_pBitmap->GetPixelSize();
+    if (si.width == (UINT)width && si.height == (UINT)height)
+        return true;
+    SafeRelease(m_pBitmap);
+
     auto& d2dInfo = d2d_get_info();
     d2dInfo.bp_proper.bitmapOptions = D2D1_BITMAP_OPTIONS_TARGET | D2D1_BITMAP_OPTIONS_GDI_COMPATIBLE;
-    D2D1_SIZE_U size = { width, height };
+    D2D1_SIZE_U size = { (UINT)width, (UINT)height };
     HRESULT hr = m_pRenderTarget->CreateBitmap(size, 0, 0, &d2dInfo.bp_proper, &m_pBitmap);
+    m_pRenderTarget->SetTarget(m_pBitmap);
     return SUCCEEDED(hr);
 }
 

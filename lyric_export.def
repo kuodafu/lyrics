@@ -6,3 +6,5 @@ EXPORTS
 	lyric_get_line_count
 	lyric_get_line
 	lyric_calc_text_width
+	lyric_get_language
+	lyric_re_calc_text_width

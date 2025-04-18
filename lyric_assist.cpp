@@ -268,3 +268,23 @@ wchar_t* LYRICCALL lyric_to_lrc(HLYRIC hLyric, int indexLine, int indexWord)
 
     return nullptr;
 }
+
+int LYRICCALL lyric_get_language(HLYRIC hLyric)
+{
+    auto pLyric = (PINSIDE_LYRIC_INFO)hLyric;
+    int ret = 0;
+    if (pLyric)
+    {
+        for (auto& item : pLyric->language)
+        {
+            if (!item.lines.empty())
+            {
+                if (item.type == 0)
+                    ret |= 1;
+                else if (item.type == 1)
+                    ret |= 2;
+            }
+        }
+    }
+    return ret;
+}

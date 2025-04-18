@@ -56,8 +56,7 @@ CD2DFont::~CD2DFont()
 
 bool CD2DFont::create(const LOGFONTW* logFont)
 {
-    if (logFont != &m_logFont)
-        memcpy(&m_logFont, logFont, sizeof(LOGFONTW));
+    memcpy(&m_logFont, logFont, sizeof(LOGFONTW));
 
     if (m_logFont.lfWeight == 0)
         m_logFont.lfWeight = FW_NORMAL;
@@ -66,7 +65,8 @@ bool CD2DFont::create(const LOGFONTW* logFont)
     if (pLocalName[0] == 0)
         GetUserDefaultLocaleName(pLocalName, 260);
 
-    int lfHeight = (m_logFont.lfHeight > 0) ? m_logFont.lfHeight : (m_logFont.lfHeight * -1);
+    int lfHeight = (logFont->lfHeight > 0) ? logFont->lfHeight : (logFont->lfHeight * -1);
+
     auto& d2dInfo = d2d_get_info();
     HRESULT hr = d2dInfo.pDWriteFactory->CreateTextFormat(
         logFont->lfFaceName,

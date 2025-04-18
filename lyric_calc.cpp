@@ -31,15 +31,23 @@ bool LYRICCALL lyric_calc_text_width(HLYRIC hLyric, LYRIC_PARSE_CALCTEXT pfnCalc
 
     pLyric->pfnCalcText = pfnCalcText;
     pLyric->pUserData = pUserData;
+    return lyric_re_calc_text_width(hLyric);
+}
 
-    // 清除所有记录的字宽度, 每一行每一个字都清零
+bool LYRICCALL lyric_re_calc_text_width(HLYRIC hLyric)
+{
+    using namespace LYRIC_NAMESPACE;
+    auto pLyric = (PINSIDE_LYRIC_INFO)hLyric;
+
+    if (!pLyric)
+        return false;
+
+    // 清除所有记录的字宽度, 每一行都清零, 计算歌词位置的时候值为0会重新计算
     for (auto& line : pLyric->lines)
         line.width = 0;
 
-    return false;
+    return true;
 }
-
-
 
 bool LYRICCALL lyric_calc(HLYRIC hLyric, int time, LYRIC_CALC_STRUCT* pRet)
 {
@@ -215,7 +223,7 @@ int lyric_find_line(PINSIDE_LYRIC_INFO pLyric, int time)
         if (cmp > 0)    // 找了一次没找到, 那就设置搜索数组时的左边位置和右边位置
             left = pLyric->index + 1;
         else
-            right = pLyric->index - 1;
+            right = pLyric->index;
 
         // 如果当前行找不到, 并且目标位置在右边, 那就尝试下一行, 不行就搜索整个数组
         // 因为大部分情况下是逐行递增的, 除非中途调整位置

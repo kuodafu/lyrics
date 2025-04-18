@@ -42,6 +42,18 @@
     <ClInclude Include="CD2DRender.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="lyric_wnd_header.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="tinyxml2.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="CD2DImage.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="test_lyrics.cpp">
@@ -62,5 +74,42 @@
     <ClCompile Include="CD2DRender.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="lyric_wnd_header.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="lyric_wnd_draw_text.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="tinyxml2.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="lyric_wnd_load_image.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="CD2DImage.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="lyric_wnd_draw_button.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="lyric_wnd_button_click.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="lyric_wnd_button_hover.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="test_lyrics.rc">
+      <Filter>资源文件</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Xml Include="res\lyric_image.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="res\lyric_image.png">
+      <Filter>资源文件</Filter>
+    </Image>
   </ItemGroup>
 </Project>

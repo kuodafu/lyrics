@@ -14,6 +14,17 @@
 #pragma comment(lib, "Dwrite.lib")
 #pragma comment(lib, "Msimg32.lib")
 
+#ifndef Assert
+#   if defined( DEBUG ) || defined( _DEBUG )
+#       include <assert.h>
+#       define ____L(s) L ## s
+#       define __L(s) ____L(s)
+#       define Assert(b) {if(!(b)){wchar_t __debug_str[520];swprintf_s(__debug_str, 520, L"检测到错误, 文件 " __L(__FILE__) L" , 行号 = %d\n", __LINE__);OutputDebugStringW(__debug_str);}}assert(b)
+#   else
+#       define Assert(b)
+#   endif //DEBUG || _DEBUG
+#endif
+
 
 #define RGB2ARGB(_cr,a)     ((DWORD)(BYTE)(a) << 24) | ((_cr & 0x000000ff) << 16) | ((_cr & 0x0000ff00)) | ((_cr & 0x00ff0000) >> 16)
 #define ARGB2RGB(_cr)       ((COLORREF)( ((BYTE)((_cr & 0xff0000) >> 16)|((WORD)((BYTE)((_cr & 0xff00) >> 8))<<8)) | (((DWORD)(BYTE)(_cr & 0xff))<<16) ))
@@ -66,13 +77,17 @@ template<typename T>inline void SafeRelease(T*& pObj)
 {
     if (pObj)
         pObj->Release();
-    pObj = NULL;
+    pObj = nullptr;
 }
 template<typename T>inline void SafeAddref(T* pObj)
 {
     if (pObj)
         pObj->AddRef();
-    pObj = NULL;
+}
+
+template<typename T, typename R>inline bool __query(T l, R r)
+{
+    return ((R)l & r) == r;
 }
 
 

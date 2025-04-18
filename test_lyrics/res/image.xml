@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="gb2312"?>
+<LyrcConfig Author="福仔" QQ="121007124" Url="https://www.kuodafu.com">
+	<common name="菜单" size="0,0,22,22" normal="1,0,22,22" highlight="24,0,22,22" down="47,0,22,22" Tips="1"/>
+	<common name="上一首" size="0,0,40,40" normal="1,24,40,40" highlight="42,24,40,40" down="83,24,40,40" Tips="2"/>
+	<common name="播放暂停" size="0,0,50,50" normal="1,106,50,50" highlight="52,106,50,50" down="103,106,50,50" normal_ck="154,106,50,50" highlight_ck="205,106,50,50" down_ck="256,106,50,50" Tips="3"/>
+	<common name="下一首" size="0,0,40,40" normal="124,24,40,40" highlight="165,24,40,40" down="206,24,40,40" Tips="4"/>
+	<common name="字体增大" size="0,0,25,23" normal="70,0,25,23" highlight="96,0,25,23" down="122,0,25,23" Tips="5"/>
+	<common name="字体减小" size="0,0,25,23" normal="148,0,25,23" highlight="174,0,25,23" down="200,0,25,23" Tips="6"/>
+	<common name="设置" size="0,0,22,23" normal="370,0,22,23" highlight="393,0,22,23" down="416,0,22,23" Tips="7"/>
+	<common name="歌词延后" size="0,0,23,23" normal="226,0,23,23" highlight="250,0,23,23" down="274,0,23,23" Tips="8"/>
+	<common name="歌词提前" size="0,0,23,23" normal="298,0,23,23" highlight="322,0,23,23" down="346,0,23,23" Tips="9"/>
+	<common name="歌词不对" size="0,0,58,23" normal="247,24,58,23" highlight="306,24,58,23" down="365,24,58,23" Tips="10"/>
+	<common name="翻译" size="0,0,18,23" normal="1,65,18,23" highlight="20,65,18,23" down="39,65,18,23" ban="58,65,18,23" normal_ck="77,65,18,23" highlight_ck="96,65,18,23" down_ck="115,65,18,23" ban_ck="134,65,18,23" Tips="11"/>
+	<common name="音译" size="0,0,18,23" normal="153,65,18,23" highlight="172,65,18,23" down="191,65,18,23" ban="210,65,18,23" normal_ck="229,65,18,23" highlight_ck="248,65,18,23" down_ck="267,65,18,23" ban_ck="286,65,18,23" Tips="12"/>
+	<common name="锁定" size="0,0,23,23" normal="305,65,23,23" highlight="329,65,23,23" down="353,65,23,23" Tips="13"/>
+	<common name="隐藏" size="0,0,18,18" normal="439,0,18,18" highlight="463,0,18,18" down="487,0,18,18" Tips="14"/>
+</LyrcConfig>

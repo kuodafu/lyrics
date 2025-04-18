@@ -115,6 +115,13 @@ void LYRICCALL lyric_free(void* pStr);
 /// <returns>返回是否处理成功</returns>
 bool LYRICCALL lyric_calc_text_width(HLYRIC hLyric, LYRIC_PARSE_CALCTEXT pfnCalcText, void* pUserData);
 
+/// <summary>
+/// 重新计算歌词文字的宽度, 调用这个函数会重新计算歌词占用宽度, 用来确定歌词高亮位置, 字体被改变时调用
+/// </summary>
+/// <param name="hLyric">歌词句柄</param>
+/// <returns>返回是否处理成功</returns>
+bool LYRICCALL lyric_re_calc_text_width(HLYRIC hLyric);
+
 
 /// <summary>
 /// 计算指定时间是在歌词的哪一行哪一个字上
@@ -229,4 +236,11 @@ int LYRICCALL lyric_get_line_all_str(HLYRIC hLyric, const wchar_t** pArrayBuffer
 /// <param name="hLyric">歌词句柄</param>
 /// <returns>返回歌词文本指针, 失败返回0, 不使用时需要调用 lyric_free() 释放</returns>
 wchar_t* LYRICCALL lyric_to_lrc(HLYRIC hLyric, int indexLine, int indexWord);
+
+/// <summary>
+/// 获取歌词语言信息, 翻译歌词使用
+/// </summary>
+/// <param name="hLyric">歌词句柄</param>
+/// <returns>返回歌词语言, 0=没有翻译, 1=翻译, 2=音译, 3=翻译+音译, 其他待定</returns>
+int LYRICCALL lyric_get_language(HLYRIC hLyric);
 

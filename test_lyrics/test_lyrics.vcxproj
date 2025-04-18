@@ -138,24 +138,45 @@
     <ClInclude Include="..\..\..\cpp\_git_works\CommonCode\d2d\Color.h" />
     <ClInclude Include="CD2DBrush.h" />
     <ClInclude Include="CD2DFont.h" />
+    <ClInclude Include="CD2DImage.h" />
     <ClInclude Include="CD2DRender.h" />
     <ClInclude Include="d2d.h" />
     <ClInclude Include="lyric_wnd.h" />
+    <ClInclude Include="lyric_wnd_header.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="lyric_exe_header.h" />
+    <ClInclude Include="tinyxml2.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CD2DBrush.cpp" />
     <ClCompile Include="CD2DFont.cpp" />
+    <ClCompile Include="CD2DImage.cpp" />
     <ClCompile Include="CD2DRender.cpp" />
+    <ClCompile Include="lyric_wnd_button_click.cpp" />
+    <ClCompile Include="lyric_wnd_button_hover.cpp" />
+    <ClCompile Include="lyric_wnd_draw_button.cpp" />
+    <ClCompile Include="lyric_wnd_draw_text.cpp" />
     <ClCompile Include="d2d.cpp" />
     <ClCompile Include="lyric_wnd.cpp" />
+    <ClCompile Include="lyric_wnd_header.cpp" />
+    <ClCompile Include="lyric_wnd_load_image.cpp" />
     <ClCompile Include="test_lyrics.cpp" />
+    <ClCompile Include="tinyxml2.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\lyrics.vcxproj">
       <Project>{066db818-4c7f-4cbc-a6ef-3cfb6848576b}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="test_lyrics.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Xml Include="res\lyric_image.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="res\lyric_image.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

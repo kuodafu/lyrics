@@ -1,4 +1,6 @@
-﻿#include "lyric_exe_header.h"
+﻿#include <control/WndControl6_0.h>
+
+#include "lyric_exe_header.h"
 #include <string>
 #include <random>
 #include <thread>
@@ -17,6 +19,7 @@
 static HINSTANCE hInst;                                // 当前实例
 static HSTREAM m_hStream;      // 音乐播放句柄
 static HWND m_hLyricWindow;    // 歌词窗口句柄
+static HWND m_hWnd;            // 主窗口句柄
 
 // 此代码模块中包含的函数的前向声明:
 BOOL                InitInstance(HINSTANCE, int);
@@ -135,37 +138,43 @@ void EnumerateKRCFiles(const std::wstring& directory) {
     FindClose(hFind);
 }
 
-HWND hStatic[3];
 
-//
-//  函数: WndProc(HWND, UINT, WPARAM, LPARAM)
-//
-//  目标: 处理主窗口的消息。
-//
-//  WM_COMMAND  - 处理应用程序菜单
-//  WM_PAINT    - 绘制主窗口
-//  WM_DESTROY  - 发送退出消息并返回
-//
-//
+#define ID_LOCK 5000
+#define ID_SHOW 5001
+
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-
     switch (message)
     {
     case WM_CREATE:
     {
+        m_hWnd = hWnd;
         BASS_Init(-1, 44100, 0, hWnd, NULL);
+        int left = 100;
+        int top = 20;
+        auto pfn_create = [&](int id, LPCWSTR name)
+        {
+            HWND hChild = CreateWindowExW(0, L"BUTTON", name, WS_VISIBLE | WS_CHILD | BS_AUTOCHECKBOX,
+                                          left, top, 300, 24, hWnd, (HMENU)(LONG_PTR)id, hInst, 0);
+            SendMessageW(hChild, WM_SETFONT, (WPARAM)GetStockObject(DEFAULT_GUI_FONT), TRUE);
+            top += 28;
+            return hChild;
+        };
+
+        pfn_create(ID_LOCK, L"锁定歌词");
+        pfn_create(ID_SHOW, L"歌词可视");
+
 
         //LPCWSTR file = LR"(I:\音乐\The Tech Thieves - Fake.mp3)";
         //LPCWSTR file = LR"(I:\音乐\音乐\低调组合 - 终点起点.mp3)";
         //LPCWSTR file = LR"(I:\音乐\音乐\低调组合 - 夜空中最亮的星.mp3)";
-        LPCWSTR file = LR"(I:\音乐\陈奕迅 - 淘汰.mp3)";
-        //LPCWSTR file = LR"(I:\音乐\周杰伦\10-2006-依然范特西\周杰伦 - 本草纲目.mp3)";
+        //LPCWSTR file = LR"(I:\音乐\陈奕迅 - 淘汰.mp3)";
+        LPCWSTR file = LR"(I:\音乐\周杰伦\10-2006-依然范特西\周杰伦 - 本草纲目.mp3)";
         m_hStream = BASS_StreamCreateFile(FALSE, file, 0, 0, BASS_SAMPLE_FLOAT);
         if (m_hStream)
         {
             BASS_ChannelPlay(m_hStream, FALSE);
-            BASS_ChannelSetPosition(m_hStream, BASS_ChannelSeconds2Bytes(m_hStream, 40.), BASS_POS_BYTE);
+            BASS_ChannelSetPosition(m_hStream, BASS_ChannelSeconds2Bytes(m_hStream, 200), BASS_POS_BYTE);
         }
         SetTimer(hWnd, 100, 1000, 0);
         SetTimer(hWnd, 200, 10, 0);
@@ -180,18 +189,21 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         //});
         //_th.detach();
         // 枚举  目录下所有 krc文件
-        //EnumerateKRCFiles(LR"(T:\tool盘\KuGou\Lyric)");
-        //LPCWSTR krc1 = LR"(T:\tool盘\KuGou\Lyric\The Tech Thieves - Fake-cf6d70385ebd673a9f423ed466bd200d-125671670-00000000.krc)";
-        //LPCWSTR krc1 = LR"(T:\tool盘\KuGou\Lyric\低调组合 - 终点起点-6257a78a9df6fb551f2324dbc08b4cf7-121741063-00000000.krc)";
+        //EnumerateKRCFiles(LR"(J:\cahce\kugou\Lyric)");
+        //LPCWSTR krc1 = LR"(J:\cahce\kugou\Lyric\The Tech Thieves - Fake-cf6d70385ebd673a9f423ed466bd200d-125671670-00000000.krc)";
+        //LPCWSTR krc1 = LR"(J:\cahce\kugou\Lyric\低调组合 - 终点起点-6257a78a9df6fb551f2324dbc08b4cf7-121741063-00000000.krc)";
         //LPCWSTR krc1 = LR"(T:\移动机械硬盘\E源码备份\易语言备份\1自己写的源码\实用工具\播放器\lrc\低调组合 - 夜空中最亮的星.krc)";
-        LPCWSTR krc1 = LR"(T:\tool盘\KuGou\Lyric\陈奕迅 - 淘汰-ea514c1f8eaee9f24dcd1f26575bac4f-135600792-00000000.krc)";
-        //LPCWSTR krc1 = LR"(I:\Kugou\Lyric\周杰伦 - 本草纲目-50f657c1d53e3acb1381ef97e5cfabd2-108581021-00000000.krc)";
+        //LPCWSTR krc1 = LR"(J:\cahce\kugou\Lyric\陈奕迅 - 淘汰-ea514c1f8eaee9f24dcd1f26575bac4f-135600792-00000000.krc)";
+        LPCWSTR krc1 = LR"(J:\cahce\kugou\Lyric\周杰伦 - 本草纲目-50f657c1d53e3acb1381ef97e5cfabd2-108581021-00000000.krc)";
         std::string data;
         read_file(krc1, data);
         LYRIC_WND_ARG arg{};
-        arg.rcWindow = { 400, 1100, 2100, 1300 };
+        lyric_wnd_get_default_arg(&arg);
+        arg.rcWindow = { 300, 800, 1500, 1000 };
+
         m_hLyricWindow = lyric_wnd_create(&arg, OnLyricCommand, 0);
         lyric_wnd_load_krc(m_hLyricWindow, data.c_str(), (int)data.size());
+        lyric_wnd_call_event(m_hLyricWindow, LYRIC_WND_BUTTON_ID_PLAY);
         break;
     }
     case WM_TIMER:
@@ -241,15 +253,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     {
         HDC hdc = (HDC)wParam;
         HWND hWndChild = (HWND)lParam;
-        if (hWndChild == hStatic[1] || hWndChild == hStatic[2])
-        {
-            if (hWndChild == hStatic[2])
-                SetTextColor(hdc, RGB(255, 0, 0));
-            SetBkColor(hdc, RGB(255, 255, 255));
-            SetBkMode(hdc, TRANSPARENT);
-            return (LRESULT)GetStockObject(LTGRAY_BRUSH);
-        }
-
         return (LRESULT)GetStockObject(WHITE_BRUSH);
     }
     default:
@@ -322,15 +325,30 @@ bool init_dpi()
     return true;
 }
 
+static bool IsCheck(HWND hWnd)
+{
+    return SendMessageW(hWnd, BM_GETCHECK, 0, 0) == BST_CHECKED;
+}
+
+static bool SetCheck(HWND hWnd, bool isCheck)
+{
+    return SendMessageW(hWnd, BM_SETCHECK, isCheck ? BST_CHECKED : BST_UNCHECKED, 0);
+}
 
 // “关于”框的消息处理程序。
 bool OnCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 {
+    HWND hChild = (HWND)lParam;
     const int id = LOWORD(wParam);
     const int code = HIWORD(wParam);
+    const bool isCheck = IsCheck(hChild);
     switch (id)
     {
-    case 0:
+    case ID_LOCK:
+        lyric_wnd_call_event(m_hLyricWindow, isCheck ? LYRIC_WND_BUTTON_ID_LOCK : LYRIC_WND_BUTTON_ID_UNLOCK);
+        break;
+    case ID_SHOW:
+        lyric_wnd_call_event(m_hLyricWindow, isCheck ? LYRIC_WND_BUTTON_ID_SHOW : LYRIC_WND_BUTTON_ID_CLOSE);
         break;
     default:
         return false;
@@ -340,6 +358,40 @@ bool OnCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 
 int CALLBACK OnLyricCommand(HWND hWindowLyric, int id, LPARAM lParam)
 {
-
+    switch (id)
+    {
+    case LYRIC_WND_BUTTON_ID_LOCK:
+        SetCheck(GetDlgItem(m_hWnd, ID_LOCK), true);
+        break;
+    case LYRIC_WND_BUTTON_ID_UNLOCK:
+        SetCheck(GetDlgItem(m_hWnd, ID_LOCK), false);
+        break;
+    case LYRIC_WND_BUTTON_ID_SHOW:
+        SetCheck(GetDlgItem(m_hWnd, ID_SHOW), true);
+        break;
+    case LYRIC_WND_BUTTON_ID_CLOSE:
+        SetCheck(GetDlgItem(m_hWnd, ID_SHOW), false);
+        break;
+    case LYRIC_WND_BUTTON_ID_NEXT:
+    case LYRIC_WND_BUTTON_ID_PREV:
+    {
+        double d_pos = BASS_ChannelBytes2Seconds(m_hStream, BASS_ChannelGetPosition(m_hStream, BASS_POS_BYTE));
+        double new_pos = id == LYRIC_WND_BUTTON_ID_NEXT ? 40. : -40.;
+        BASS_ChannelSetPosition(m_hStream, BASS_ChannelSeconds2Bytes(m_hStream, d_pos + new_pos), BASS_POS_BYTE);
+        break;
+    }
+    case LYRIC_WND_BUTTON_ID_PLAY:
+    {
+        BASS_ChannelPlay(m_hStream, FALSE);
+        break;
+    }
+    case LYRIC_WND_BUTTON_ID_PAUSE:
+    {
+        BASS_ChannelPause(m_hStream);
+        break;
+    }
+    default:
+        break;
+    }
     return 0;
 }

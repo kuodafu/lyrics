@@ -1,4 +1,5 @@
 #include "CD2DRender.h"
+
 NAMESPACE_D2D_BEGIN
 LPWSTR prefixstring(LPCWSTR text, DWORD format, size_t*& nPreFix, int& count);
 
@@ -84,6 +85,18 @@ bool CD2DRender::calc_text(CD2DFont* pFont, LPCWSTR text, size_t textLen, DWORD 
     if (ppDWriteTextLayout)
         *ppDWriteTextLayout = pDWriteTextLayout;
 
+    //CComPtr<IDWriteTextLayout1> pTextLayout1 = nullptr;
+    //hr = pDWriteTextLayout->QueryInterface(__uuidof(IDWriteTextLayout1), reinterpret_cast<void**>(&pTextLayout1));
+
+    //if (pTextLayout1)
+    //{
+    //    DWRITE_TEXT_RANGE range = { 0, (UINT32)textLen };
+    //    hr = pTextLayout1->SetCharacterSpacing(
+    //        10.0f,  // 前导间距 (字符前添加的空间)
+    //        5.0f,   // 尾随间距 (字符后添加的空间)
+    //        20.0f,  // 最小前进宽度 (字符的最小总宽度)
+    //        range);
+    //}
 
     if (FAILED(hr))
         return false;

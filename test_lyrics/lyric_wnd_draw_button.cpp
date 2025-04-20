@@ -1,4 +1,4 @@
-#include "lyric_wnd_header.h"
+#include "lyric_wnd_function.h"
 #include <tstr.h>
 
 using namespace NAMESPACE_D2D;
@@ -7,10 +7,7 @@ using namespace NAMESPACE_D2D;
 
 NAMESPACE_LYRIC_WND_BEGIN
 
-
-
-
-void lyric_wnd_draw_button(LYRIC_WND_INFU& wnd_info, const RECT& rcWindow, LYRIC_CALC_STRUCT& arg)
+void lyric_wnd_draw_button(LYRIC_WND_INFU& wnd_info, const RECT& rcWindow)
 {
     if (!wnd_info.isFillBack)
         return;

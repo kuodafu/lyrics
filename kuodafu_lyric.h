@@ -42,6 +42,7 @@ struct LYRIC_CALC_STRUCT
     int                 indexLine;  // 当前时间在整体歌词的那一行上, 从0开始
     int                 indexWord;  // 当前时间在这一行歌词的哪一个字上, 从0开始
     int                 nWidthWord; // 传递这个时间字索引高亮占用的宽度, 用来确定高亮位置
+    int                 nLineCount; // 歌词行数
     LYRIC_LINE_STRUCT   line;       // 歌词行信息
     LYRIC_WORD_STRUCT   word;       // 歌词字信息
 
@@ -131,6 +132,14 @@ bool LYRICCALL lyric_re_calc_text_width(HLYRIC hLyric);
 /// <param name="pRet">参考返回的数据, 返回歌词行文本, 歌词字文本, 行索引, 字索引</param>
 /// <returns>返回是否获取成功</returns>
 bool LYRICCALL lyric_calc(HLYRIC hLyric, int time, LYRIC_CALC_STRUCT* pRet);
+
+/// <summary>
+/// 歌词提前/延后, 正数是提前, 负数是延后
+/// </summary>
+/// <param name="hLyric">歌词句柄</param>
+/// <param name="nTime">要提前或者延后的时间, 正数是提前, 负数是延后, 单位是毫秒</param>
+/// <returns>返回设置后延时的毫秒数, 如果参数传递0则为获取</returns>
+int LYRICCALL lyric_behind_ahead(HLYRIC hLyric, int nTime);
 
 /// <summary>
 /// 获取歌词里记录的各种基础信息

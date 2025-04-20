@@ -1,8 +1,10 @@
-#include "lyric_wnd_header.h"
+// 绘画歌词文本, 路径的方式绘画
+
+#include "lyric_wnd_function.h"
 
 using namespace NAMESPACE_D2D;
 
-
+constexpr float strokeWidth = 2.0f; // 歌词文本描边宽度
 
 NAMESPACE_LYRIC_WND_BEGIN
 
@@ -129,12 +131,12 @@ public:
             glyphRun->glyphOffsets,
             glyphRun->glyphCount,
             glyphRun->isSideways,
-            glyphRun->bidiLevel != 0,
+            glyphRun->bidiLevel % 2,
             pSink
         );
-        pSink->Close();
         if (FAILED(hr))
             return hr;
+        pSink->Close();
 
         //D2D1::Matrix3x2F matrix = D2D1::Matrix3x2F(
         //    1.0f, 0.0f,
@@ -245,162 +247,158 @@ public:
 
 };
 
-// 将文本加入到路几何图形径中
-bool lyric_wnd_geometry_add_string(ID2D1DeviceContext* pRenderTarget, ID2D1PathGeometry* pPathGeometry, IDWriteTextLayout* pTextLayout)
+// 绘画到缓存位图里, 两个位图, 一个绘画高亮, 一个绘画普通
+void lyric_wnd_draw_text_geometry_draw_cache(LYRIC_WND_INFU& wnd_info, LYRIC_WND_DRAWTEXT_INFO& draw_info);
+
+
+void lyric_wnd_draw_text_geometry(LYRIC_WND_INFU& wnd_info, LYRIC_WND_DRAWTEXT_INFO& draw_info)
 {
-    CustomTextRenderer rand(pRenderTarget, pPathGeometry);
-
-    D2D1::Matrix3x2F matrix = D2D1::Matrix3x2F(
-        1.0f, 0.0f,
-        0.0f, 1.0f,
-        0.f, 0.f
-    );
-    pRenderTarget->SetTransform(matrix);
-    pTextLayout->Draw(0, &rand, 0.f, 0.f);
-
-    return true;
+    ID2D1DeviceContext* pRenderTarget = draw_info.pRenderTarget;
+    D2D1_ANTIALIAS_MODE oldMode = pRenderTarget->GetAntialiasMode();
+    pRenderTarget->SetAntialiasMode(D2D1_ANTIALIAS_MODE_ALIASED);  // 关闭抗锯齿
+    lyric_wnd_draw_text_geometry_draw_cache(wnd_info, draw_info);
+    pRenderTarget->SetAntialiasMode(oldMode);  // 恢复默认
 }
 
-bool lyric_wnd_draw_glow_text(ID2D1DeviceContext* pRenderTarget, IDWriteTextFormat* pTextFormat, LYRIC_CALC_STRUCT& arg,
-                              ID2D1LinearGradientBrush* hbrNormal, const D2D1_RECT_F& rcText);
-
-bool lyric_wnd_draw_geometry(ID2D1DeviceContext* pRenderTarget, ID2D1PathGeometry* pPathGeometry,
-                             ID2D1LinearGradientBrush* hbrNormal, ID2D1LinearGradientBrush* hbrLight,
-                             ID2D1SolidColorBrush* hbrDraw,
-                             const D2D1_RECT_F& rcText, const D2D1_RECT_F& rcText2,
-                             LYRIC_CALC_STRUCT& arg, IDWriteTextFormat* dxFormat)
+void lyric_wnd_draw_text_geometry_draw_cache(LYRIC_WND_INFU& wnd_info, LYRIC_WND_DRAWTEXT_INFO& draw_info)
 {
-    D2D1_MATRIX_3X2_F oldTransform;
-    pRenderTarget->GetTransform(&oldTransform);
-    float strokeWidth = 2.2f;
-    D2D1_RECT_F bounds;
-    HRESULT hr = pPathGeometry->GetBounds(oldTransform, &bounds);
-
-    float start_top_left = (bounds.right - bounds.left) / 2;
-    POINT_F startPoint = { start_top_left, bounds.top };
-    POINT_F endPoint = { start_top_left, bounds.bottom };
-    hbrNormal->SetStartPoint(startPoint);
-    hbrNormal->SetEndPoint(endPoint);
-
-    float translateTop = -bounds.top + rcText.top;
-    D2D1_MATRIX_3X2_F newTransform = D2D1::Matrix3x2F::Translation(rcText.left, translateTop);
-    pRenderTarget->SetTransform(&newTransform);
-
-    const float _offset = 20.f;
-
-    // 设置剪切区, 普通歌词左边的位置只能在高亮部分后面显示
-    D2D1_RECT_F rcRgn = { rcText2.right, bounds.top - _offset, bounds.right + _offset, bounds.bottom + _offset };
-    pRenderTarget->PushAxisAlignedClip(rcRgn, D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
-
+    ID2D1LinearGradientBrush* hbrNormal = draw_info.hbrNormal;
+    ID2D1LinearGradientBrush* hbrLight = draw_info.hbrLight;
+    ID2D1SolidColorBrush* hbrBorder = draw_info.hbrBorder;
+    IDWriteTextFormat* dxFormat = draw_info.dxFormat;
     auto& d2dInfo = d2d_get_info();
 
-    //CComPtr<ID2D1StrokeStyle> strokeStyle;
-    //D2D1_STROKE_STYLE_PROPERTIES strokeStyleProperties =
-    //{
-    //    D2D1_CAP_STYLE_SQUARE,
-    //    D2D1_CAP_STYLE_SQUARE,
-    //    D2D1_CAP_STYLE_SQUARE,
-    //    D2D1_LINE_JOIN_MITER,
-    //    strokeWidth,
-    //    D2D1_DASH_STYLE_SOLID,
-    //    0.0f
-    //};
-    //d2dInfo.pFactory->CreateStrokeStyle(strokeStyleProperties, 0, 0, &strokeStyle);
+    LYRIC_LINE_STRUCT& line = *draw_info.line;
 
-    //D2D1_RECT_F rcTest = rcRgn;
-    //rcTest.left = rcText2.left;
-    //lyric_wnd_draw_glow_text(pRenderTarget, dxFormat, arg, hbrNormal, rcTest);
-    pRenderTarget->DrawGeometry(pPathGeometry, hbrDraw, strokeWidth, nullptr);
-    pRenderTarget->FillGeometry(pPathGeometry, hbrNormal);
+    CComPtr<ID2D1PathGeometry> pTextGeometry;
+    CComPtr<IDWriteTextLayout> pTextLayout;
 
-    // 还原普通歌词剪切区
-    pRenderTarget->PopAxisAlignedClip();
-
-    // 高亮部分的右边只能显示到高亮的部分
-    rcRgn = { bounds.left - rcText2.left, bounds.top - _offset, rcText2.right, bounds.bottom + _offset };
-    pRenderTarget->PushAxisAlignedClip(rcRgn, D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
-
-    hbrLight->SetStartPoint(startPoint);
-    hbrLight->SetEndPoint(endPoint);
-    pRenderTarget->DrawGeometry(pPathGeometry, hbrDraw, strokeWidth, nullptr);
-    pRenderTarget->FillGeometry(pPathGeometry, hbrLight);
-
-    // 还原高亮歌词剪切区
-    pRenderTarget->PopAxisAlignedClip();
-
-    pRenderTarget->SetTransform(&oldTransform);
-
-    return true;
-}
-
-// 绘画发光文本
-bool lyric_wnd_draw_glow_text(ID2D1DeviceContext* pRenderTarget, IDWriteTextFormat* pTextFormat, LYRIC_CALC_STRUCT& arg,
-                              ID2D1LinearGradientBrush* hbrNormal, const D2D1_RECT_F& rcText)
-{
-    HRESULT hr = S_OK;
-
-    // 计算文本尺寸
-    D2D1_SIZE_F size = D2D1::SizeF(rcText.right - rcText.left, rcText.bottom - rcText.top);
-
-    // 创建兼容的位图渲染目标
-    CComPtr<ID2D1BitmapRenderTarget> pTextBitmapRT = nullptr;
-    hr = pRenderTarget->CreateCompatibleRenderTarget(size, &pTextBitmapRT);
+    HRESULT hr = d2dInfo.pFactory->CreatePathGeometry(&pTextGeometry);
     if (FAILED(hr))
-        return false;
+        return;
 
-    // 绘制文本到位图
-    pTextBitmapRT->BeginDraw();
-    pTextBitmapRT->Clear(D2D1::ColorF(0, 0, 0, 0)); // 透明背景
-    pTextBitmapRT->DrawText(
-        arg.line.pText, arg.line.nLength, pTextFormat,
-        D2D1::RectF(0, 0, size.width, size.height),
-        hbrNormal);
-    pTextBitmapRT->EndDraw();
+    pTextLayout = lyric_wnd_create_text_layout(line.pText, (UINT32)line.nLength, draw_info.dxFormat,
+                                               draw_info.layout_text_max_width, draw_info.layout_text_max_height);
 
-    // 获取位图
-    ID2D1Bitmap* pCachedTextBitmap = nullptr;
-    hr = pTextBitmapRT->GetBitmap(&pCachedTextBitmap);
+    //hr = d2dInfo.pDWriteFactory->CreateTextLayout(
+    //    line.pText, (UINT32)line.nLength, draw_info.dxFormat,
+    //    draw_info.layout_text_max_width, draw_info.layout_text_max_height,
+    //    &pTextLayout
+    //);
 
-    D2D1_COLOR_F g_GlowColor = D2D1::ColorF(0.0f, 0.8f, 1.0f, 1.0f);
+    if (!pTextLayout)
+        return;
 
-    // 1. 绘制多重发光层(模拟光晕)
-    for (int i = 8; i >= 1; i--) {
-        float radius = 3.0f * i;
-        float opacity = 0.8f / i;
+    //D2D1_STROKE_STYLE_PROPERTIES1 strokeProps = D2D1::StrokeStyleProperties1(
+    //    D2D1_CAP_STYLE_FLAT,
+    //    D2D1_CAP_STYLE_FLAT,
+    //    D2D1_CAP_STYLE_FLAT,
+    //    D2D1_LINE_JOIN_MITER,
+    //    10.0f,  // miterLimit
+    //    D2D1_STROKE_TRANSFORM_TYPE_FIXED,  // 关键：防止笔触向外扩展
+    //    D2D1_DASH_STYLE_SOLID
+    //);
+    //d2dInfo.pFactory->CreateStrokeStyle1(
+    //    &strokeProps,
+    //    nullptr,
+    //    0,
+    //    &pStrokeStyle
+    //);
 
-        // 创建模糊效果
-        ID2D1Effect* pBlurEffect = nullptr;
-        pRenderTarget->CreateEffect(CLSID_D2D1GaussianBlur, &pBlurEffect);
-        pBlurEffect->SetValue(D2D1_GAUSSIANBLUR_PROP_STANDARD_DEVIATION, radius);
-        pBlurEffect->SetValue(D2D1_GAUSSIANBLUR_PROP_OPTIMIZATION, D2D1_GAUSSIANBLUR_OPTIMIZATION_QUALITY);
+    // 1. 创建笔触样式（防止笔触向外扩展）
+    D2D1_STROKE_STYLE_PROPERTIES strokeProps = D2D1::StrokeStyleProperties(
+        D2D1_CAP_STYLE_ROUND,   // 线帽：平头（避免额外延伸）
+        D2D1_CAP_STYLE_ROUND,
+        D2D1_CAP_STYLE_ROUND,
+        D2D1_LINE_JOIN_MITER,  // 连接方式：斜接（避免圆角延伸）
+        10.0f,                 // 斜接限制
+        D2D1_DASH_STYLE_SOLID  // 实线
+    );
 
-        // 设置输入
-        pBlurEffect->SetInput(0, pCachedTextBitmap);
+    CComPtr<ID2D1StrokeStyle> pStrokeStyle = nullptr;
+    d2dInfo.pFactory->CreateStrokeStyle(&strokeProps, nullptr, 0, &pStrokeStyle);
 
-        // 创建颜色矩阵效果(调整发光颜色)
-        ID2D1Effect* pColorMatrixEffect = nullptr;
-        pRenderTarget->CreateEffect(CLSID_D2D1ColorMatrix, &pColorMatrixEffect);
+    CustomTextRenderer rand(draw_info.pRenderTarget, pTextGeometry);  // 获取文本路径信息
 
-        D2D1_MATRIX_5X4_F matrix = {
-            g_GlowColor.r, 0, 0, 0,  // R
-            0, g_GlowColor.g, 0, 0,   // G
-            0, 0, g_GlowColor.b, 0,   // B
-            0, 0, 0, opacity,         // Alpha
-            0, 0, 0, 0               // 偏移
-        };
-        pColorMatrixEffect->SetValue(D2D1_COLORMATRIX_PROP_COLOR_MATRIX, matrix);
-        pColorMatrixEffect->SetInputEffect(0, pBlurEffect);
+    // 绘画左边顶边偏移的位置, 不从0开始, 画阴影部分会小于0, 这里偏移一些像素
+    const float _offset = (draw_info.layout_text_max_height - wnd_info.nLineHeight) / 2;
 
-        // 绘制发光层
-        pRenderTarget->DrawImage(pColorMatrixEffect, D2D1::Point2F(rcText.left, rcText.top));
+    auto pfn_draw_text = [&](ID2D1LinearGradientBrush* hbrFill) -> ID2D1Bitmap*
+    {
+        // 弄个新的渲染目标, 把数据绘画到这个目标上, 然后取出位图保存
+        CComPtr<ID2D1BitmapRenderTarget> pRender = nullptr;
+        float width = (line.nWidth ? ((float)(line.nWidth)) : wnd_info.nLineDefWidth) + _offset * 2;
 
-        SafeRelease(pBlurEffect);
-        SafeRelease(pColorMatrixEffect);
-    }
+        D2D1_SIZE_F size = D2D1::SizeF(draw_info.layout_text_max_width, draw_info.layout_text_max_height);
+        //D2D1_SIZE_F size = D2D1::SizeF(width, draw_info.layout_text_max_height);
+        hr = draw_info.pRenderTarget->CreateCompatibleRenderTarget(size, &pRender);
+        if (FAILED(hr))
+            return nullptr;
 
-    pRenderTarget->DrawText(arg.line.pText, arg.line.nLength, pTextFormat, rcText, hbrNormal);
+        pRender->BeginDraw();
+        if (hbrFill == draw_info.hbrNormal)
+            pRender->Clear(ARGB_D2D(MAKEARGB(200, 255, 0, 0)));
+        else
+            pRender->Clear(ARGB_D2D(MAKEARGB(200, 0, 255, 0)));
 
-    return true;
+        pRender->Clear();
+
+        D2D1::Matrix3x2F matrix = D2D1::Matrix3x2F(
+            1.0f, 0.0f,
+            0.0f, 1.0f,
+            0.f, 0.f
+        );
+
+        pTextLayout->Draw(0, &rand, 0.f, 0.f);
+
+        D2D1_RECT_F bounds;
+        hr = pTextGeometry->GetBounds(matrix, &bounds);
+
+        float start_top_left = (bounds.right - bounds.left) / 2;
+        POINT_F startPoint = { start_top_left, bounds.top };
+        POINT_F endPoint = { start_top_left, bounds.bottom };
+        hbrFill->SetStartPoint(startPoint);
+        hbrFill->SetEndPoint(endPoint);
+
+        // 平移到路径那个起始位置
+        float translateTop = -bounds.top + _offset;
+
+        D2D1_MATRIX_3X2_F newTransform = D2D1::Matrix3x2F::Translation(_offset, translateTop);
+        pRender->SetTransform(&newTransform);
+
+
+
+        pRender->DrawGeometry(pTextGeometry, hbrBorder, strokeWidth, pStrokeStyle);
+        pRender->FillGeometry(pTextGeometry, hbrFill);  // 调用方指定填充的画刷
+
+        hr = pTextGeometry->GetWidenedBounds(strokeWidth, pStrokeStyle, newTransform, &draw_info.cache->rcBounds);
+
+        pRender->SetTransform(&matrix);
+
+        CD2DBrush hbrBak(MAKEARGB(180, 255, 0, 0));
+        pRender->FillRectangle(draw_info.cache->rcBounds, hbrBak);
+
+        hr = pRender->EndDraw();
+        if (FAILED(hr))
+            return nullptr;
+
+        // 绘画结束, 取出位图返回
+        //TODO 这里应该创建一个位图, 然后画到这个位图里面
+        // 这个位图的尺寸就是计算出来的边界矩形的大小
+
+        ID2D1Bitmap* pBitmap = nullptr;
+        hr = pRender->GetBitmap(&pBitmap);
+        if (SUCCEEDED(hr))
+            return pBitmap;
+        return nullptr;
+    };
+
+
+    SafeRelease(draw_info.cache->pBitmapNormal);
+    SafeRelease(draw_info.cache->pBitmapLight);
+    draw_info.cache->pBitmapNormal = pfn_draw_text(hbrNormal);
+    draw_info.cache->pBitmapLight = pfn_draw_text(hbrLight);
+
 }
 
 NAMESPACE_LYRIC_WND_END

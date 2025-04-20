@@ -39,6 +39,7 @@ enum LYRIC_WND_BUTTON_ID
     LYRIC_WND_BUTTON_ID_SHOW            = 1025, // 显示歌词, 没这个按钮, 但是有这个事件, 可以让外部调用, 内部没这个按钮, 内部不会主动触发
 
 
+
 };
 
 enum LYRIC_WND_BUTTON_STATE

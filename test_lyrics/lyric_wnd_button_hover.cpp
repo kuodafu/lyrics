@@ -1,4 +1,4 @@
-#include "lyric_wnd_header.h"
+#include "lyric_wnd_function.h"
 #include <CommCtrl.h>
 
 

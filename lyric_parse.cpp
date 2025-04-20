@@ -206,15 +206,43 @@ void lyric_parse_text(PINSIDE_LYRIC_INFO pLyric, LPWSTR pStart, LPWSTR pEnd)
             if (words.t3 != 0)
                 __debugbreak();
             words.text = pStart;
+            LPWSTR apos_pos = nullptr;
             while (pStart < pEnd)
             {
                 wchar_t ch = *pStart;
                 if (ch == L'<' || ch == L'\r' || ch == L'\n' || ch == L'\0')
                     break;
+                if (ch == L'&')
+                {
+                    // 是&开头, 比较接下来5个字符是不是&apos;
+                    if (_wcsnicmp(pStart + 1, L"apos;", 5) == 0)
+                    {
+                        apos_pos = pStart;
+                        pStart += 5;
+                    }
+                }
                 pStart++;
             }
             words.size = (int)(pStart - words.text);
-            lines.text.append(words.text, pStart - words.text);
+            if (apos_pos)
+            {
+                LPCWSTR replace_end = pStart;
+                size_t replace_len = (size_t)(apos_pos - words.text);  // 找到位置前面有几个字符
+                // 这里是 &apos; 符号, 要替换成单引号
+                LPWSTR p1 = (LPWSTR)apos_pos;
+                LPWSTR p2 = p1 + 6;
+
+                *p1++ = L'\'';  // 换成单引号
+                replace_len++;
+
+                // 把p2一直拷贝到p1里面
+                while (p2 < replace_end)
+                    *p1++ = *p2++, replace_len++;  // 后面的字符都拷贝过去, 数量+1
+                *p1 = 0;
+                words.size = (int)replace_len;
+            }
+
+            lines.text.append(words.text, words.size);
         }
 
         while (*pStart == L'\r' || *pStart == L'\n')

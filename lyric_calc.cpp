@@ -57,6 +57,7 @@ bool LYRICCALL lyric_calc(HLYRIC hLyric, int time, LYRIC_CALC_STRUCT* pRet)
     if (!pRet || !pLyric)
         return false;
 
+    time += pLyric->nTimeOffset;
     int size = (int)pLyric->lines.size();
     int index = lyric_find_line(pLyric, time);
     if (index > size || index < 0)
@@ -96,6 +97,7 @@ bool LYRICCALL lyric_calc(HLYRIC hLyric, int time, LYRIC_CALC_STRUCT* pRet)
 
     pRet->indexLine     = pLyric->index;
     pRet->indexWord     = index_word;
+    pRet->nLineCount    = size;
 
     lyric_get_line(hLyric, pRet->indexLine, &pRet->line);
     lyric_get_word(hLyric, pRet->indexLine, pRet->indexWord, &pRet->word);
@@ -118,6 +120,18 @@ bool LYRICCALL lyric_calc(HLYRIC hLyric, int time, LYRIC_CALC_STRUCT* pRet)
     }
 
     return true;
+}
+
+int LYRICCALL lyric_behind_ahead(HLYRIC hLyric, int nTime)
+{
+    using namespace LYRIC_NAMESPACE;
+    auto pLyric = (PINSIDE_LYRIC_INFO)hLyric;
+
+    if (!pLyric)
+        return 0;
+
+    pLyric->nTimeOffset += nTime;
+    return pLyric->nTimeOffset;
 }
 
 
@@ -221,7 +235,7 @@ int lyric_find_line(PINSIDE_LYRIC_INFO pLyric, int time)
             return pLyric->index;   // 在当前记录的行找到了
 
         if (cmp > 0)    // 找了一次没找到, 那就设置搜索数组时的左边位置和右边位置
-            left = pLyric->index + 1;
+            left = pLyric->index;
         else
             right = pLyric->index;
 

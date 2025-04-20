@@ -1,4 +1,4 @@
-#include "lyric_wnd_header.h"
+#include "lyric_wnd_function.h"
 using namespace NAMESPACE_D2D;
 
 
@@ -191,11 +191,19 @@ void lrc_click_font(LYRIC_WND_INFU& wnd_info, int id)
     wnd_info.dx.re_create_font(&wnd_info);      // 调整尺寸后重新创建
     lyric_re_calc_text_width(wnd_info.hLyric);  // 重新计算歌词宽度
     wnd_info.change_btn = true;                 // 标记按钮需要重新绘画
+    wnd_info.change_font = true;                // 标记字体已经改变, 需要重新创建歌词缓存
+
+    lyric_wnd_calc_height(wnd_info);
+
+    RECT rc;
+    GetWindowRect(wnd_info.hWnd, &rc);
+    MoveWindow(wnd_info.hWnd, rc.left, rc.top, rc.right - rc.left, wnd_info.nMinHeight, TRUE);
 }
 
 void lrc_click_lrc_ms(LYRIC_WND_INFU& wnd_info, int id)
 {
-    wnd_info.nTimeOffset += (id == LYRIC_WND_BUTTON_ID_BEHIND ? -500 : 500);
+    int nTimeOffset = (id == LYRIC_WND_BUTTON_ID_BEHIND ? -500 : 500);
+    wnd_info.nTimeOffset = lyric_behind_ahead(wnd_info.hLyric, nTimeOffset);
     wnd_info.change_btn = true;   // 标记按钮需要重新绘画
 }
 

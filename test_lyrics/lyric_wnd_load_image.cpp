@@ -1,4 +1,4 @@
-#include "lyric_wnd_header.h"
+#include "lyric_wnd_function.h"
 #include "resource.h"
 #include "tinyxml2.h"
 
@@ -104,15 +104,22 @@ bool lyric_wnd_load_image(LYRIC_WND_INFU& wnd_info)
     const int offset = _10;
     wnd_info.button.width = lyric_wnd_calc_button(wnd_info, wnd_info.button.maxHeight, offset);
 
-    wnd_info.nLineTop1 = wnd_info.button.maxHeight + _20;
-    wnd_info.nLineTop2 = wnd_info.nLineTop1 + (int)wnd_info.nLineHeight + offset;
-    wnd_info.nMinWidth = wnd_info.button.width + _50;
-    wnd_info.nMinHeight = wnd_info.nLineTop2 + (int)wnd_info.nLineHeight + offset;
+    lyric_wnd_calc_height(wnd_info);
 
     return true;
 }
 
+void lyric_wnd_calc_height(LYRIC_WND_INFU& wnd_info)
+{
+    const int _10 = wnd_info.scale(10);
+    const int _20 = _10 * 2;
+    const int _50 = _10 * 5;
 
+    wnd_info.nLineTop1 = wnd_info.button.maxHeight + _20;
+    wnd_info.nLineTop2 = wnd_info.nLineTop1 + (int)wnd_info.nLineHeight + _10;
+    wnd_info.nMinWidth = wnd_info.button.width + _50;
+    wnd_info.nMinHeight = wnd_info.nLineTop2 + (int)wnd_info.nLineHeight + _10;
+}
 // 解析xml里的位置信息, 记录起来
 bool lyric_wnd_load_image_parse(LYRIC_WND_INFU& wnd_info, tinyxml2::XMLNode* node)
 {

@@ -8,3 +8,4 @@ EXPORTS
 	lyric_calc_text_width
 	lyric_get_language
 	lyric_re_calc_text_width
+	lyric_behind_ahead

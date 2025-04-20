@@ -77,13 +77,15 @@ typedef struct INSIDE_LYRIC_INFO
     LPCWSTR offset;
     LYRIC_PARSE_CALCTEXT pfnCalcText;
     void*   pUserData;
-    int     index;      // 歌词高亮索引, 当前是在第几行, 搜索时限搜索这个, 不是在这个索引才去搜索数组
+    int     index;          // 歌词高亮索引, 当前是在第几行, 搜索时限搜索这个, 不是在这个索引才去搜索数组
+    int     nTimeOffset;    // 时间偏移, 计算歌词位置的时候加上这个偏移
     INSIDE_LYRIC_INFO()
     {
         id = ar = ti = by = hash = al = sign = qq = total = offset = nullptr;
         index = -1;
         pfnCalcText = nullptr;
         pUserData = nullptr;
+        nTimeOffset = 0;
     }
 }*PINSIDE_LYRIC_INFO;
 

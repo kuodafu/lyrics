@@ -7,7 +7,7 @@
 #include "lyric_exe_header.h"
 #include <string>
 #include <unordered_map>
-#include "lyric_wnd_header.h"
+#include "lyric_wnd_function.h"
 #include <CommCtrl.h>
 
 using namespace NAMESPACE_D2D;
@@ -128,23 +128,30 @@ bool lyric_wnd_load_krc(HWND hWindowLyric, LPCVOID pKrcData, int nKrcDataLen)
     auto pWndInfo = (LYRIC_WND_INFU*)GetWindowLongPtrW(hWindowLyric, GWLP_USERDATA);
     if (!pWndInfo)
         return false;
+    lyric_destroy(pWndInfo->hLyric);
     LYRIC_WND_INFU& wnd_info = *pWndInfo;
-    HLYRIC hLyric = lyric_parse(pKrcData, nKrcDataLen);
-    if (!hLyric)
+    wnd_info.hLyric = lyric_parse(pKrcData, nKrcDataLen);
+    pWndInfo->nTimeOffset = lyric_behind_ahead(wnd_info.hLyric, 0);
+    if (!wnd_info.hLyric)
         return false;
-    wnd_info.hLyric = hLyric;
 
-    lyric_calc_text_width(hLyric, [](void* pUserData, LPCWSTR pText, int nTextLen, int* pRetHeight) -> int
+    lyric_calc_text_width(wnd_info.hLyric, [](void* pUserData, LPCWSTR pText, int nTextLen, int* pRetHeight) -> int
     {
         LYRIC_WND_INFU* pWndInfo = (LYRIC_WND_INFU*)pUserData;
         CD2DRender& hCanvas = *pWndInfo->dx.hCanvas;
         if (!pWndInfo->dx.hFont)
             lyric_wnd_default_object(*pWndInfo);
-        float width = 0, height = 0;
-        hCanvas.calc_text(pWndInfo->dx.hFont, pText, nTextLen, DT_SINGLELINE, 0, 0, 0, &width, &height, 0);
-        //_canvas_calctextsize(hCanvas, pWndInfo->hFont, pText, nTextLen, DT_SINGLELINE, 0, 0, &width, &height);
-        *pRetHeight = (int)height;
-        return (int)width;
+
+        *pRetHeight = 0;
+        IDWriteTextLayout* pTextLayout = lyric_wnd_create_text_layout(pText, nTextLen, *pWndInfo->dx.hFont, 0, 0);
+        if (pTextLayout)
+        {
+            DWRITE_TEXT_METRICS metrics = { 0 };
+            pTextLayout->GetMetrics(&metrics);
+            *pRetHeight = (int)metrics.height;
+            return (int)metrics.widthIncludingTrailingWhitespace;
+        }
+        return (int)0;
     }, pWndInfo);
     return true;
 }

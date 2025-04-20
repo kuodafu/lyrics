@@ -11,23 +11,19 @@
 #define NAMESPACE_LYRIC_WND_BEGIN namespace NAMESPACE_LYRIC_WND{
 #define NAMESPACE_LYRIC_WND_END }
 
-
-
-
 NAMESPACE_LYRIC_WND_BEGIN
-
 
 
 struct LYRIC_WND_INFU;
 // 歌词窗口dx相关的对象
 struct LYRIC_WND_DX
 {
-    NAMESPACE_D2D::CD2DRender*  hCanvas;        // D2D绘画句柄
-    NAMESPACE_D2D::CD2DFont*    hFont;          // 绘画歌词的字体, 这个是设备无关字体, 设备失效不需要重新创建
+    NAMESPACE_D2D::CD2DRender* hCanvas;        // D2D绘画句柄
+    NAMESPACE_D2D::CD2DFont* hFont;          // 绘画歌词的字体, 这个是设备无关字体, 设备失效不需要重新创建
 
-    NAMESPACE_D2D::CD2DImage*   image;          // 歌词窗口按钮需要的图片
-    NAMESPACE_D2D::CD2DBrush*   hbrBorder;      // 绘画歌词文本的边框画刷
-    NAMESPACE_D2D::CD2DBrush*   hbrLine;        // 歌词按钮分隔部分的线条画刷
+    NAMESPACE_D2D::CD2DImage* image;          // 歌词窗口按钮需要的图片
+    NAMESPACE_D2D::CD2DBrush* hbrBorder;      // 绘画歌词文本的边框画刷
+    NAMESPACE_D2D::CD2DBrush* hbrLine;        // 歌词按钮分隔部分的线条画刷
     NAMESPACE_D2D::CD2DBrush_LinearGradient* hbrNormal;      // 普通歌词画刷
     NAMESPACE_D2D::CD2DBrush_LinearGradient* hbrLight;       // 高亮歌词画刷
 
@@ -53,7 +49,7 @@ struct LYRIC_WND_DX
 
     // 重新创建所有对象
     bool re_create(LYRIC_WND_INFU* pWndInfo);
-    
+
     // 重新创建画刷对象, 普通画刷/高亮画刷, 外部重新设置颜色的时候调用
     bool re_create_brush(LYRIC_WND_INFU* pWndInfo, bool isLight);
 
@@ -86,21 +82,36 @@ struct LYRIC_WND_BUTTON_INFO
     int     index;      // 按钮索引, 从1开始, 表示显示的第几个按钮, 和xml里的顺序对应
     int     state;      // 按钮状态
     RECT    rc;         // 按钮实际的位置, 单位是像素, 判断鼠标移动到这个位置就在按钮上
-    RECT*   prcSrc;     // 按钮的源矩形, 从大图片上的哪个位置拿出来绘画
+    RECT* prcSrc;     // 按钮的源矩形, 从大图片上的哪个位置拿出来绘画
 };
 struct LYRIC_WND_BUTTON
 {
     std::vector<LYRIC_WND_BUTTON_INFO>  rcBtn;  // 按钮实际绘画的位置, id 等信息
     std::vector<LYRIC_WND_IMAGE>        rcSrc;  // 源矩形, 从大图片上的哪个位置拿出来绘画
 
-    int     index{-1};    // 按钮索引, 当前鼠标移动到了哪个索引上, 这个索引就是 rcBtn 的下标
-    int     indexDown{-1};// 按下索引
+    int     index{ -1 };    // 按钮索引, 当前鼠标移动到了哪个索引上, 这个索引就是 rcBtn 的下标
+    int     indexDown{ -1 };// 按下索引
     int     width{};      // 所有按钮的宽度
     int     maxHeight{};  // 最大按钮的高度
 
 };
 
+// 缓存对象, 一行两个缓存位图, 一个是普通歌词, 一个是高亮歌词, 缓存起来, 后面直接设定裁剪区就可以了
+// 音译或者翻译模式下是两行都有高亮部分
+// 把一整行普通歌词 + 一整行高亮歌词绘画到缓存位图上, 只有歌词改变才会重新绘画第二次
+struct LYRIC_WND_CACHE_OBJ
+{
+    int     preIndex;   // 上次绘画的行号索引
+    LPCWSTR preText;    // 上次绘画的文本地址, 行号和文本都一样那就是不需要重新创建对象
+    int     preLength;  // 上次绘画文本的长度
 
+    D2D1_RECT_F rcBounds;       // 实际绘画的区域
+    ID2D1Bitmap* pBitmapNormal; // 缓存位图, 普通歌词文本, 一次画好, 后面直接设定裁剪区就可以了
+    ID2D1Bitmap* pBitmapLight;  // 缓存位图, 高亮歌词文本
+
+    LYRIC_WND_CACHE_OBJ();
+    ~LYRIC_WND_CACHE_OBJ();
+};
 
 // 歌词窗口 USERDATA 里存放的是这个结构
 typedef struct LYRIC_WND_INFU
@@ -111,8 +122,11 @@ typedef struct LYRIC_WND_INFU
     int         prevIndexLine;  // 上一次绘画的歌词行号
     int         prevWidth;      // 上一次绘画的歌词宽度
     float       nLineHeight;    // 一行歌词的高度
+    float       nLineDefWidth;  // 没有歌词时歌词的默认宽度
+    LPCWSTR     pszDefText;     // 没有歌词时的默认文本
+    int         nDefText;       // 默认文本长度
     int         nCurrentTimeMS; // 当前歌词播放时间
-    int         nTimeOffset;    // 时间偏移, 计算歌词位置的时候加上这个偏移
+    int         nTimeOffset;    // 时间偏移, 显示提示时使用
     int         nMinWidth;      // 歌词窗口最小宽度, 所有按钮的宽度 加上一些边距
     int         nMinHeight;     // 歌词窗口最小高度
     int         nLineTop1;      // 第一行歌词的顶部位置
@@ -130,12 +144,16 @@ typedef struct LYRIC_WND_INFU
     {
         struct
         {
-            USHORT  change_wnd : 1; // 窗口是否有改变
-            USHORT  change_btn : 1; // 按钮部分是否有改变, 热点改变/按下改变等
+            USHORT  change_wnd : 1;     // 窗口是否有改变
+            USHORT  change_btn : 1;     // 按钮部分是否有改变, 热点改变/按下改变等
+            USHORT  change_font : 1;    // 字体有改变, 需要在绘画歌词文本的时候重新创建缓存
+            USHORT  change_hbr : 1;     // 画刷有改变, 需要在绘画歌词文本的时候重新创建缓存
         };    // 有窗口部分有改变的放这里, 里面的值为真的时候会往下走进行重画
         USHORT  change;
     };
 
+    LYRIC_WND_CACHE_OBJ     cache1;     // 第一行的缓存对象
+    LYRIC_WND_CACHE_OBJ     cache2;     // 第二行的缓存对象
 
     LYRIC_WND_BUTTON        button;
     PFN_LYRIC_WND_COMMAND   pfnCommand; // 歌词窗口上的按钮被点击回调函数
@@ -146,30 +164,7 @@ typedef struct LYRIC_WND_INFU
     std::vector<DWORD>      clrLight;   // 高亮歌词画刷颜色组
     DWORD                   clrBorder;  // 歌词文本边框颜色
     CScale                  scale;      // 缩放比例
-    LYRIC_WND_INFU()
-    {
-        hWnd = nullptr;
-        hTips = nullptr;
-        hLyric = nullptr;
-        prevIndexLine = -1;
-        prevWidth = 0;
-        nLineHeight = 0;
-        nCurrentTimeMS = 0;
-        nTimeOffset = 0;
-        isFillBack = 0;
-        status = 0;
-        change = 0;
-        nMinWidth = 0;
-        nMinHeight = 0;
-        nLineTop1 = 0;
-        nLineTop2 = 0;
-
-        dx.clrBack = MAKEARGB(100, 0, 0, 0);
-        clrBorder = MAKEARGB(255, 33, 33, 33);
-
-        pfnCommand = nullptr;
-        lParam = 0;
-    }
+    LYRIC_WND_INFU();
 
     ~LYRIC_WND_INFU()
     {
@@ -181,45 +176,28 @@ typedef struct LYRIC_WND_INFU
 
 }*PLYRIC_WND_INFU;
 
+// 记录绘画文本需要的数据, 路径, 阴影方式都是使用这个结构
+struct LYRIC_WND_DRAWTEXT_INFO
+{
+    ID2D1LinearGradientBrush* hbrNormal;
+    ID2D1LinearGradientBrush* hbrLight;
+    ID2D1SolidColorBrush* hbrBorder;
+    IDWriteTextFormat* dxFormat;
+    ID2D1DeviceContext* pRenderTarget;
 
-bool lyric_wnd_geometry_add_string(ID2D1DeviceContext* pRenderTarget, ID2D1PathGeometry* pPathGeometry, IDWriteTextLayout* pTextLayout);
+    LYRIC_LINE_STRUCT*   line;   // 歌词行信息
+    LYRIC_WND_CACHE_OBJ* cache;  // 缓存对象指针
 
-bool lyric_wnd_draw_geometry(ID2D1DeviceContext* pRenderTarget, ID2D1PathGeometry* pPathGeometry,
-                             ID2D1LinearGradientBrush* hbrNormal, ID2D1LinearGradientBrush* hbrLight,
-                             ID2D1SolidColorBrush* hbrDraw,
-                             const D2D1_RECT_F& rcText, const D2D1_RECT_F& rcText2,
-                             LYRIC_CALC_STRUCT& arg, IDWriteTextFormat* dxFormat);
+    int cxClient;
+    int cyClient;
 
-HWND lyric_create_layered_window(const LYRIC_WND_ARG* arg);
-void lyric_wnd_default_object(LYRIC_WND_INFU& wnd_info);
+    D2D1_RECT_F rcBack;     // 歌词窗口位置, 这个就是绘画背景的位置
+    D2D1_RECT_F rcText;     // 歌词文本绘画的位置
 
-// 让歌词窗口失效, 然后重画
-// isUpdate = 为true的时候始终重画, 为false的时候会判断是否需要绘画
-bool lyric_wnd_invalidate(LYRIC_WND_INFU& wnd_info);
-
-// 加载程序资源里的图片, 然后把各个坐标都记录好
-bool lyric_wnd_load_image(LYRIC_WND_INFU& wnd_info);
-
-// 绘画歌词窗口需要的按钮
-void lyric_wnd_draw_button(LYRIC_WND_INFU& wnd_info, const RECT& rcWindow, LYRIC_CALC_STRUCT& arg);
-
-// 歌词窗口上的按钮被点击
-void lyric_wnd_button_click(LYRIC_WND_INFU& wnd_info);
-
-// 调用指定事件
-bool lyric_wnd_call_event(LYRIC_WND_INFU& wnd_info, int id);
-
-bool lyric_wnd_set_btn_state(LYRIC_WND_INFU& wnd_info, int id, LYRIC_WND_BUTTON_STATE state);
-LYRIC_WND_BUTTON_STATE lyric_wnd_get_btn_state(LYRIC_WND_INFU& wnd_info, int id);
-
-// 鼠标移动到按钮上, 显示提示信息
-void lyric_wnd_button_hover(LYRIC_WND_INFU& wnd_info);
-// 鼠标离开按钮, 隐藏提示信息
-void lyric_wnd_button_leave(LYRIC_WND_INFU& wnd_info);
-
-// 计算需要绘画的按钮的总宽度, 计算好宽度后可以让所有按钮居中
-int lyric_wnd_calc_button(LYRIC_WND_INFU& wnd_info, int& maxHeight, int offset);
-
-
+    float nLightWidth;              // 歌词高亮位置, 大于0的话就是要绘画高亮区域
+    float layout_text_max_width;    // 文本布局的最大宽度, 这个值会比文本实际宽度大一些
+    float layout_text_max_height;   // 文本布局的最大高度, 这个值会比文本实际高度大一些
+};
 
 NAMESPACE_LYRIC_WND_END
+

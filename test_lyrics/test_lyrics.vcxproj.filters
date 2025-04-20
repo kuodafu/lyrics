@@ -42,7 +42,7 @@
     <ClInclude Include="CD2DRender.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="lyric_wnd_header.h">
+    <ClInclude Include="lyric_wnd_function.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="tinyxml2.h">
@@ -52,6 +52,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="CD2DImage.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="lyric_wnd_header.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
@@ -74,10 +77,10 @@
     <ClCompile Include="CD2DRender.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="lyric_wnd_header.cpp">
+    <ClCompile Include="lyric_wnd_function.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="lyric_wnd_draw_text.cpp">
+    <ClCompile Include="lyric_wnd_draw_text_glow.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="tinyxml2.cpp">
@@ -96,6 +99,12 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="lyric_wnd_button_hover.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="lyric_wnd_draw_text_geometry.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="lyric_wnd_header.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

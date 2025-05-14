@@ -3,8 +3,10 @@
 
 
 NAMESPACE_LYRIC_WND_BEGIN
-
-
+// 设置歌词窗口数据到窗口
+void lyric_wnd_set_data(HWND hWnd, PLYRIC_WND_INFU pWndInfo);
+// 从窗口获取歌词窗口数据
+PLYRIC_WND_INFU lyric_wnd_get_data(HWND hWnd);
 
 // 用路径的方式绘画歌词文本
 void lyric_wnd_draw_text_geometry(LYRIC_WND_INFU& wnd_info, LYRIC_WND_DRAWTEXT_INFO& draw_text_info);

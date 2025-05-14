@@ -272,22 +272,21 @@ void lyric_wnd_draw_text_geometry_draw_cache(LYRIC_WND_INFU& wnd_info, LYRIC_WND
 
     CComPtr<ID2D1PathGeometry> pTextGeometry;
     CComPtr<IDWriteTextLayout> pTextLayout;
+    HRESULT hr = S_OK;
 
-    HRESULT hr = d2dInfo.pFactory->CreatePathGeometry(&pTextGeometry);
-    if (FAILED(hr))
-        return;
+    if (draw_info.line->nLength && draw_info.line->pText && *draw_info.line->pText)
+    {
+        hr = d2dInfo.pFactory->CreatePathGeometry(&pTextGeometry);
+        if (FAILED(hr))
+            return;
 
-    pTextLayout = lyric_wnd_create_text_layout(line.pText, (UINT32)line.nLength, draw_info.dxFormat,
-                                               draw_info.layout_text_max_width, draw_info.layout_text_max_height);
+        pTextLayout = lyric_wnd_create_text_layout(line.pText, (UINT32)line.nLength, draw_info.dxFormat,
+                                                   draw_info.layout_text_max_width, draw_info.layout_text_max_height);
 
-    //hr = d2dInfo.pDWriteFactory->CreateTextLayout(
-    //    line.pText, (UINT32)line.nLength, draw_info.dxFormat,
-    //    draw_info.layout_text_max_width, draw_info.layout_text_max_height,
-    //    &pTextLayout
-    //);
+        if (!pTextLayout)
+            return;
+    }
 
-    if (!pTextLayout)
-        return;
 
     //D2D1_STROKE_STYLE_PROPERTIES1 strokeProps = D2D1::StrokeStyleProperties1(
     //    D2D1_CAP_STYLE_FLAT,
@@ -310,13 +309,13 @@ void lyric_wnd_draw_text_geometry_draw_cache(LYRIC_WND_INFU& wnd_info, LYRIC_WND
         D2D1_CAP_STYLE_ROUND,   // 线帽：平头（避免额外延伸）
         D2D1_CAP_STYLE_ROUND,
         D2D1_CAP_STYLE_ROUND,
-        D2D1_LINE_JOIN_MITER,  // 连接方式：斜接（避免圆角延伸）
-        10.0f,                 // 斜接限制
-        D2D1_DASH_STYLE_SOLID  // 实线
+        D2D1_LINE_JOIN_MITER,   // 连接方式：斜接（避免圆角延伸）
+        10.f,                   // 斜接限制
+        D2D1_DASH_STYLE_SOLID   // 实线
     );
 
     CComPtr<ID2D1StrokeStyle> pStrokeStyle = nullptr;
-    d2dInfo.pFactory->CreateStrokeStyle(&strokeProps, nullptr, 0, &pStrokeStyle);
+    //d2dInfo.pFactory->CreateStrokeStyle(&strokeProps, nullptr, 0, &pStrokeStyle);
 
     CustomTextRenderer rand(draw_info.pRenderTarget, pTextGeometry);  // 获取文本路径信息
 
@@ -327,56 +326,64 @@ void lyric_wnd_draw_text_geometry_draw_cache(LYRIC_WND_INFU& wnd_info, LYRIC_WND
     {
         // 弄个新的渲染目标, 把数据绘画到这个目标上, 然后取出位图保存
         CComPtr<ID2D1BitmapRenderTarget> pRender = nullptr;
-        float width = (line.nWidth ? ((float)(line.nWidth)) : wnd_info.nLineDefWidth) + _offset * 2;
+        // 需要左右各多出一部分显示阴影
+        float width = (line.nWidth ? line.nWidth : wnd_info.nLineDefWidth) + _offset * 2;
 
-        D2D1_SIZE_F size = D2D1::SizeF(draw_info.layout_text_max_width, draw_info.layout_text_max_height);
-        //D2D1_SIZE_F size = D2D1::SizeF(width, draw_info.layout_text_max_height);
+        //D2D1_SIZE_F size = D2D1::SizeF(draw_info.layout_text_max_width, draw_info.layout_text_max_height);
+        D2D1_SIZE_F size = D2D1::SizeF(width, draw_info.layout_text_max_height);
         hr = draw_info.pRenderTarget->CreateCompatibleRenderTarget(size, &pRender);
         if (FAILED(hr))
             return nullptr;
 
         pRender->BeginDraw();
-        if (hbrFill == draw_info.hbrNormal)
-            pRender->Clear(ARGB_D2D(MAKEARGB(200, 255, 0, 0)));
-        else
-            pRender->Clear(ARGB_D2D(MAKEARGB(200, 0, 255, 0)));
+        //if (hbrFill == draw_info.hbrNormal)
+        //    pRender->Clear(ARGB_D2D(MAKEARGB(200, 255, 0, 0)));
+        //else
+        //    pRender->Clear(ARGB_D2D(MAKEARGB(200, 0, 255, 0)));
 
         pRender->Clear();
 
-        D2D1::Matrix3x2F matrix = D2D1::Matrix3x2F(
-            1.0f, 0.0f,
-            0.0f, 1.0f,
-            0.f, 0.f
-        );
+        if (pTextLayout)
+        {
+            D2D1::Matrix3x2F matrix = D2D1::Matrix3x2F(
+                1.0f, 0.0f,
+                0.0f, 1.0f,
+                0.f, 0.f
+            );
 
-        pTextLayout->Draw(0, &rand, 0.f, 0.f);
+            pTextLayout->Draw(0, &rand, 0.f, 0.f);
 
-        D2D1_RECT_F bounds;
-        hr = pTextGeometry->GetBounds(matrix, &bounds);
+            D2D1_RECT_F bounds = { 0 };
+            hr = pTextGeometry->GetBounds(matrix, &bounds);
 
-        float start_top_left = (bounds.right - bounds.left) / 2;
-        POINT_F startPoint = { start_top_left, bounds.top };
-        POINT_F endPoint = { start_top_left, bounds.bottom };
-        hbrFill->SetStartPoint(startPoint);
-        hbrFill->SetEndPoint(endPoint);
+            float start_top_left = (bounds.right - bounds.left) / 2;
+            POINT_F startPoint = { start_top_left, bounds.top };
+            POINT_F endPoint = { start_top_left, bounds.bottom };
+            hbrFill->SetStartPoint(startPoint);
+            hbrFill->SetEndPoint(endPoint);
 
-        // 平移到路径那个起始位置
-        float translateTop = -bounds.top + _offset;
+            // 平移到路径那个起始位置
+            float translateTop = -bounds.top + _offset;
 
-        D2D1_MATRIX_3X2_F newTransform = D2D1::Matrix3x2F::Translation(_offset, translateTop);
-        pRender->SetTransform(&newTransform);
+            D2D1_MATRIX_3X2_F newTransform = D2D1::Matrix3x2F::Translation(_offset, translateTop);
+            pRender->SetTransform(&newTransform);
 
+            //CD2DBrush _hbrBak(hbrFill == hbrLight ? MAKEARGB(255, 255, 255, 255) : MAKEARGB(255, 0, 0, 0));
+            //CD2DBrush _hbrBak2(hbrFill == hbrNormal ? MAKEARGB(255, 255, 255, 255) : MAKEARGB(255, 0, 0, 0));
+            //pRender->DrawGeometry(pTextGeometry, _hbrBak2, 1, pStrokeStyle);
+            //pRender->DrawGeometry(pTextGeometry, _hbrBak, strokeWidth, pStrokeStyle);
+            //pRender->FillGeometry(pTextGeometry, _hbrBak2);  // 调用方指定填充的画刷
 
+            pRender->DrawGeometry(pTextGeometry, hbrBorder, strokeWidth, pStrokeStyle);
+            pRender->FillGeometry(pTextGeometry, hbrFill);  // 调用方指定填充的画刷
 
-        pRender->DrawGeometry(pTextGeometry, hbrBorder, strokeWidth, pStrokeStyle);
-        pRender->FillGeometry(pTextGeometry, hbrFill);  // 调用方指定填充的画刷
+            hr = pTextGeometry->GetWidenedBounds(strokeWidth, pStrokeStyle, newTransform, &draw_info.cache->rcBounds);
 
-        hr = pTextGeometry->GetWidenedBounds(strokeWidth, pStrokeStyle, newTransform, &draw_info.cache->rcBounds);
+            pRender->SetTransform(&matrix);
 
-        pRender->SetTransform(&matrix);
-
-        CD2DBrush hbrBak(MAKEARGB(180, 255, 0, 0));
-        pRender->FillRectangle(draw_info.cache->rcBounds, hbrBak);
+            //CD2DBrush hbrBak(MAKEARGB(180, 255, 0, 0));
+            //pRender->FillRectangle(draw_info.cache->rcBounds, hbrBak);
+        }
 
         hr = pRender->EndDraw();
         if (FAILED(hr))

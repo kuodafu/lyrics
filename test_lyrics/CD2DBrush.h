@@ -1,5 +1,5 @@
 #pragma once
-#include "d2d.h"
+#include "CD2DRender.h"
 NAMESPACE_D2D_BEGIN
 
 
@@ -8,7 +8,7 @@ class CD2DBrush
     ID2D1SolidColorBrush* m_pBrush;    // 纯色画刷
 
 public:
-    CD2DBrush(DWORD argb);
+    CD2DBrush(CD2DRender& d2dRender, DWORD argb);
     ~CD2DBrush();
     operator ID2D1SolidColorBrush*() const { return m_pBrush; }
     ID2D1SolidColorBrush* operator->() const { return m_pBrush; }
@@ -29,7 +29,7 @@ public:
     // color,colorCount = 颜色数组, 颜色数组数量
     // fillMode = 填充模式
     // pRatios, ratiosCount = 渐变比例数组, 取值范围0-1, 数组数量
-    CD2DBrush_LinearGradient(const POINT_F& pt1, const POINT_F& pt2, ARGB* color, DWORD colorCount, int fillMode = 0, const float* pRatios = 0, DWORD ratiosCount = 0);
+    CD2DBrush_LinearGradient(CD2DRender& d2dRender, const POINT_F& pt1, const POINT_F& pt2, ARGB* color, DWORD colorCount, int fillMode = 0, const float* pRatios = 0, DWORD ratiosCount = 0);
     ~CD2DBrush_LinearGradient();
     operator ID2D1LinearGradientBrush*() const { return m_pBrush; }
     ID2D1LinearGradientBrush* operator->() const { return m_pBrush; }
@@ -46,7 +46,7 @@ public:
     // color,colorCount = 颜色数组, 颜色数组数量
     // fillMode = 填充模式
     // pRatios, ratiosCount = 渐变比例数组, 取值范围0-1, 数组数量
-    CD2DBrush_RadialGradient(const ELLIPSE_F* pos, ARGB* color, DWORD colorCount, int fillMode = 0, const float* pRatios = 0, DWORD ratiosCount = 0);
+    CD2DBrush_RadialGradient(CD2DRender& d2dRender, const ELLIPSE_F* pos, ARGB* color, DWORD colorCount, int fillMode = 0, const float* pRatios = 0, DWORD ratiosCount = 0);
     ~CD2DBrush_RadialGradient();
     operator ID2D1RadialGradientBrush*() const { return m_pBrush; }
     ID2D1RadialGradientBrush* operator->() const { return m_pBrush; }

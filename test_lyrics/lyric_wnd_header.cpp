@@ -24,19 +24,20 @@ bool LYRIC_WND_DX::re_create(LYRIC_WND_INFU* pWndInfo)
     const int cxClient = rc.right - rc.left;
     const int cyClient = rc.bottom - rc.top;
 
+    SafeDelete(hCanvas);
+    hCanvas = new CD2DRender(cxClient, cyClient);
+
     if (!hFont)
         re_create_font(pWndInfo);
 
-    SafeDelete(hCanvas);
     re_create_brush(pWndInfo, true);
     re_create_brush(pWndInfo, false);
     re_create_border(pWndInfo);
     re_create_image(pWndInfo);
 
     SafeDelete(hbrLine);
-    hbrLine = new CD2DBrush(MAKEARGB(100, 255, 255, 255));
+    hbrLine = new CD2DBrush(*hCanvas, MAKEARGB(100, 255, 255, 255));
 
-    hCanvas = new CD2DRender(cxClient, cyClient);
 
 
     return true;
@@ -65,14 +66,14 @@ bool LYRIC_WND_DX::re_create_brush(LYRIC_WND_INFU* pWndInfo, bool isLight)
 
     POINT_F pt1 = { 0.f, 0.f };
     POINT_F pt2 = { 1.f, .1f };
-    *ppBrush = new CD2DBrush_LinearGradient(pt1, pt2, pClr, size);
+    *ppBrush = new CD2DBrush_LinearGradient(*hCanvas, pt1, pt2, pClr, size);
     return *ppBrush != nullptr;
 }
 
 bool LYRIC_WND_DX::re_create_border(LYRIC_WND_INFU* pWndInfo)
 {
     SafeDelete(hbrBorder);
-    hbrBorder = new CD2DBrush(pWndInfo->clrBorder);
+    hbrBorder = new CD2DBrush(*hCanvas, pWndInfo->clrBorder);
     return hbrBorder != nullptr;
 }
 
@@ -84,8 +85,16 @@ bool LYRIC_WND_DX::re_create_font(LYRIC_WND_INFU* pWndInfo)
     lf.lfHeight = -MulDiv(lf.lfHeight, pWndInfo->scale, 72);
     hFont = new CD2DFont(&lf);
 
-    hCanvas->calc_text(hFont, pWndInfo->pszDefText, pWndInfo->nDefText, DT_SINGLELINE,
-                       0, 0, 0, &pWndInfo->nLineDefWidth, &pWndInfo->nLineHeight, 0);
+    IDWriteTextLayout* pTextLayout = lyric_wnd_create_text_layout(pWndInfo->pszDefText, pWndInfo->nDefText, *hFont, 0, 0);
+    if (pTextLayout)
+    {
+        DWRITE_TEXT_METRICS metrics = { 0 };
+        pTextLayout->GetMetrics(&metrics);
+        SafeRelease(pTextLayout);
+        pWndInfo->nLineDefWidth = metrics.widthIncludingTrailingWhitespace;
+        pWndInfo->nLineHeight = metrics.height;
+    }
+
     return hFont != nullptr;
 }
 
@@ -172,6 +181,7 @@ LYRIC_WND_INFU::LYRIC_WND_INFU()
     nMinHeight = 0;
     nLineTop1 = 0;
     nLineTop2 = 0;
+    rcWindow = { 0 };
     nLineDefWidth = 0;
 
     pszDefText = L"该歌曲暂时没有歌词";
@@ -182,6 +192,18 @@ LYRIC_WND_INFU::LYRIC_WND_INFU()
 
     pfnCommand = nullptr;
     lParam = 0;
+}
+
+// 设置歌词窗口数据到窗口
+void lyric_wnd_set_data(HWND hWnd, PLYRIC_WND_INFU pWndInfo)
+{
+    SetWindowLongPtrW(hWnd, 0, (LONG_PTR)pWndInfo);
+}
+
+// 从窗口获取歌词窗口数据
+PLYRIC_WND_INFU lyric_wnd_get_data(HWND hWnd)
+{
+    return (PLYRIC_WND_INFU)GetWindowLongPtrW(hWnd, 0);
 }
 
 NAMESPACE_LYRIC_WND_END

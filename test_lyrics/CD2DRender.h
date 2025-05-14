@@ -1,7 +1,6 @@
 #pragma once
 #include "d2d.h"
-#include "CD2DFont.h"
-#include "CD2DBrush.h"
+
 
 NAMESPACE_D2D_BEGIN
 
@@ -24,9 +23,9 @@ public:
     bool resize(int width, int height);
     bool getsize(int* width, int* height);
 
-    bool calc_text(CD2DFont* font, LPCWSTR text, size_t textLen,
-                   DWORD textFormat, LPDRAWTEXTPARAMS lParam, float layoutWidth, float layoutHeight,
-                   float* pWidth, float* pHeight, IDWriteTextLayout** ppDWriteTextLayout);
+    //bool calc_text(CD2DFont* font, LPCWSTR text, size_t textLen,
+    //               DWORD textFormat, LPDRAWTEXTPARAMS lParam, float layoutWidth, float layoutHeight,
+    //               float* pWidth, float* pHeight, IDWriteTextLayout** ppDWriteTextLayout);
 };
 
 

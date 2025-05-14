@@ -19,7 +19,7 @@ struct LYRIC_LINE_STRUCT
     int             nEnd;       // 行歌词结束时间, 单位是毫秒
     int             nWordCount; // 这一行歌词的字数, 英文是单词数, 这里的字不是字符也不是字节, 是根据歌词内容决定的
     
-    int             nWidth;     // 这一行文本占用的宽度, 单位是像素, 没有设置计算文本回调时值为0
+    float           nWidth;     // 这一行文本占用的宽度, 单位是像素, 没有设置计算文本回调时值为0
 };
 
 struct LYRIC_WORD_STRUCT
@@ -29,9 +29,9 @@ struct LYRIC_WORD_STRUCT
     int             nStart;     // 字的开始时间, 单位是毫秒, 这个开始时间是相对歌词行的
     int             nEnd;       // 字的结束时间, 单位是毫秒
 
-    int             nLeft;      // 这个字在这一行歌词里的左边位置, 如果没有设置计算文本回调, 下面这几个值会返回0
-    int             nWidth;     // 字占用的宽度
-    int             nHeight;    // 字占用的高度, 一般来说整行都是一样的高度, 目前只处理这种
+    float           nLeft;      // 这个字在这一行歌词里的左边位置, 如果没有设置计算文本回调, 下面这几个值会返回0
+    float           nWidth;     // 字占用的宽度
+    float           nHeight;    // 字占用的高度, 一般来说整行都是一样的高度, 目前只处理这种
 
 };
 
@@ -41,7 +41,7 @@ struct LYRIC_CALC_STRUCT
 {
     int                 indexLine;  // 当前时间在整体歌词的那一行上, 从0开始
     int                 indexWord;  // 当前时间在这一行歌词的哪一个字上, 从0开始
-    int                 nWidthWord; // 传递这个时间字索引高亮占用的宽度, 用来确定高亮位置
+    float               nWidthWord; // 传递这个时间字索引高亮占用的宽度, 用来确定高亮位置
     int                 nLineCount; // 歌词行数
     LYRIC_LINE_STRUCT   line;       // 歌词行信息
     LYRIC_WORD_STRUCT   word;       // 歌词字信息
@@ -80,7 +80,7 @@ _def_struct(LYRIC_INFO_STRUCT);
 
 #undef _def_struct
 
-typedef int (LYRICCALL* LYRIC_PARSE_CALCTEXT)(void* pUserData, LPCWSTR pText, int nTextLen, int* pRetHeight);
+typedef float (LYRICCALL* LYRIC_PARSE_CALCTEXT)(void* pUserData, LPCWSTR pText, int nTextLen, float* pRetHeight);
 
 /// <summary>
 /// 解析歌词, 返回krc解密后的数据, 返回的指针需要调用 lyric_destroy 销毁句柄

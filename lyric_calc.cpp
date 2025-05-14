@@ -82,19 +82,6 @@ bool LYRICCALL lyric_calc(HLYRIC hLyric, int time, LYRIC_CALC_STRUCT* pRet)
     int index_word = lyric_find_word(line, time - line.start);
     auto& word = line.words[index_word];
 
-    if (line.width == 0 && pLyric->pfnCalcText)
-    {
-        // 这一行没有计算字宽度, 这里计算一下
-        int left = 0;
-        for (auto& item_word : line.words)
-        {
-            item_word.width = pLyric->pfnCalcText(pLyric->pUserData, item_word.text, item_word.size, &item_word.height);
-            item_word.left = left;
-            left += item_word.width;
-        }
-        line.width = left;
-    }
-
     pRet->indexLine     = pLyric->index;
     pRet->indexWord     = index_word;
     pRet->nLineCount    = size;
@@ -109,9 +96,9 @@ bool LYRICCALL lyric_calc(HLYRIC hLyric, int time, LYRIC_CALC_STRUCT* pRet)
         int nEndTime = word.duration ? word.duration : 1;
         int nNowTime = time - line.start - word.start;
 
-        int bili = word.width;
+        int bili = (int)word.width;
         int percentage = (nNowTime * bili + nEndTime / 2) / nEndTime;
-        int result = (word.width * percentage + bili / 2) / bili;
+        int result = ((int)word.width * percentage + bili / 2) / bili;
         if (result > bili)
             result = bili;
 

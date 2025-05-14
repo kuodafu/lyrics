@@ -73,7 +73,7 @@ HWND lyric_wnd_create(const LYRIC_WND_ARG* arg, PFN_LYRIC_WND_COMMAND pfnCommand
 
     LYRIC_WND_INFU* pWndInfo = new LYRIC_WND_INFU;
     LYRIC_WND_INFU& wnd_info = *pWndInfo;
-    SetWindowLongPtrW(hWnd, GWLP_USERDATA, (LONG_PTR)pWndInfo);
+    lyric_wnd_set_data(hWnd, pWndInfo);
 
     RECT rcDesk;
     GetWindowRect(GetDesktopWindow(), &rcDesk);
@@ -125,7 +125,7 @@ HWND lyric_wnd_create(const LYRIC_WND_ARG* arg, PFN_LYRIC_WND_COMMAND pfnCommand
 bool lyric_wnd_load_krc(HWND hWindowLyric, LPCVOID pKrcData, int nKrcDataLen)
 {
     using namespace lyric_wnd;
-    auto pWndInfo = (LYRIC_WND_INFU*)GetWindowLongPtrW(hWindowLyric, GWLP_USERDATA);
+    PLYRIC_WND_INFU pWndInfo = lyric_wnd_get_data(hWindowLyric);
     if (!pWndInfo)
         return false;
     lyric_destroy(pWndInfo->hLyric);
@@ -135,7 +135,8 @@ bool lyric_wnd_load_krc(HWND hWindowLyric, LPCVOID pKrcData, int nKrcDataLen)
     if (!wnd_info.hLyric)
         return false;
 
-    lyric_calc_text_width(wnd_info.hLyric, [](void* pUserData, LPCWSTR pText, int nTextLen, int* pRetHeight) -> int
+    // 必须得用小数记, 不然歌词字多了会相差出很多个像素
+    lyric_calc_text_width(wnd_info.hLyric, [](void* pUserData, LPCWSTR pText, int nTextLen, float* pRetHeight) -> float
     {
         LYRIC_WND_INFU* pWndInfo = (LYRIC_WND_INFU*)pUserData;
         CD2DRender& hCanvas = *pWndInfo->dx.hCanvas;
@@ -148,10 +149,11 @@ bool lyric_wnd_load_krc(HWND hWindowLyric, LPCVOID pKrcData, int nKrcDataLen)
         {
             DWRITE_TEXT_METRICS metrics = { 0 };
             pTextLayout->GetMetrics(&metrics);
-            *pRetHeight = (int)metrics.height;
-            return (int)metrics.widthIncludingTrailingWhitespace;
+            *pRetHeight = metrics.height;
+            SafeRelease(pTextLayout);
+            return metrics.widthIncludingTrailingWhitespace;
         }
-        return (int)0;
+        return 0.f;
     }, pWndInfo);
     return true;
 }
@@ -159,7 +161,7 @@ bool lyric_wnd_load_krc(HWND hWindowLyric, LPCVOID pKrcData, int nKrcDataLen)
 bool lyric_wnd_update(HWND hWindowLyric, int nCurrentTimeMS)
 {
     using namespace lyric_wnd;
-    auto pWndInfo = (LYRIC_WND_INFU*)GetWindowLongPtrW(hWindowLyric, GWLP_USERDATA);
+    PLYRIC_WND_INFU pWndInfo = lyric_wnd_get_data(hWindowLyric);
     if (!pWndInfo)
         return false;
 
@@ -173,7 +175,7 @@ bool lyric_wnd_update(HWND hWindowLyric, int nCurrentTimeMS)
 bool lyric_wnd_set_color(HWND hWindowLyric, bool isLight, DWORD* pClr, int nCount)
 {
     using namespace lyric_wnd;
-    auto pWndInfo = (LYRIC_WND_INFU*)GetWindowLongPtrW(hWindowLyric, GWLP_USERDATA);
+        PLYRIC_WND_INFU pWndInfo = lyric_wnd_get_data(hWindowLyric);
     if (!pWndInfo)
         return false;
 
@@ -192,7 +194,7 @@ bool lyric_wnd_set_color(HWND hWindowLyric, bool isLight, DWORD* pClr, int nCoun
 bool lyric_wnd_set_font(HWND hWindowLyric, LPCWSTR pszName, int nSize, bool isBold, bool isItalic)
 {
     using namespace lyric_wnd;
-    auto pWndInfo = (LYRIC_WND_INFU*)GetWindowLongPtrW(hWindowLyric, GWLP_USERDATA);
+        PLYRIC_WND_INFU pWndInfo = lyric_wnd_get_data(hWindowLyric);
     if (!pWndInfo)
         return false;
 
@@ -213,7 +215,7 @@ bool lyric_wnd_set_font(HWND hWindowLyric, LPCWSTR pszName, int nSize, bool isBo
 bool lyric_wnd_set_clr_back(HWND hWindowLyric, DWORD clr)
 {
     using namespace lyric_wnd;
-    auto pWndInfo = (LYRIC_WND_INFU*)GetWindowLongPtrW(hWindowLyric, GWLP_USERDATA);
+        PLYRIC_WND_INFU pWndInfo = lyric_wnd_get_data(hWindowLyric);
     if (!pWndInfo)
         return false;
 
@@ -224,7 +226,7 @@ bool lyric_wnd_set_clr_back(HWND hWindowLyric, DWORD clr)
 bool lyric_wnd_set_clr_border(HWND hWindowLyric, DWORD clr)
 {
     using namespace lyric_wnd;
-    auto pWndInfo = (LYRIC_WND_INFU*)GetWindowLongPtrW(hWindowLyric, GWLP_USERDATA);
+        PLYRIC_WND_INFU pWndInfo = lyric_wnd_get_data(hWindowLyric);
     if (!pWndInfo)
         return false;
 
@@ -238,7 +240,7 @@ bool lyric_wnd_get_config(HWND hWindowLyric, LYRIC_WND_ARG* arg)
         return false;
 
     using namespace lyric_wnd;
-    auto pWndInfo = (LYRIC_WND_INFU*)GetWindowLongPtrW(hWindowLyric, GWLP_USERDATA);
+        PLYRIC_WND_INFU pWndInfo = lyric_wnd_get_data(hWindowLyric);
     if (!pWndInfo)
         return false;
 
@@ -260,7 +262,7 @@ bool lyric_wnd_get_config(HWND hWindowLyric, LYRIC_WND_ARG* arg)
 bool lyric_wnd_call_event(HWND hWindowLyric, LYRIC_WND_BUTTON_ID id)
 {
     using namespace lyric_wnd;
-    auto pWndInfo = (LYRIC_WND_INFU*)GetWindowLongPtrW(hWindowLyric, GWLP_USERDATA);
+        PLYRIC_WND_INFU pWndInfo = lyric_wnd_get_data(hWindowLyric);
     if (!pWndInfo)
         return false;
     return lyric_wnd::lyric_wnd_call_event(*pWndInfo, id);
@@ -269,7 +271,7 @@ bool lyric_wnd_call_event(HWND hWindowLyric, LYRIC_WND_BUTTON_ID id)
 bool lyric_wnd_set_button_state(HWND hWindowLyric, LYRIC_WND_BUTTON_ID id, LYRIC_WND_BUTTON_STATE state)
 {
     using namespace lyric_wnd;
-    auto pWndInfo = (LYRIC_WND_INFU*)GetWindowLongPtrW(hWindowLyric, GWLP_USERDATA);
+        PLYRIC_WND_INFU pWndInfo = lyric_wnd_get_data(hWindowLyric);
     if (!pWndInfo)
         return false;
     return lyric_wnd::lyric_wnd_set_btn_state(*pWndInfo, id, state);
@@ -278,7 +280,7 @@ bool lyric_wnd_set_button_state(HWND hWindowLyric, LYRIC_WND_BUTTON_ID id, LYRIC
 LYRIC_WND_BUTTON_STATE lyric_wnd_get_button_state(HWND hWindowLyric, LYRIC_WND_BUTTON_ID id)
 {
     using namespace lyric_wnd;
-    auto pWndInfo = (LYRIC_WND_INFU*)GetWindowLongPtrW(hWindowLyric, GWLP_USERDATA);
+        PLYRIC_WND_INFU pWndInfo = lyric_wnd_get_data(hWindowLyric);
     if (!pWndInfo)
         return LYRIC_WND_BUTTON_STATE_ERROR;
     return lyric_wnd::lyric_wnd_get_btn_state(*pWndInfo, id);

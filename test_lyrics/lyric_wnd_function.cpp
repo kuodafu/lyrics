@@ -40,7 +40,7 @@ HWND lyric_create_layered_window(const LYRIC_WND_ARG* arg)
     wc.style            = 0;
     wc.lpfnWndProc      = lyric_wnd_proc;
     wc.cbClsExtra       = 0;
-    wc.cbWndExtra       = 0;
+    wc.cbWndExtra       = sizeof(PVOID);    // 窗口多存放一个PVOID指针
     wc.hInstance        = GetModuleHandleW(0);
     wc.hIcon            = LoadIconW(NULL, IDI_APPLICATION);
     wc.hCursor          = m_hCursorArrow;
@@ -81,7 +81,7 @@ void lyric_wnd_default_object(LYRIC_WND_INFU& wnd_info)
 void lyric_wnd_get_draw_text_info(LYRIC_WND_INFU& wnd_info,
                                   LYRIC_WND_DRAWTEXT_INFO& draw_info,
                                   const RECT& rcWindow, int nLine,
-                                  LYRIC_LINE_STRUCT& line, int nLightWidth)
+                                  LYRIC_LINE_STRUCT& line, float nLightWidth)
 {
     CD2DRender& hCanvas = *wnd_info.dx.hCanvas;
     auto& d2dInfo = d2d_get_info();
@@ -105,13 +105,20 @@ void lyric_wnd_get_draw_text_info(LYRIC_WND_INFU& wnd_info,
     float height = (float)wnd_info.nLineHeight + wnd_info.scale(10);
     float top = (float)(nLine == 1 ? wnd_info.nLineTop1 : wnd_info.nLineTop2);
     float left = (float)nLeft;
+    if (nLine == 2 || 1)
+    {
+        // 第二行, 设置成右对齐
+        int nTemp = draw_info.cxClient - nLeft * 2 - line.nWidth;
+        left = (float)max(nLeft, nTemp);
+    }
 
-    draw_info.nLightWidth = (float)(nLightWidth);
-    draw_info.rcText = { left, top, left + (float)line.nWidth, top + height };
+    draw_info.nLightWidth = nLightWidth;
+    draw_info.rcText = { left, top, left + line.nWidth, top + height };
     draw_info.layout_text_max_width = (float)(draw_info.cxClient - nLeft * 2);
     draw_info.layout_text_max_height = (float)(draw_info.rcText.bottom - draw_info.rcText.top);
     
 }
+
 
 bool lyric_wnd_invalidate(LYRIC_WND_INFU& wnd_info)
 {
@@ -121,7 +128,7 @@ bool lyric_wnd_invalidate(LYRIC_WND_INFU& wnd_info)
         return false;
 
     CD2DRender& hCanvas = *wnd_info.dx.hCanvas;
-    RECT rcWindow;
+    RECT& rcWindow = wnd_info.rcWindow;
     GetWindowRect(wnd_info.hWnd, &rcWindow);
     const int cxClient = rcWindow.right - rcWindow.left;
     const int cyClient = rcWindow.bottom - rcWindow.top;
@@ -215,7 +222,7 @@ bool lyric_wnd_invalidate(LYRIC_WND_INFU& wnd_info)
     }
 
     ID2D1GdiInteropRenderTarget* pGdiInterop = hCanvas;
-    HDC hdcD2D = 0;
+    HDC hdcD2D = nullptr;
     pGdiInterop->GetDC(D2D1_DC_INITIALIZE_MODE_COPY, &hdcD2D);
     UpdateLayered(wnd_info.hWnd, cxClient, cyClient, hdcD2D);
     pGdiInterop->ReleaseDC(0);
@@ -238,31 +245,60 @@ bool lyric_wnd_invalidate(LYRIC_WND_INFU& wnd_info)
 
 void lyric_wnd_draw_cache_text(LYRIC_WND_INFU& wnd_info, LYRIC_WND_DRAWTEXT_INFO& draw_info)
 {
-    LYRIC_LINE_STRUCT& line = *draw_info.line;
-    ID2D1DeviceContext* pRenderTarget = draw_info.pRenderTarget;
-    const int _10 = wnd_info.scale(10);
-
     // 从缓存里把数据拿出来画到目标上
-    const float _offset = (draw_info.layout_text_max_height - wnd_info.nLineHeight) / 2;
     auto pfn_draw_bitmap = [&](ID2D1Bitmap* pBitmap)
     {
         if (!pBitmap)
             return;
+
+        LYRIC_LINE_STRUCT& line = *draw_info.line;
+        ID2D1DeviceContext* pRenderTarget = draw_info.pRenderTarget;
+        const int _10 = wnd_info.scale(10);
+
+        RECT& rcWindow = wnd_info.rcWindow;
+
+        const float _offset = (draw_info.layout_text_max_height - wnd_info.nLineHeight) / 2;
+
+        // 如果歌词宽度超过这个, 那就要在歌词高亮显示到窗口一半的时候调整左边位置
+        const float cxClient = ((float)(rcWindow.right - rcWindow.left)) - _offset * 2;
+        const float _p60 = cxClient * 0.6f;
+        const D2D1_RECT_F& rcText = draw_info.rcText;
+
+        // 最小的左边距离
+        const float min_left = cxClient - line.nWidth - rcText.left;
+
+
         // 从位图的这个位置拿出来绘画, 就是拿整个位图数据
         D2D1_SIZE_F si = pBitmap->GetSize();
         D2D1_RECT_F rcSrc = { 0.f, 0.f, si.width, si.height };
+        
+        float text_left = rcText.left;
+        if (si.width > cxClient)
+        {
+            // 歌词宽度超过窗口宽度, 判断高亮位置是否大于窗口一半, 如果大于, 就调整左边位置
+            // 还要计算右边能显示多少
+            if (draw_info.nLightWidth > _p60)
+            {
+                // 高亮位置 减去 宽度百分比, 得到百分比 到 高亮位置的距离
+                // 左边位置需要减去这个距离
+                text_left -= (draw_info.nLightWidth - _p60);
+                text_left = max(min_left, text_left);   // 设定一个最小值, 小于这个最小值就设为最小值
+            }
+        }
 
-        const D2D1_RECT_F& rcText = draw_info.rcText;
         D2D1_RECT_F rcDst = { 0 };
-        rcDst.left = rcText.left;
+        rcDst.left = text_left;
         rcDst.top = rcText.top - _10;
         rcDst.right = rcDst.left + si.width;
         rcDst.bottom = rcDst.top + si.height;
         bool isLigth = draw_info.cache->pBitmapLight == pBitmap;
 
-        D2D1_RECT_F rcRgn = rcDst;
-        if (line.nWidth > 0)
+        bool isClip = false;
+
+        // 如果有高亮部分, 那就设置裁剪区
+        if (draw_info.nLightWidth > 0.f)
         {
+            D2D1_RECT_F rcRgn = rcDst;
             float light_offset = 0.f;
             if (draw_info.nLightWidth == line.nWidth)
                 light_offset += _offset;
@@ -277,6 +313,8 @@ void lyric_wnd_draw_cache_text(LYRIC_WND_INFU& wnd_info, LYRIC_WND_DRAWTEXT_INFO
                 // 普通文本, 限制左边不能显示
                 rcRgn.left = light_right;
             }
+            isClip = true;
+            pRenderTarget->PushAxisAlignedClip(rcRgn, D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
         }
 
 
@@ -286,19 +324,19 @@ void lyric_wnd_draw_cache_text(LYRIC_WND_INFU& wnd_info, LYRIC_WND_DRAWTEXT_INFO
         //    pRenderTarget->FillRectangle(rcDst, hbrBak);
         //}
 
-        pRenderTarget->PushAxisAlignedClip(rcRgn, D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
         pRenderTarget->DrawBitmap(pBitmap, rcDst, 1.0f, D2D1_BITMAP_INTERPOLATION_MODE_LINEAR, rcSrc);
-        pRenderTarget->PopAxisAlignedClip();
+        if (isClip)
+            pRenderTarget->PopAxisAlignedClip();
     };
 
     pfn_draw_bitmap(draw_info.cache->pBitmapNormal);
-    if (line.nWidth > 0)
+    if (draw_info.nLightWidth > 0)  // 有高亮才绘画高亮部分
         pfn_draw_bitmap(draw_info.cache->pBitmapLight);
 }
 
 LRESULT CALLBACK lyric_wnd_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    auto pWndInfo = (LYRIC_WND_INFU*)GetWindowLongPtrW(hWnd, GWLP_USERDATA);
+    PLYRIC_WND_INFU pWndInfo = lyric_wnd_get_data(hWnd);
     if (!pWndInfo)
         return DefWindowProcW(hWnd, message, wParam, lParam);
 
@@ -338,7 +376,7 @@ LRESULT CALLBACK lyric_wnd_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         return lyric_wnd_OnTimer(*pWndInfo, message, wParam, lParam);
     case WM_DESTROY:
     {
-        SetWindowLongPtrW(hWnd, GWLP_USERDATA, 0);
+        lyric_wnd_set_data(hWnd, 0);
         delete pWndInfo;
         return 0;
     }

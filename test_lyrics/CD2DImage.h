@@ -1,5 +1,5 @@
 #pragma once
-#include "d2d.h"
+#include "CD2DRender.h"
 
 NAMESPACE_D2D_BEGIN
 
@@ -11,12 +11,12 @@ class CD2DImage
 
 ;
 public:
-    CD2DImage(const void* pData, size_t len);
-    CD2DImage(IStream* stream);
+    CD2DImage(CD2DRender& d2dRender, const void* pData, size_t len);
+    CD2DImage(CD2DRender& d2dRender, IStream* stream);
     ~CD2DImage();
 
 public:
-    ID2D1Bitmap1* GetBitmap(HRESULT* phr = 0);
+    ID2D1Bitmap1* GetBitmap(CD2DRender& d2dRender, HRESULT* phr = 0);
 
 
 private:

@@ -34,7 +34,7 @@ bool lyric_wnd_load_image(LYRIC_WND_INFU& wnd_info)
     LPCSTR xml = pfn_get_res(IDR_XML_LYRIC, L"XML", &xml_size);
     LPCSTR png = pfn_get_res(IDR_PNG_LYRIC, L"PNG", &png_size);
 
-    wnd_info.dx.image = new CD2DImage(png, png_size);
+    wnd_info.dx.image = new CD2DImage(*wnd_info.dx.hCanvas, png, png_size);
     wnd_info.button.rcSrc.reserve(30);
     wnd_info.button.rcBtn.reserve(30);
     wnd_info.button.rcSrc.clear();

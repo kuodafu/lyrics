@@ -112,6 +112,21 @@ bool LYRICCALL lyric_get_line(HLYRIC hLyric, int indexLine, PLYRIC_LINE_STRUCT p
         if (indexLine >= 0 && indexLine < (int)pLyric->lines.size())
         {
             auto& line = pLyric->lines[indexLine];
+
+            if (line.width == 0 && pLyric->pfnCalcText)
+            {
+                // 这一行没有计算字宽度, 这里计算一下
+                float left = 0;
+                for (auto& word : line.words)
+                {
+                    word.width = pLyric->pfnCalcText(pLyric->pUserData, word.text, word.size, &word.height);
+                    word.left = left;
+                    left += word.width;
+                }
+                line.width = left;
+            }
+
+
             pRet->pText = line.text.c_str();
             pRet->nLength = (int)line.text.size();
 

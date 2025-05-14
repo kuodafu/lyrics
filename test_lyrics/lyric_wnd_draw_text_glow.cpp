@@ -65,9 +65,15 @@ bool glow_create_cache(GLOW_ARG& glow_arg)
     auto pfn_create_bitmap = [&](ID2D1LinearGradientBrush* hbrFill) -> ID2D1Bitmap1*
     {
         ID2D1Bitmap1* pBitmapRet = nullptr;
-        d2dInfo.bp_proper.bitmapOptions = D2D1_BITMAP_OPTIONS_TARGET | D2D1_BITMAP_OPTIONS_GDI_COMPATIBLE;
+        D2D1_BITMAP_PROPERTIES1 d2dbp = {};
+        d2dbp.pixelFormat.alphaMode = D2D1_ALPHA_MODE_PREMULTIPLIED;
+        d2dbp.pixelFormat.format = DXGI_FORMAT_B8G8R8A8_UNORM;
+        d2dbp.bitmapOptions = D2D1_BITMAP_OPTIONS_TARGET | D2D1_BITMAP_OPTIONS_GDI_COMPATIBLE;
+        d2dbp.dpiX = 96;
+        d2dbp.dpiY = 96;
+
         D2D1_SIZE_U size = { (UINT)draw_info.layout_text_max_width, (UINT)draw_info.layout_text_max_height };
-        hr = pRenderTarget->CreateBitmap(size, 0, 0, &d2dInfo.bp_proper, &pBitmapRet);
+        hr = pRenderTarget->CreateBitmap(size, 0, 0, &d2dbp, &pBitmapRet);
         if (FAILED(hr))
             return 0;
 

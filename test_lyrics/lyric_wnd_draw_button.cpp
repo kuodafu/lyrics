@@ -37,7 +37,7 @@ void lyric_wnd_draw_button(LYRIC_WND_INFU& wnd_info, const RECT& rcWindow)
     pRenderTarget->SetAntialiasMode(D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
 
     HRESULT hr = 0;
-    ID2D1Bitmap1* image = wnd_info.dx.image->GetBitmap(&hr);
+    ID2D1Bitmap1* image = wnd_info.dx.image->GetBitmap(*wnd_info.dx.hCanvas, &hr);
     const float bl = (float)((double)dpi / 96.0);
 
     for (LYRIC_WND_BUTTON_INFO& item : wnd_info.button.rcBtn)

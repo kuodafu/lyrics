@@ -111,7 +111,7 @@ static IWICBitmap* _wic_init_from_decoder(IWICBitmapDecoder* pDecoder)
 }
 
 
-CD2DImage::CD2DImage(const void* pData, size_t len): m_pDecoder(nullptr), m_pFrame(nullptr), m_pBitmap(nullptr)
+CD2DImage::CD2DImage(CD2DRender& d2dRender, const void* pData, size_t len): m_pDecoder(nullptr), m_pFrame(nullptr), m_pBitmap(nullptr)
 {
     IStream* stream = _img_createfromstream_init(pData, len);
     if (!stream)
@@ -120,7 +120,7 @@ CD2DImage::CD2DImage(const void* pData, size_t len): m_pDecoder(nullptr), m_pFra
     _img_create_fromstream(stream);
 }
 
-CD2DImage::CD2DImage(IStream* stream) : m_pDecoder(nullptr), m_pFrame(nullptr), m_pBitmap(nullptr)
+CD2DImage::CD2DImage(CD2DRender& d2dRender, IStream* stream) : m_pDecoder(nullptr), m_pFrame(nullptr), m_pBitmap(nullptr)
 {
     _img_create_fromstream(stream);
 }
@@ -132,12 +132,19 @@ CD2DImage::~CD2DImage()
     SafeRelease(m_pBitmap);
 }
 
-ID2D1Bitmap1* CD2DImage::GetBitmap(HRESULT* phr)
+ID2D1Bitmap1* CD2DImage::GetBitmap(CD2DRender& d2dRender, HRESULT* phr)
 {
     if (!m_pBitmap)
     {
-        auto& d2dInfo = d2d_get_info();
-        HRESULT hr = d2dInfo.pD2DDeviceContext->CreateBitmapFromWicBitmap(m_pFrame, &d2dInfo.bp_proper, &m_pBitmap);
+        ID2D1DeviceContext* pD2DDeviceContext = d2dRender;
+        D2D1_BITMAP_PROPERTIES1 d2dbp = {};
+        d2dbp.pixelFormat.alphaMode = D2D1_ALPHA_MODE_PREMULTIPLIED;
+        d2dbp.pixelFormat.format = DXGI_FORMAT_B8G8R8A8_UNORM;
+        d2dbp.bitmapOptions = D2D1_BITMAP_OPTIONS_TARGET | D2D1_BITMAP_OPTIONS_GDI_COMPATIBLE;
+        d2dbp.dpiX = 96;
+        d2dbp.dpiY = 96;
+
+        HRESULT hr = pD2DDeviceContext->CreateBitmapFromWicBitmap(m_pFrame, &d2dbp, &m_pBitmap);
         if (phr)
             *phr = hr;
     }

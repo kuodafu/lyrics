@@ -3,12 +3,12 @@
 
 NAMESPACE_D2D_BEGIN
 
-CD2DBrush::CD2DBrush(DWORD argb): m_pBrush(nullptr)
+CD2DBrush::CD2DBrush(CD2DRender& d2dRender, DWORD argb): m_pBrush(nullptr)
 {
-    auto& d2dInfo = d2d_get_info();
-    HRESULT hr = d2dInfo.pD2DDeviceContext->CreateSolidColorBrush(ARGB_D2D::toDx(argb),
-                                                                  D2D1::BrushProperties(),
-                                                                  &m_pBrush);
+    ID2D1DeviceContext* pD2DDeviceContext = d2dRender;
+    HRESULT hr = pD2DDeviceContext->CreateSolidColorBrush(ARGB_D2D::toDx(argb),
+                                                          D2D1::BrushProperties(),
+                                                          &m_pBrush);
 }
 
 
@@ -36,11 +36,13 @@ DWORD CD2DBrush::GetColor(DWORD argb)
 
 
 
-CD2DBrush_LinearGradient::CD2DBrush_LinearGradient(const POINT_F& pt1, const POINT_F& pt2, ARGB* color, DWORD colorCount, int fillMode, const float* pRatios, DWORD ratiosCount) : m_pBrush(nullptr)
+CD2DBrush_LinearGradient::CD2DBrush_LinearGradient(CD2DRender& d2dRender, const POINT_F& pt1, const POINT_F& pt2, ARGB* color, DWORD colorCount, int fillMode, const float* pRatios, DWORD ratiosCount) : m_pBrush(nullptr)
 {
     D2D1_LINEAR_GRADIENT_BRUSH_PROPERTIES pt{};
     memcpy(&pt.startPoint, &pt1, sizeof(pt.startPoint));
     memcpy(&pt.endPoint, &pt2, sizeof(pt.endPoint));
+
+    HRESULT hr = S_OK;
 
     std::vector<D2D1_GRADIENT_STOP> gradientStops(colorCount);
     const float* ratios = nullptr;
@@ -57,9 +59,9 @@ CD2DBrush_LinearGradient::CD2DBrush_LinearGradient(const POINT_F& pt1, const POI
     }
 
     CComPtr<ID2D1GradientStopCollection> pGradientStops;
-    auto& d2dInfo = d2d_get_info();
+    ID2D1DeviceContext* pD2DDeviceContext = d2dRender;
 
-    HRESULT hr = d2dInfo.pD2DDeviceContext->CreateGradientStopCollection(
+    hr = pD2DDeviceContext->CreateGradientStopCollection(
         &gradientStops[0], colorCount,
         D2D1_GAMMA_2_2,
         (D2D1_EXTEND_MODE)fillMode,
@@ -73,7 +75,7 @@ CD2DBrush_LinearGradient::CD2DBrush_LinearGradient(const POINT_F& pt1, const POI
     props.opacity = 1.0f;
     props.transform._11 = 1.0f;
     props.transform._22 = 1.0f;
-    hr = d2dInfo.pD2DDeviceContext->CreateLinearGradientBrush(pt, props, pGradientStops, &m_pBrush);
+    hr = pD2DDeviceContext->CreateLinearGradientBrush(pt, props, pGradientStops, &m_pBrush);
 
 }
 
@@ -82,7 +84,7 @@ CD2DBrush_LinearGradient::~CD2DBrush_LinearGradient()
     SafeRelease(m_pBrush);
 }
 
-CD2DBrush_RadialGradient::CD2DBrush_RadialGradient(const ELLIPSE_F* pos, ARGB* color, DWORD colorCount, int fillMode, const float* pRatios, DWORD ratiosCount) : m_pBrush(nullptr)
+CD2DBrush_RadialGradient::CD2DBrush_RadialGradient(CD2DRender& d2dRender, const ELLIPSE_F* pos, ARGB* color, DWORD colorCount, int fillMode, const float* pRatios, DWORD ratiosCount) : m_pBrush(nullptr)
 {
 
     D2D1_RADIAL_GRADIENT_BRUSH_PROPERTIES pt;
@@ -107,8 +109,8 @@ CD2DBrush_RadialGradient::CD2DBrush_RadialGradient(const ELLIPSE_F* pos, ARGB* c
     }
 
     CComPtr<ID2D1GradientStopCollection> pGradientStops = 0;
-    auto& d2dInfo = d2d_get_info();
-    HRESULT hr = d2dInfo.pD2DDeviceContext->CreateGradientStopCollection(&gradientStops[0], colorCount,
+    ID2D1DeviceContext* pD2DDeviceContext = d2dRender;
+    HRESULT hr = pD2DDeviceContext->CreateGradientStopCollection(&gradientStops[0], colorCount,
                                                                          D2D1_GAMMA_2_2,
                                                                          (D2D1_EXTEND_MODE)fillMode,
                                                                          &pGradientStops);
@@ -116,7 +118,7 @@ CD2DBrush_RadialGradient::CD2DBrush_RadialGradient(const ELLIPSE_F* pos, ARGB* c
     if (FAILED(hr))
         return;
 
-    hr = d2dInfo.pD2DDeviceContext->CreateRadialGradientBrush(pt, pGradientStops, &m_pBrush);
+    hr = pD2DDeviceContext->CreateRadialGradientBrush(pt, pGradientStops, &m_pBrush);
 
 }
 

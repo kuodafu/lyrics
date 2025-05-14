@@ -97,9 +97,6 @@ struct D2D_GDI_DATA_STRUCT
     IDWriteFactory* pDWriteFactory;             // 文字工厂接口
     IWICImagingFactory2* pWICFactory;           // WIC图像工厂接口
     ID2D1Device* pD2DDevice;                    // d2d设备
-    ID2D1DeviceContext* pD2DDeviceContext;      // D2D设备上下文
-    ID2D1GdiInteropRenderTarget* pGDIInterop;   // gdi兼容
-    D2D1_BITMAP_PROPERTIES1 bp_proper;          // 创建位图属性
     float DpiX;
     float DpiY;
     ~D2D_GDI_DATA_STRUCT();

@@ -1,6 +1,8 @@
 #pragma once
 #include "lyric_wnd.h"
 #include "CD2DRender.h"
+#include "CD2DFont.h"
+#include "CD2DBrush.h"
 #include "CD2DImage.h"
 #include <CScale.h>
 #include <vector>
@@ -120,7 +122,7 @@ typedef struct LYRIC_WND_INFU
     HWND        hTips;          // 提示窗口句柄
     HLYRIC      hLyric;         // 歌词句柄
     int         prevIndexLine;  // 上一次绘画的歌词行号
-    int         prevWidth;      // 上一次绘画的歌词宽度
+    float       prevWidth;      // 上一次绘画的歌词宽度
     float       nLineHeight;    // 一行歌词的高度
     float       nLineDefWidth;  // 没有歌词时歌词的默认宽度
     LPCWSTR     pszDefText;     // 没有歌词时的默认文本
@@ -131,6 +133,7 @@ typedef struct LYRIC_WND_INFU
     int         nMinHeight;     // 歌词窗口最小高度
     int         nLineTop1;      // 第一行歌词的顶部位置
     int         nLineTop2;      // 第二行歌词的顶部位置
+    RECT        rcWindow;       // 歌词窗口的位置, 整个窗口都是客户区, 这里记录的是屏幕位置, 绘画时的位置, 不保证是当前窗口的位置
     union
     {
         struct

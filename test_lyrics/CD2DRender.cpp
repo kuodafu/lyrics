@@ -3,6 +3,19 @@
 NAMESPACE_D2D_BEGIN
 LPWSTR prefixstring(LPCWSTR text, DWORD format, size_t*& nPreFix, int& count);
 
+static HRESULT _d2d_create_bitmap(ID2D1DeviceContext* pRenderTarget, int width, int height, ID2D1Bitmap1** ppBitmap)
+{
+    D2D1_BITMAP_PROPERTIES1 d2dbp = {};
+    d2dbp.pixelFormat.alphaMode = D2D1_ALPHA_MODE_PREMULTIPLIED;
+    d2dbp.pixelFormat.format = DXGI_FORMAT_B8G8R8A8_UNORM;
+    d2dbp.bitmapOptions = D2D1_BITMAP_OPTIONS_TARGET | D2D1_BITMAP_OPTIONS_GDI_COMPATIBLE;
+    d2dbp.dpiX = 96;
+    d2dbp.dpiY = 96;
+
+    D2D1_SIZE_U size = { (UINT)width, (UINT)height };
+    return pRenderTarget->CreateBitmap(size, 0, 0, d2dbp, ppBitmap);
+}
+
 CD2DRender::CD2DRender(int width, int height):
     m_pRenderTarget(nullptr),
     m_pBitmap(nullptr),
@@ -12,7 +25,7 @@ CD2DRender::CD2DRender(int width, int height):
     if (height <= 0) height = 1;
     auto& d2dInfo = d2d_get_info();
     HRESULT hr = 0;
-    if (m_pRenderTarget == 0)
+    if (!m_pRenderTarget)
     {
         hr = d2dInfo.pD2DDevice->CreateDeviceContext(D2D1_DEVICE_CONTEXT_OPTIONS_NONE,
                                                              &m_pRenderTarget);
@@ -21,10 +34,9 @@ CD2DRender::CD2DRender(int width, int height):
         m_pRenderTarget->QueryInterface(IID_PPV_ARGS(&m_pGDIInterop));
     }
 
-    d2dInfo.bp_proper.bitmapOptions = D2D1_BITMAP_OPTIONS_TARGET | D2D1_BITMAP_OPTIONS_GDI_COMPATIBLE;
-    D2D1_SIZE_U size = { (UINT)width, (UINT)height };
-    hr = m_pRenderTarget->CreateBitmap(size, 0, 0, &d2dInfo.bp_proper, &m_pBitmap);
+    hr = _d2d_create_bitmap(m_pRenderTarget, width, height, &m_pBitmap);
     m_pRenderTarget->SetTarget(m_pBitmap);
+
 }
 
 CD2DRender::~CD2DRender()
@@ -54,127 +66,124 @@ bool CD2DRender::resize(int width, int height)
         return true;
     SafeRelease(m_pBitmap);
 
-    auto& d2dInfo = d2d_get_info();
-    d2dInfo.bp_proper.bitmapOptions = D2D1_BITMAP_OPTIONS_TARGET | D2D1_BITMAP_OPTIONS_GDI_COMPATIBLE;
-    D2D1_SIZE_U size = { (UINT)width, (UINT)height };
-    HRESULT hr = m_pRenderTarget->CreateBitmap(size, 0, 0, &d2dInfo.bp_proper, &m_pBitmap);
+    HRESULT hr = _d2d_create_bitmap(m_pRenderTarget, width, height, &m_pBitmap);
     m_pRenderTarget->SetTarget(m_pBitmap);
     return SUCCEEDED(hr);
 }
-
-bool CD2DRender::calc_text(CD2DFont* pFont, LPCWSTR text, size_t textLen, DWORD textFormat, LPDRAWTEXTPARAMS lParam, float layoutWidth, float layoutHeight, float* pWidth, float* pHeight, IDWriteTextLayout** ppDWriteTextLayout)
-{
-    if (layoutWidth < 0)layoutWidth = 0;
-    if (layoutHeight < 0)layoutHeight = 0;
-
-    CD2DFont& font = *pFont;
-
-    size_t* nPreFix = 0;
-    int nPreFixCount = 0;
-    LPWSTR lpwzTextFix = prefixstring(text, textFormat, nPreFix, nPreFixCount);
-    HRESULT hr = 0;
-
-    IDWriteInlineObject* pWriteInlineObject = font;
-    IDWriteTextFormat* dxFormat = font;
-
-
-    auto& d2dInfo = d2d_get_info();
-    IDWriteTextLayout* pDWriteTextLayout = 0;
-    hr = d2dInfo.pDWriteFactory->CreateTextLayout(lpwzTextFix ? lpwzTextFix : text,
-                                                  (UINT32)textLen, dxFormat, layoutWidth, layoutHeight, &pDWriteTextLayout);
-    if (ppDWriteTextLayout)
-        *ppDWriteTextLayout = pDWriteTextLayout;
-
-    //CComPtr<IDWriteTextLayout1> pTextLayout1 = nullptr;
-    //hr = pDWriteTextLayout->QueryInterface(__uuidof(IDWriteTextLayout1), reinterpret_cast<void**>(&pTextLayout1));
-
-    //if (pTextLayout1)
-    //{
-    //    DWRITE_TEXT_RANGE range = { 0, (UINT32)textLen };
-    //    hr = pTextLayout1->SetCharacterSpacing(
-    //        10.0f,  // 前导间距 (字符前添加的空间)
-    //        5.0f,   // 尾随间距 (字符后添加的空间)
-    //        20.0f,  // 最小前进宽度 (字符的最小总宽度)
-    //        range);
-    //}
-
-    if (FAILED(hr))
-        return false;
-    LOGFONTW& lf = font;
-
-    if (lf.lfUnderline)
-    {
-        DWRITE_TEXT_RANGE tmp{};
-        tmp.length = (UINT32)textLen;
-        tmp.startPosition = 0;
-        pDWriteTextLayout->SetUnderline(lf.lfUnderline, tmp);
-    }
-    if (lf.lfStrikeOut)
-    {
-        DWRITE_TEXT_RANGE tmp{};
-        tmp.length = (UINT32)textLen;
-        tmp.startPosition = 0;
-        pDWriteTextLayout->SetStrikethrough(lf.lfStrikeOut, tmp);
-    }
-    pDWriteTextLayout->SetWordWrapping(
-        (textFormat & DT_SINGLELINE)
-        ? DWRITE_WORD_WRAPPING::DWRITE_WORD_WRAPPING_NO_WRAP
-        : DWRITE_WORD_WRAPPING::DWRITE_WORD_WRAPPING_WRAP);
-    if ((textFormat & DT_PATH_ELLIPSIS) || (textFormat & DT_WORD_ELLIPSIS) || (textFormat & DT_END_ELLIPSIS))
-    {
-        DWRITE_TRIMMING tmp{};
-        if ((textFormat & DT_END_ELLIPSIS))
-        {
-            tmp.granularity = DWRITE_TRIMMING_GRANULARITY_CHARACTER;
-            tmp.delimiter = 0;
-            tmp.delimiterCount = 0;
-        }
-        else if ((textFormat & DT_WORD_ELLIPSIS))
-        {
-            tmp.granularity = DWRITE_TRIMMING_GRANULARITY_WORD;
-        }
-        if (SUCCEEDED(hr))
-        {
-            pDWriteTextLayout->SetTrimming(&tmp, pWriteInlineObject);
-        }
-    }
-    DWRITE_TEXT_METRICS t = { 0 };
-    pDWriteTextLayout->GetMetrics(&t);
-    if (pWidth)*pWidth = t.widthIncludingTrailingWhitespace;
-    if (pHeight)*pHeight = t.height;
-    DWRITE_TEXT_ALIGNMENT textAlignment;
-    if (textFormat & DT_CENTER)
-        textAlignment = DWRITE_TEXT_ALIGNMENT::DWRITE_TEXT_ALIGNMENT_CENTER;
-    else if (textFormat & DT_RIGHT)
-        textAlignment = DWRITE_TEXT_ALIGNMENT::DWRITE_TEXT_ALIGNMENT_TRAILING;
-    else
-        textAlignment = DWRITE_TEXT_ALIGNMENT::DWRITE_TEXT_ALIGNMENT_LEADING;
-    pDWriteTextLayout->SetTextAlignment(textAlignment);
-    DWRITE_PARAGRAPH_ALIGNMENT paragraphAlignment;
-    if (textFormat & DT_VCENTER)
-        paragraphAlignment = DWRITE_PARAGRAPH_ALIGNMENT::DWRITE_PARAGRAPH_ALIGNMENT_CENTER;
-    else if (textFormat & DT_BOTTOM)
-        paragraphAlignment = DWRITE_PARAGRAPH_ALIGNMENT::DWRITE_PARAGRAPH_ALIGNMENT_FAR;
-    else
-        paragraphAlignment = DWRITE_PARAGRAPH_ALIGNMENT::DWRITE_PARAGRAPH_ALIGNMENT_NEAR;
-    pDWriteTextLayout->SetParagraphAlignment(paragraphAlignment);
-    if (nPreFix)
-    {
-        DWRITE_TEXT_RANGE tmp{};
-        tmp.length = 1;
-        tmp.startPosition = (UINT32)nPreFix[0];
-        pDWriteTextLayout->SetUnderline(TRUE, tmp);
-    }
-    if (lpwzTextFix)
-    {
-        delete[] nPreFix;
-        delete[] lpwzTextFix;
-    }
-    if (!ppDWriteTextLayout)
-        pDWriteTextLayout->Release();
-    return SUCCEEDED(hr);
-}
-
+//
+//bool CD2DRender::calc_text(CD2DFont* pFont, LPCWSTR text, size_t textLen, DWORD textFormat, LPDRAWTEXTPARAMS lParam, float layoutWidth, float layoutHeight, float* pWidth, float* pHeight, IDWriteTextLayout** ppDWriteTextLayout)
+//{
+//    if (layoutWidth < 0)layoutWidth = 0;
+//    if (layoutHeight < 0)layoutHeight = 0;
+//
+//    CD2DFont& font = *pFont;
+//
+//    size_t* nPreFix = 0;
+//    int nPreFixCount = 0;
+//    LPWSTR lpwzTextFix = prefixstring(text, textFormat, nPreFix, nPreFixCount);
+//    HRESULT hr = 0;
+//
+//    IDWriteInlineObject* pWriteInlineObject = font;
+//    IDWriteTextFormat* dxFormat = font;
+//
+//
+//    auto& d2dInfo = d2d_get_info();
+//    IDWriteTextLayout* pDWriteTextLayout = 0;
+//    hr = d2dInfo.pDWriteFactory->CreateTextLayout(lpwzTextFix ? lpwzTextFix : text,
+//                                                  (UINT32)textLen, dxFormat, layoutWidth, layoutHeight, &pDWriteTextLayout);
+//    if (ppDWriteTextLayout)
+//        *ppDWriteTextLayout = pDWriteTextLayout;
+//
+//    //CComPtr<IDWriteTextLayout1> pTextLayout1 = nullptr;
+//    //hr = pDWriteTextLayout->QueryInterface(__uuidof(IDWriteTextLayout1), reinterpret_cast<void**>(&pTextLayout1));
+//
+//    //if (pTextLayout1)
+//    //{
+//    //    DWRITE_TEXT_RANGE range = { 0, (UINT32)textLen };
+//    //    hr = pTextLayout1->SetCharacterSpacing(
+//    //        10.0f,  // 前导间距 (字符前添加的空间)
+//    //        5.0f,   // 尾随间距 (字符后添加的空间)
+//    //        20.0f,  // 最小前进宽度 (字符的最小总宽度)
+//    //        range);
+//    //}
+//
+//    if (FAILED(hr))
+//        return false;
+//    LOGFONTW& lf = font;
+//
+//    if (lf.lfUnderline)
+//    {
+//        DWRITE_TEXT_RANGE tmp{};
+//        tmp.length = (UINT32)textLen;
+//        tmp.startPosition = 0;
+//        pDWriteTextLayout->SetUnderline(lf.lfUnderline, tmp);
+//    }
+//    if (lf.lfStrikeOut)
+//    {
+//        DWRITE_TEXT_RANGE tmp{};
+//        tmp.length = (UINT32)textLen;
+//        tmp.startPosition = 0;
+//        pDWriteTextLayout->SetStrikethrough(lf.lfStrikeOut, tmp);
+//    }
+//    pDWriteTextLayout->SetWordWrapping(
+//        (textFormat & DT_SINGLELINE)
+//        ? DWRITE_WORD_WRAPPING::DWRITE_WORD_WRAPPING_NO_WRAP
+//        : DWRITE_WORD_WRAPPING::DWRITE_WORD_WRAPPING_WRAP);
+//    if ((textFormat & DT_PATH_ELLIPSIS) || (textFormat & DT_WORD_ELLIPSIS) || (textFormat & DT_END_ELLIPSIS))
+//    {
+//        DWRITE_TRIMMING tmp{};
+//        if ((textFormat & DT_END_ELLIPSIS))
+//        {
+//            tmp.granularity = DWRITE_TRIMMING_GRANULARITY_CHARACTER;
+//            tmp.delimiter = 0;
+//            tmp.delimiterCount = 0;
+//        }
+//        else if ((textFormat & DT_WORD_ELLIPSIS))
+//        {
+//            tmp.granularity = DWRITE_TRIMMING_GRANULARITY_WORD;
+//        }
+//        if (SUCCEEDED(hr))
+//        {
+//            pDWriteTextLayout->SetTrimming(&tmp, pWriteInlineObject);
+//        }
+//    }
+//    DWRITE_TEXT_METRICS t = { 0 };
+//    pDWriteTextLayout->GetMetrics(&t);
+//    if (pWidth)*pWidth = t.widthIncludingTrailingWhitespace;
+//    if (pHeight)*pHeight = t.height;
+//    DWRITE_TEXT_ALIGNMENT textAlignment;
+//    if (textFormat & DT_CENTER)
+//        textAlignment = DWRITE_TEXT_ALIGNMENT::DWRITE_TEXT_ALIGNMENT_CENTER;
+//    else if (textFormat & DT_RIGHT)
+//        textAlignment = DWRITE_TEXT_ALIGNMENT::DWRITE_TEXT_ALIGNMENT_TRAILING;
+//    else
+//        textAlignment = DWRITE_TEXT_ALIGNMENT::DWRITE_TEXT_ALIGNMENT_LEADING;
+//    pDWriteTextLayout->SetTextAlignment(textAlignment);
+//    DWRITE_PARAGRAPH_ALIGNMENT paragraphAlignment;
+//    if (textFormat & DT_VCENTER)
+//        paragraphAlignment = DWRITE_PARAGRAPH_ALIGNMENT::DWRITE_PARAGRAPH_ALIGNMENT_CENTER;
+//    else if (textFormat & DT_BOTTOM)
+//        paragraphAlignment = DWRITE_PARAGRAPH_ALIGNMENT::DWRITE_PARAGRAPH_ALIGNMENT_FAR;
+//    else
+//        paragraphAlignment = DWRITE_PARAGRAPH_ALIGNMENT::DWRITE_PARAGRAPH_ALIGNMENT_NEAR;
+//    pDWriteTextLayout->SetParagraphAlignment(paragraphAlignment);
+//    if (nPreFix)
+//    {
+//        DWRITE_TEXT_RANGE tmp{};
+//        tmp.length = 1;
+//        tmp.startPosition = (UINT32)nPreFix[0];
+//        pDWriteTextLayout->SetUnderline(TRUE, tmp);
+//    }
+//    if (lpwzTextFix)
+//    {
+//        delete[] nPreFix;
+//        delete[] lpwzTextFix;
+//    }
+//    if (!ppDWriteTextLayout)
+//        pDWriteTextLayout->Release();
+//    return SUCCEEDED(hr);
+//}
+//
 
 LPWSTR prefixstring(LPCWSTR text, DWORD format, size_t*& nPreFix, int& count)
 {

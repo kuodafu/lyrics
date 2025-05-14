@@ -7,8 +7,6 @@ static D2D_GDI_DATA_STRUCT d2dInfo;
 
 D2D_GDI_DATA_STRUCT::~D2D_GDI_DATA_STRUCT()
 {
-    SafeRelease(d2dInfo.pGDIInterop);
-    SafeRelease(d2dInfo.pD2DDeviceContext);
     SafeRelease(d2dInfo.pD2DDevice);
     SafeRelease(d2dInfo.pDWriteFactory);
     SafeRelease(d2dInfo.pFactory);
@@ -68,22 +66,6 @@ bool d2d_init(bool isDebug)
     // 4. 创建D2D设备
     hr = d2dInfo.pFactory->CreateDevice(pDxgiDevice, &d2dInfo.pD2DDevice);
     if (FAILED(hr)) false;
-
-    // 5. 创建D2D设备上下文
-    hr = d2dInfo.pD2DDevice->CreateDeviceContext(D2D1_DEVICE_CONTEXT_OPTIONS_NONE, &d2dInfo.pD2DDeviceContext);
-    if (FAILED(hr)) false;
-
-    d2dInfo.pD2DDeviceContext->QueryInterface(IID_PPV_ARGS(&d2dInfo.pGDIInterop));
-    d2dInfo.pD2DDeviceContext->SetUnitMode(D2D1_UNIT_MODE_PIXELS);
-    //d2dInfo.pFactory->GetDesktopDpi(&d2dInfo.DpiX, &d2dInfo.DpiY);
-    d2dInfo.pD2DDeviceContext->GetDpi(&d2dInfo.DpiX, &d2dInfo.DpiY);
-
-    d2dInfo.bp_proper.pixelFormat.alphaMode = D2D1_ALPHA_MODE_PREMULTIPLIED;
-    d2dInfo.bp_proper.pixelFormat.format = DXGI_FORMAT_B8G8R8A8_UNORM;
-    d2dInfo.bp_proper.bitmapOptions = D2D1_BITMAP_OPTIONS_TARGET | D2D1_BITMAP_OPTIONS_GDI_COMPATIBLE;
-    d2dInfo.bp_proper.dpiX = 96;
-    d2dInfo.bp_proper.dpiY = 96;
-    d2dInfo.bp_proper.colorContext = 0;
 
     hr = DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED,
                                 __uuidof(IDWriteFactory),

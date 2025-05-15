@@ -253,7 +253,9 @@ void lyric_wnd_draw_text_geometry_draw_cache(LYRIC_WND_INFU& wnd_info, LYRIC_WND
 
 void lyric_wnd_draw_text_geometry(LYRIC_WND_INFU& wnd_info, LYRIC_WND_DRAWTEXT_INFO& draw_info)
 {
-    ID2D1DeviceContext* pRenderTarget = draw_info.pRenderTarget;
+    CD2DRender& hCanvas = *wnd_info.dx.hCanvas;
+    ID2D1DeviceContext* pRenderTarget = hCanvas;
+
     D2D1_ANTIALIAS_MODE oldMode = pRenderTarget->GetAntialiasMode();
     pRenderTarget->SetAntialiasMode(D2D1_ANTIALIAS_MODE_ALIASED);  // 关闭抗锯齿
     lyric_wnd_draw_text_geometry_draw_cache(wnd_info, draw_info);
@@ -262,25 +264,29 @@ void lyric_wnd_draw_text_geometry(LYRIC_WND_INFU& wnd_info, LYRIC_WND_DRAWTEXT_I
 
 void lyric_wnd_draw_text_geometry_draw_cache(LYRIC_WND_INFU& wnd_info, LYRIC_WND_DRAWTEXT_INFO& draw_info)
 {
-    ID2D1LinearGradientBrush* hbrNormal = draw_info.hbrNormal;
-    ID2D1LinearGradientBrush* hbrLight = draw_info.hbrLight;
-    ID2D1SolidColorBrush* hbrBorder = draw_info.hbrBorder;
-    IDWriteTextFormat* dxFormat = draw_info.dxFormat;
+    CD2DRender& hCanvas = *wnd_info.dx.hCanvas;
+    CD2DFont& font = *wnd_info.dx.hFont;
+    ID2D1LinearGradientBrush* hbrNormal = *wnd_info.dx.hbrNormal;
+    ID2D1LinearGradientBrush* hbrLight = *wnd_info.dx.hbrLight;
+    ID2D1SolidColorBrush* hbrBorder = *wnd_info.dx.hbrBorder;
+    IDWriteTextFormat* dxFormat = font;
+    ID2D1DeviceContext* pRenderTarget = hCanvas;
+
     auto& d2dInfo = d2d_get_info();
 
-    LYRIC_LINE_STRUCT& line = *draw_info.line;
+    LYRIC_LINE_STRUCT& line = draw_info.line;
 
     CComPtr<ID2D1PathGeometry> pTextGeometry;
     CComPtr<IDWriteTextLayout> pTextLayout;
     HRESULT hr = S_OK;
 
-    if (draw_info.line->nLength && draw_info.line->pText && *draw_info.line->pText)
+    if (draw_info.line.nLength && draw_info.line.pText && *draw_info.line.pText)
     {
         hr = d2dInfo.pFactory->CreatePathGeometry(&pTextGeometry);
         if (FAILED(hr))
             return;
 
-        pTextLayout = lyric_wnd_create_text_layout(line.pText, (UINT32)line.nLength, draw_info.dxFormat,
+        pTextLayout = lyric_wnd_create_text_layout(line.pText, (UINT32)line.nLength, dxFormat,
                                                    draw_info.layout_text_max_width, draw_info.layout_text_max_height);
 
         if (!pTextLayout)
@@ -317,7 +323,7 @@ void lyric_wnd_draw_text_geometry_draw_cache(LYRIC_WND_INFU& wnd_info, LYRIC_WND
     CComPtr<ID2D1StrokeStyle> pStrokeStyle = nullptr;
     //d2dInfo.pFactory->CreateStrokeStyle(&strokeProps, nullptr, 0, &pStrokeStyle);
 
-    CustomTextRenderer rand(draw_info.pRenderTarget, pTextGeometry);  // 获取文本路径信息
+    CustomTextRenderer rand(pRenderTarget, pTextGeometry);  // 获取文本路径信息
 
     // 绘画左边顶边偏移的位置, 不从0开始, 画阴影部分会小于0, 这里偏移一些像素
     const float _offset = (draw_info.layout_text_max_height - wnd_info.nLineHeight) / 2;
@@ -329,9 +335,10 @@ void lyric_wnd_draw_text_geometry_draw_cache(LYRIC_WND_INFU& wnd_info, LYRIC_WND
         // 需要左右各多出一部分显示阴影
         float width = (line.nWidth ? line.nWidth : wnd_info.nLineDefWidth) + _offset * 2;
 
+        //width = draw_info.layout_text_max_width;
         //D2D1_SIZE_F size = D2D1::SizeF(draw_info.layout_text_max_width, draw_info.layout_text_max_height);
         D2D1_SIZE_F size = D2D1::SizeF(width, draw_info.layout_text_max_height);
-        hr = draw_info.pRenderTarget->CreateCompatibleRenderTarget(size, &pRender);
+        hr = pRenderTarget->CreateCompatibleRenderTarget(size, &pRender);
         if (FAILED(hr))
             return nullptr;
 
@@ -377,7 +384,7 @@ void lyric_wnd_draw_text_geometry_draw_cache(LYRIC_WND_INFU& wnd_info, LYRIC_WND
             pRender->DrawGeometry(pTextGeometry, hbrBorder, strokeWidth, pStrokeStyle);
             pRender->FillGeometry(pTextGeometry, hbrFill);  // 调用方指定填充的画刷
 
-            hr = pTextGeometry->GetWidenedBounds(strokeWidth, pStrokeStyle, newTransform, &draw_info.cache->rcBounds);
+            hr = pTextGeometry->GetWidenedBounds(strokeWidth, pStrokeStyle, newTransform, &draw_info.cache.rcBounds);
 
             pRender->SetTransform(&matrix);
 
@@ -401,10 +408,10 @@ void lyric_wnd_draw_text_geometry_draw_cache(LYRIC_WND_INFU& wnd_info, LYRIC_WND
     };
 
 
-    SafeRelease(draw_info.cache->pBitmapNormal);
-    SafeRelease(draw_info.cache->pBitmapLight);
-    draw_info.cache->pBitmapNormal = pfn_draw_text(hbrNormal);
-    draw_info.cache->pBitmapLight = pfn_draw_text(hbrLight);
+    SafeRelease(draw_info.cache.pBitmapNormal);
+    SafeRelease(draw_info.cache.pBitmapLight);
+    draw_info.cache.pBitmapNormal = pfn_draw_text(hbrNormal);
+    draw_info.cache.pBitmapLight = pfn_draw_text(hbrLight);
 
 }
 

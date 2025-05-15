@@ -39,8 +39,15 @@ bool glow_create_cache(GLOW_ARG& glow_arg)
     HRESULT hr = S_OK;
     LYRIC_WND_INFU& wnd_info = *glow_arg.pWndInfo;
     LYRIC_WND_DRAWTEXT_INFO& draw_info = *glow_arg.pDrawInfo;
-    LYRIC_LINE_STRUCT& line = *draw_info.line;
+    LYRIC_LINE_STRUCT& line = draw_info.line;
     IDWriteTextFormat* pTextFormat = *wnd_info.dx.hFont;
+
+    CD2DFont& font = *wnd_info.dx.hFont;
+    ID2D1LinearGradientBrush* hbrNormal = *wnd_info.dx.hbrNormal;
+    ID2D1LinearGradientBrush* hbrLight = *wnd_info.dx.hbrLight;
+    ID2D1SolidColorBrush* hbrBorder = *wnd_info.dx.hbrBorder;
+    IDWriteTextFormat* dxFormat = font;
+
     auto& d2dInfo = d2d_get_info();
 
     CComPtr<ID2D1DeviceContext> pRenderTarget;  // 在这个函数内就释放
@@ -54,7 +61,7 @@ bool glow_create_cache(GLOW_ARG& glow_arg)
     //    draw_info.layout_text_max_width, draw_info.layout_text_max_height,
     //    &pTextLayout
     //);
-    pTextLayout = lyric_wnd_create_text_layout(line.pText, (UINT32)line.nLength, draw_info.dxFormat,
+    pTextLayout = lyric_wnd_create_text_layout(line.pText, (UINT32)line.nLength, dxFormat,
                                                draw_info.layout_text_max_width, draw_info.layout_text_max_height);
     if (!pTextLayout)
         return false;
@@ -84,7 +91,7 @@ bool glow_create_cache(GLOW_ARG& glow_arg)
         hbrFill->SetEndPoint(endPoint);
 
 
-        ID2D1Image* oldBitmap = nullptr;
+        CComPtr<ID2D1Image> oldBitmap;
         pRenderTarget->GetTarget(&oldBitmap);
         pRenderTarget->SetTarget(pBitmapRet);
         ID2D1Bitmap* pBitmap = glow_create_text_bitmap(glow_arg, hbrFill);
@@ -103,10 +110,10 @@ bool glow_create_cache(GLOW_ARG& glow_arg)
         return pBitmapRet;
     };
 
-    SafeRelease(draw_info.cache->pBitmapNormal);
-    SafeRelease(draw_info.cache->pBitmapLight);
-    draw_info.cache->pBitmapNormal = pfn_create_bitmap(draw_info.hbrNormal);
-    draw_info.cache->pBitmapLight = pfn_create_bitmap(draw_info.hbrLight);
+    SafeRelease(draw_info.cache.pBitmapNormal);
+    SafeRelease(draw_info.cache.pBitmapLight);
+    draw_info.cache.pBitmapNormal = pfn_create_bitmap(hbrNormal);
+    draw_info.cache.pBitmapLight = pfn_create_bitmap(hbrLight);
 
     return true;
 }
@@ -148,7 +155,7 @@ void glow_draw_effetc(GLOW_ARG& glow_arg, ID2D1LinearGradientBrush* hbrFill, ID2
 {
     LYRIC_WND_INFU& wnd_info = *glow_arg.pWndInfo;
     LYRIC_WND_DRAWTEXT_INFO& draw_info = *glow_arg.pDrawInfo;
-    LYRIC_LINE_STRUCT& line = *draw_info.line;
+    LYRIC_LINE_STRUCT& line = draw_info.line;
     auto& d2dInfo = d2d_get_info();
     HRESULT hr = S_OK;
     ID2D1DeviceContext* pRenderTarget = glow_arg.pRenderTarget;
@@ -166,7 +173,7 @@ void glow_draw_effetc(GLOW_ARG& glow_arg, ID2D1LinearGradientBrush* hbrFill, ID2
         return;
 
     // 计算发光区域边界
-    draw_info.cache->rcBounds = { 0 };
+    draw_info.cache.rcBounds = { 0 };
     D2D1_RECT_F textBounds = { 0.f, 0.f, (float)line.nWidth, wnd_info.nLineHeight };
 
 
@@ -195,12 +202,12 @@ void glow_draw_effetc(GLOW_ARG& glow_arg, ID2D1LinearGradientBrush* hbrFill, ID2
         pColorMatrixEffect->SetValue(D2D1_COLORMATRIX_PROP_COLOR_MATRIX, matrix);
         pColorMatrixEffect->SetInputEffect(0, pBlurEffect);
 
-        if (draw_info.cache->rcBounds.left == 0)
+        if (draw_info.cache.rcBounds.left == 0)
         {
-            draw_info.cache->rcBounds.left = textBounds.left - radius; // 扩展左边界
-            draw_info.cache->rcBounds.top = textBounds.top - radius;   // 扩展上边界
-            draw_info.cache->rcBounds.right = textBounds.right + radius; // 扩展右边界
-            draw_info.cache->rcBounds.bottom = textBounds.bottom + radius; // 扩展下边界
+            draw_info.cache.rcBounds.left = textBounds.left - radius; // 扩展左边界
+            draw_info.cache.rcBounds.top = textBounds.top - radius;   // 扩展上边界
+            draw_info.cache.rcBounds.right = textBounds.right + radius; // 扩展右边界
+            draw_info.cache.rcBounds.bottom = textBounds.bottom + radius; // 扩展下边界
         }
 
         // 绘制发光层

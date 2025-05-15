@@ -135,10 +135,12 @@ bool LYRICCALL lyric_get_line(HLYRIC hLyric, int indexLine, PLYRIC_LINE_STRUCT p
             if (pTranslate2)
                 pRet->pTranslate2 = (*pTranslate2)[indexLine].c_str(), pRet->nTranslate2 = (int)(*pTranslate2)[indexLine].size();;
 
+            pRet->nInterval     = line.interval;
             pRet->nStart        = line.start;
             pRet->nEnd          = line.start + line.duration;
             pRet->nWordCount    = (int)line.words.size();
             pRet->nWidth        = line.width;
+
             return true;
         }
     }

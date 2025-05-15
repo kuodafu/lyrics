@@ -13,8 +13,10 @@ void lyric_wnd_draw_text_geometry(LYRIC_WND_INFU& wnd_info, LYRIC_WND_DRAWTEXT_I
 // 绘画发光字体的歌词文本
 void lyric_wnd_draw_text_glow(LYRIC_WND_INFU& wnd_info, LYRIC_WND_DRAWTEXT_INFO& draw_info);
 
-// 把缓存的文本绘画出来
-void lyric_wnd_draw_cache_text(LYRIC_WND_INFU& wnd_info, LYRIC_WND_DRAWTEXT_INFO& draw_info);
+// 重画函数, 处理绘画的函数
+HRESULT lyric_wnd_OnPaint(LYRIC_WND_INFU& wnd_info, bool isresize, LYRIC_CALC_STRUCT& arg);
+
+void lyric_wnd_draw_line(LYRIC_WND_INFU& wnd_info, LYRIC_WND_DRAWTEXT_INFO& line_info, int nIndexLine);
 
 
 

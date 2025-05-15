@@ -17,7 +17,7 @@ void lyric_wnd_draw_button(LYRIC_WND_INFU& wnd_info, const RECT& rcWindow)
 
     CD2DRender& hCanvas = *wnd_info.dx.hCanvas;
     ID2D1DeviceContext* pRenderTarget = hCanvas;
-    const int offset = _10, offset_top = wnd_info.scale(2), line_height = _10 * 2;
+    const int offset = _10, offset_top = (int)wnd_info.shadowRadius, line_height = _10 * 2;
     const UINT dpi = wnd_info.scale;
 
     const int cxClient = rcWindow.right - rcWindow.left;

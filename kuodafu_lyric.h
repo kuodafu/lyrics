@@ -14,7 +14,7 @@ struct LYRIC_LINE_STRUCT
     int             nLength;    // 字符数
     int             nTranslate1;// 字符数
     int             nTranslate2;// 字符数
-
+    int             nInterval;  // 距离下一行的间隔时间, 单位是毫秒, -1表示是最后一行
     int             nStart;     // 行歌词开始时间, 单位是毫秒
     int             nEnd;       // 行歌词结束时间, 单位是毫秒
     int             nWordCount; // 这一行歌词的字数, 英文是单词数, 这里的字不是字符也不是字节, 是根据歌词内容决定的

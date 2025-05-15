@@ -194,6 +194,7 @@ void lyric_parse_text(PINSIDE_LYRIC_INFO pLyric, LPWSTR pStart, LPWSTR pEnd)
 
         lines.start = pfn_get_num();
         lines.duration = pfn_get_num();
+        lines.interval = -1;    // 每次都假设这个是最后一行
 
         // 这里开始就是 <0,1,2>字\r\n 这种格式了, 数量不一定, 需要循环解析
         while (pStart < pEnd && *pStart == L'<')
@@ -247,6 +248,32 @@ void lyric_parse_text(PINSIDE_LYRIC_INFO pLyric, LPWSTR pStart, LPWSTR pEnd)
 
         while (*pStart == L'\r' || *pStart == L'\n')
             *pStart++ = 0;
+
+        // 成员数大于1, 需要获取上一个成员, 然后计算当前成员和上一个成员的间隔时间
+        // 当前成员就是最后一个, 上一个成员是倒数第二个
+        size_t lines_size = pLyric->lines.size();
+        if (lines_size > 1)
+        {
+            INSIDE_LYRIC_LINE& back = pLyric->lines[lines_size - 2];
+            // 间隔 = 当前行的开始时间 减去 上一行的结束时间
+            back.interval = lines.start - (back.start + back.duration);
+
+#ifdef _DEBUG
+
+            int len = swprintf_s(num, L"{%d}", back.interval);
+            INSIDE_LYRIC_WORD& words = back.words.emplace_back();
+            auto& words_prev = back.words[back.words.size() - 2];
+            words.start = words_prev.start + words_prev.duration;
+            words.duration = 10;
+            words.t3 = 0;
+
+            words.text = back.words.front().text - len - 1;
+            words.size = len;
+            wcscpy_s((LPWSTR)words.text, (size_t)len + 1, num);
+
+            back.text.append(num, len);
+#endif
+        }
     }
 }
 

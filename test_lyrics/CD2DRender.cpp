@@ -67,6 +67,8 @@ bool CD2DRender::resize(int width, int height)
     SafeRelease(m_pBitmap);
 
     HRESULT hr = _d2d_create_bitmap(m_pRenderTarget, width, height, &m_pBitmap);
+    if (FAILED(hr))
+        __debugbreak();
     m_pRenderTarget->SetTarget(m_pBitmap);
     return SUCCEEDED(hr);
 }

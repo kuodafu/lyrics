@@ -107,6 +107,12 @@
     <ClCompile Include="lyric_wnd_header.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="lyric_wnd_OnPaint.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="lyric_wnd_draw_line.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="test_lyrics.rc">

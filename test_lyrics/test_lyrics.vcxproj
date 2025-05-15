@@ -157,6 +157,7 @@
     <ClCompile Include="lyric_wnd_button_click.cpp" />
     <ClCompile Include="lyric_wnd_button_hover.cpp" />
     <ClCompile Include="lyric_wnd_draw_button.cpp" />
+    <ClCompile Include="lyric_wnd_draw_line.cpp" />
     <ClCompile Include="lyric_wnd_draw_text_glow.cpp" />
     <ClCompile Include="d2d.cpp" />
     <ClCompile Include="lyric_wnd.cpp" />
@@ -164,6 +165,7 @@
     <ClCompile Include="lyric_wnd_function.cpp" />
     <ClCompile Include="lyric_wnd_load_image.cpp" />
     <ClCompile Include="lyric_wnd_header.cpp" />
+    <ClCompile Include="lyric_wnd_OnPaint.cpp" />
     <ClCompile Include="test_lyrics.cpp" />
     <ClCompile Include="tinyxml2.cpp" />
   </ItemGroup>

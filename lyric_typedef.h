@@ -36,6 +36,7 @@ struct INSIDE_LYRIC_LINE
 {
     int                 start;      // 开始时间是基于这一行时间的开始
     int                 duration;   // 这个字持续的时间
+    int                 interval;   // 距离下一行的间隔时间, 单位是毫秒, -1表示是最后一行
     float               width;      // 这一行歌词占用的文本宽度
     std::wstring        text;       // 这一整行的歌词内容
     INSIDE_LYRIC_WORDS  words;      // 每一个字的结构
@@ -44,6 +45,7 @@ struct INSIDE_LYRIC_LINE
     {
         start = duration = 0;
         width = 0;
+        interval = 0;
     }
 };
 using INSIDE_LYRIC_LINDS = std::vector<INSIDE_LYRIC_LINE>;

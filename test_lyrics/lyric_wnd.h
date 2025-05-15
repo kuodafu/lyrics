@@ -55,7 +55,8 @@ enum LYRIC_WND_BUTTON_STATE
 typedef struct LYRIC_WND_ARG
 {
     RECT        rcWindow;       // 要设置的窗口位置和大小
-    DWORD       clrBackground;  // 背景颜色
+    DWORD       clrWndBack;     // 背景颜色
+    DWORD       clrWndBorder;   // 窗口背景边框颜色, 为0则不显示边框
     int         nFontSize;      // 字体大小
     LPCWSTR     pszFontName;    // 字体名称
     DWORD       clrBorder;      // 边框颜色

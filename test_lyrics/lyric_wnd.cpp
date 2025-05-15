@@ -10,6 +10,7 @@
 #include "lyric_wnd_function.h"
 #include <CommCtrl.h>
 
+
 using namespace NAMESPACE_D2D;
 
 #define TIMERID_UPDATE_LYRIC 1000   // 时钟ID, 更新歌词
@@ -38,7 +39,8 @@ void lyric_wnd_get_default_arg(LYRIC_WND_ARG* arg)
         MAKEARGB(255, 3, 233, 252),
     };
 
-    arg->clrBackground = MAKEARGB(100, 0, 0, 0);
+    arg->clrWndBack = MAKEARGB(100, 0, 0, 0);
+    arg->clrWndBorder = MAKEARGB(200, 0, 0, 0);
     arg->nFontSize = 24;
     arg->pszFontName = L"微软雅黑";
     arg->clrBorder = MAKEARGB(255, 33, 33, 33);
@@ -75,6 +77,7 @@ HWND lyric_wnd_create(const LYRIC_WND_ARG* arg, PFN_LYRIC_WND_COMMAND pfnCommand
     LYRIC_WND_INFU& wnd_info = *pWndInfo;
     lyric_wnd_set_data(hWnd, pWndInfo);
 
+
     RECT rcDesk;
     GetWindowRect(GetDesktopWindow(), &rcDesk);
     const int cxScreen = rcDesk.right - rcDesk.left;
@@ -86,6 +89,9 @@ HWND lyric_wnd_create(const LYRIC_WND_ARG* arg, PFN_LYRIC_WND_COMMAND pfnCommand
     wnd_info.lParam = lParam;
     RECT rc = arg->rcWindow;
     wnd_info.scale(rc);
+    wnd_info.shadowRadius = (float)wnd_info.scale(10);
+    wnd_info.line1.align = 0;
+    wnd_info.line2.align = 0;
     const int width = rc.right - rc.left;
     const int height = rc.bottom - rc.top;
 
@@ -132,6 +138,8 @@ bool lyric_wnd_load_krc(HWND hWindowLyric, LPCVOID pKrcData, int nKrcDataLen)
     LYRIC_WND_INFU& wnd_info = *pWndInfo;
     wnd_info.hLyric = lyric_parse(pKrcData, nKrcDataLen);
     pWndInfo->nTimeOffset = lyric_behind_ahead(wnd_info.hLyric, 0);
+    pWndInfo->line1.clear();
+    pWndInfo->line2.clear();
     if (!wnd_info.hLyric)
         return false;
 
@@ -167,7 +175,7 @@ bool lyric_wnd_update(HWND hWindowLyric, int nCurrentTimeMS)
 
     LYRIC_WND_INFU& wnd_info = *pWndInfo;
     wnd_info.nCurrentTimeMS = nCurrentTimeMS;
-    //InvalidateRect(hWindowLyric, 0, 0);
+    //InvalidateRect(hWindowLyric, 0, 0);   // 使用这个方式会卡, 不知道啥情况, 直接调用重画吧
     lyric_wnd_invalidate(wnd_info);
     return true;
 }
@@ -247,7 +255,7 @@ bool lyric_wnd_get_config(HWND hWindowLyric, LYRIC_WND_ARG* arg)
     GetWindowRect(hWindowLyric, &arg->rcWindow);
     pWndInfo->scale.unscale(arg->rcWindow); // 保存到配置里的是要保存未缩放的坐标
 
-    arg->clrBackground  = pWndInfo->dx.clrBack;
+    arg->clrWndBack  = pWndInfo->dx.clrBack;
     arg->nFontSize      = pWndInfo->lf.lfHeight;
     arg->pszFontName    = pWndInfo->lf.lfFaceName;
     arg->clrBorder      = pWndInfo->clrBorder;

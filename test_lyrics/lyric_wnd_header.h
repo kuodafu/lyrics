@@ -20,16 +20,21 @@ struct LYRIC_WND_INFU;
 // 歌词窗口dx相关的对象
 struct LYRIC_WND_DX
 {
-    NAMESPACE_D2D::CD2DRender* hCanvas;        // D2D绘画句柄
-    NAMESPACE_D2D::CD2DFont* hFont;          // 绘画歌词的字体, 这个是设备无关字体, 设备失效不需要重新创建
+    NAMESPACE_D2D::CD2DRender* hCanvas;         // D2D绘画句柄
+    NAMESPACE_D2D::CD2DFont* hFont;             // 绘画歌词的字体, 这个是设备无关字体, 设备失效不需要重新创建
 
-    NAMESPACE_D2D::CD2DImage* image;          // 歌词窗口按钮需要的图片
-    NAMESPACE_D2D::CD2DBrush* hbrBorder;      // 绘画歌词文本的边框画刷
-    NAMESPACE_D2D::CD2DBrush* hbrLine;        // 歌词按钮分隔部分的线条画刷
+    NAMESPACE_D2D::CD2DImage* image;            // 歌词窗口按钮需要的图片
+    NAMESPACE_D2D::CD2DBrush* hbrBorder;        // 绘画歌词文本的边框画刷
+    NAMESPACE_D2D::CD2DBrush* hbrWndBorder;     // 歌词窗口的边框画刷
+    NAMESPACE_D2D::CD2DBrush* hbrWndBack;       // 歌词窗口的背景画刷
+    NAMESPACE_D2D::CD2DBrush* hbrLine;          // 歌词按钮分隔部分的线条画刷
     NAMESPACE_D2D::CD2DBrush_LinearGradient* hbrNormal;      // 普通歌词画刷
     NAMESPACE_D2D::CD2DBrush_LinearGradient* hbrLight;       // 高亮歌词画刷
 
     DWORD       clrBack;        // 鼠标移动上来之后显示的歌词ARGB背景颜色
+    DWORD       clrWndBorder;   // 鼠标移动上来之后显示的歌词ARGB边框颜色
+
+    ID2D1Bitmap* pBitmapBack;   // 缓存位图, 窗口背景, 尺寸改变的时候需要重新创建
 
 
     LYRIC_WND_DX()
@@ -38,10 +43,14 @@ struct LYRIC_WND_DX
         hCanvas = nullptr;
         image = nullptr;
         hbrBorder = nullptr;
+        hbrWndBorder = nullptr;
+        hbrWndBack = nullptr;
         hbrLine = nullptr;
         hbrNormal = nullptr;
         hbrLight = nullptr;
+        pBitmapBack = nullptr;
         clrBack = 0;
+        clrWndBorder = 0;
     }
 
     ~LYRIC_WND_DX()
@@ -115,6 +124,41 @@ struct LYRIC_WND_CACHE_OBJ
     ~LYRIC_WND_CACHE_OBJ();
 };
 
+// 记录绘画文本需要的数据, 路径, 阴影方式都是使用这个结构, 一行对应一个结构
+struct LYRIC_WND_DRAWTEXT_INFO
+{
+    LYRIC_LINE_STRUCT   line;       // 歌词行信息
+    LYRIC_WND_CACHE_OBJ cache;      // 缓存对象指针
+
+    int         align;              // 对齐模式, 0=左对齐, 1=居中对齐, 2=右对齐
+    D2D1_RECT_F rcText;             // 歌词文本绘画的位置, 这个位置是根据对齐模式计算的
+
+    float nLightWidth;              // 歌词高亮位置, 大于0的话就是要绘画高亮区域
+    float layout_text_max_width;    // 文本布局的最大宽度, 这个值会比文本实际宽度大一些
+    float layout_text_max_height;   // 文本布局的最大高度, 这个值会比文本实际高度大一些
+
+    LYRIC_WND_DRAWTEXT_INFO()
+    {
+        align = 0;
+        clear();
+    }
+
+    inline void clear()
+    {
+        line = {0};
+        //index = -1;
+        rcText = {0};
+        nLightWidth = 0.f;
+        layout_text_max_width = 0.f;
+        layout_text_max_height = 0.f;
+
+        cache.preIndex = -1;
+        cache.preText = nullptr;
+        cache.preLength = 0;
+        cache.rcBounds = { 0 };
+    }
+};
+
 // 歌词窗口 USERDATA 里存放的是这个结构
 typedef struct LYRIC_WND_INFU
 {
@@ -134,6 +178,9 @@ typedef struct LYRIC_WND_INFU
     int         nLineTop1;      // 第一行歌词的顶部位置
     int         nLineTop2;      // 第二行歌词的顶部位置
     RECT        rcWindow;       // 歌词窗口的位置, 整个窗口都是客户区, 这里记录的是屏幕位置, 绘画时的位置, 不保证是当前窗口的位置
+    
+    float       shadowRadius;   // 阴影半径
+    
     union
     {
         struct
@@ -155,8 +202,8 @@ typedef struct LYRIC_WND_INFU
         USHORT  change;
     };
 
-    LYRIC_WND_CACHE_OBJ     cache1;     // 第一行的缓存对象
-    LYRIC_WND_CACHE_OBJ     cache2;     // 第二行的缓存对象
+    LYRIC_WND_DRAWTEXT_INFO line1;      // 第一行歌词信息, 包括缓存对象, 歌词行信息, 歌词文本绘画位置, 歌词高亮位置等
+    LYRIC_WND_DRAWTEXT_INFO line2;      // 第二行歌词信息
 
     LYRIC_WND_BUTTON        button;
     PFN_LYRIC_WND_COMMAND   pfnCommand; // 歌词窗口上的按钮被点击回调函数
@@ -179,28 +226,6 @@ typedef struct LYRIC_WND_INFU
 
 }*PLYRIC_WND_INFU;
 
-// 记录绘画文本需要的数据, 路径, 阴影方式都是使用这个结构
-struct LYRIC_WND_DRAWTEXT_INFO
-{
-    ID2D1LinearGradientBrush* hbrNormal;
-    ID2D1LinearGradientBrush* hbrLight;
-    ID2D1SolidColorBrush* hbrBorder;
-    IDWriteTextFormat* dxFormat;
-    ID2D1DeviceContext* pRenderTarget;
-
-    LYRIC_LINE_STRUCT*   line;   // 歌词行信息
-    LYRIC_WND_CACHE_OBJ* cache;  // 缓存对象指针
-
-    int cxClient;
-    int cyClient;
-
-    D2D1_RECT_F rcBack;     // 歌词窗口位置, 这个就是绘画背景的位置
-    D2D1_RECT_F rcText;     // 歌词文本绘画的位置
-
-    float nLightWidth;              // 歌词高亮位置, 大于0的话就是要绘画高亮区域
-    float layout_text_max_width;    // 文本布局的最大宽度, 这个值会比文本实际宽度大一些
-    float layout_text_max_height;   // 文本布局的最大高度, 这个值会比文本实际高度大一些
-};
 
 NAMESPACE_LYRIC_WND_END
 

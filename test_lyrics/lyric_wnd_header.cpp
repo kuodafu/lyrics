@@ -35,6 +35,12 @@ bool LYRIC_WND_DX::re_create(LYRIC_WND_INFU* pWndInfo)
     re_create_border(pWndInfo);
     re_create_image(pWndInfo);
 
+    SafeDelete(hbrWndBorder);
+    SafeDelete(hbrWndBack);
+    hbrWndBorder = new CD2DBrush(*hCanvas, clrWndBorder);
+    hbrWndBack = new CD2DBrush(*hCanvas, clrBack);
+
+
     SafeDelete(hbrLine);
     hbrLine = new CD2DBrush(*hCanvas, MAKEARGB(100, 255, 255, 255));
 
@@ -111,8 +117,12 @@ bool LYRIC_WND_DX::destroy(bool isDestroyFont)
     if (isDestroyFont)
         SafeDelete(hFont);
 
+    SafeRelease(pBitmapBack);
+
     SafeDelete(hCanvas);
     SafeDelete(hbrBorder);
+    SafeDelete(hbrWndBorder);
+    SafeDelete(hbrWndBack);
     SafeDelete(hbrLine);
     SafeDelete(hbrNormal);
     SafeDelete(hbrLight);
@@ -135,7 +145,8 @@ void LYRIC_WND_INFU::set_def_arg(const LYRIC_WND_ARG* arg)
         clrLight.assign(&arg->pClrLight[0], &arg->pClrLight[arg->nClrLight]);
 
     clrBorder = arg->clrBorder;
-    dx.clrBack = arg->clrBackground;
+    dx.clrWndBorder = arg->clrWndBorder;
+    dx.clrBack = arg->clrWndBack;
 
     LPCWSTR pszFontName = arg->pszFontName;
     if (!pszFontName || !*pszFontName)
@@ -183,6 +194,7 @@ LYRIC_WND_INFU::LYRIC_WND_INFU()
     nLineTop2 = 0;
     rcWindow = { 0 };
     nLineDefWidth = 0;
+    shadowRadius = 0.f;
 
     pszDefText = L"该歌曲暂时没有歌词";
     nDefText = 9;

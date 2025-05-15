@@ -83,7 +83,7 @@ HRESULT lyric_wnd_OnPaint(LYRIC_WND_INFU& wnd_info, bool isresize, LYRIC_CALC_ST
     {
         if (arg.indexLine + 1 < arg.nLineCount)
             lyric_get_line(wnd_info.hLyric, arg.indexLine + 1, &pLine2->line);
-        pLine2->nLightWidth = 0;
+        pLine2->nLightWidth = (arg.indexLine + 1 == arg.nLineCount) ? pLine2->line.nWidth : 0.0f;
     }
     else if (!isSwitchLine)
     {

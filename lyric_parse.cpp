@@ -275,6 +275,28 @@ void lyric_parse_text(PINSIDE_LYRIC_INFO pLyric, LPWSTR pStart, LPWSTR pEnd)
 #endif
         }
     }
+
+#ifdef _DEBUG
+    size_t lines_size = pLyric->lines.size();
+    if (lines_size > 1)
+    {
+        INSIDE_LYRIC_LINE& back = pLyric->lines.back();
+
+        int len = swprintf_s(num, L"{%d}", back.interval);
+        INSIDE_LYRIC_WORD& words = back.words.emplace_back();
+        auto& words_prev = back.words[back.words.size() - 2];
+        words.start = words_prev.start + words_prev.duration;
+        words.duration = 10;
+        words.t3 = 0;
+
+        words.text = back.words.front().text - len - 1;
+        words.size = len;
+        wcscpy_s((LPWSTR)words.text, (size_t)len + 1, num);
+
+        back.text.append(num, len);
+    }
+#endif
+
 }
 
 /// <summary>

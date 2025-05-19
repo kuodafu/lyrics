@@ -4,6 +4,11 @@
 #include "charset_stl.h"
 #include "base64.h"
 
+#ifdef _DEBUG
+#   define DEBUG_SHOW_TIME 0
+#endif
+
+
 extern "C"
 {
 #include <cjson/cJSON.h>
@@ -141,6 +146,34 @@ bool lyric_decode(const void* pData, int nSize, std::wstring& krc)
     return true;
 }
 
+// 调试状态下把时间间隔加入到歌词尾部方便调试
+#if DEBUG_SHOW_TIME
+static void _dbg_append_interval_time(PINSIDE_LYRIC_INFO pLyric, size_t back_index)
+{
+    wchar_t num[50] = { 0 };
+    size_t lines_size = pLyric->lines.size();
+    if (lines_size > 1)
+    {
+        INSIDE_LYRIC_LINE& back = pLyric->lines[back_index];
+
+        int len = swprintf_s(num, L"{%d}", back.interval);
+        INSIDE_LYRIC_WORD& words = back.words.emplace_back();
+        auto& words_prev = back.words[back.words.size() - 2];
+        words.start = words_prev.start + words_prev.duration;
+        words.duration = 10;
+        words.t3 = 0;
+
+        words.text = back.words.front().text - len - 1;
+        words.size = len;
+        wcscpy_s((LPWSTR)words.text, (size_t)len + 1, num);
+
+        back.text.append(num, len);
+    }
+}
+#else
+#define _dbg_append_interval_time(x,r)
+#endif
+
 /// <summary>
 /// 解析歌词行, "[开始时间,结束时间]<开始时间,结束时间,0>字" 解析这种内容
 /// </summary>
@@ -194,7 +227,7 @@ void lyric_parse_text(PINSIDE_LYRIC_INFO pLyric, LPWSTR pStart, LPWSTR pEnd)
 
         lines.start = pfn_get_num();
         lines.duration = pfn_get_num();
-        lines.interval = -1;    // 每次都假设这个是最后一行
+        lines.interval = MAXINT;    // 每次都假设这个是最后一行
 
         // 这里开始就是 <0,1,2>字\r\n 这种格式了, 数量不一定, 需要循环解析
         while (pStart < pEnd && *pStart == L'<')
@@ -257,46 +290,12 @@ void lyric_parse_text(PINSIDE_LYRIC_INFO pLyric, LPWSTR pStart, LPWSTR pEnd)
             INSIDE_LYRIC_LINE& back = pLyric->lines[lines_size - 2];
             // 间隔 = 当前行的开始时间 减去 上一行的结束时间
             back.interval = lines.start - (back.start + back.duration);
+            _dbg_append_interval_time(pLyric, lines_size - 2);
 
-#ifdef _DEBUG
-
-            int len = swprintf_s(num, L"{%d}", back.interval);
-            INSIDE_LYRIC_WORD& words = back.words.emplace_back();
-            auto& words_prev = back.words[back.words.size() - 2];
-            words.start = words_prev.start + words_prev.duration;
-            words.duration = 10;
-            words.t3 = 0;
-
-            words.text = back.words.front().text - len - 1;
-            words.size = len;
-            wcscpy_s((LPWSTR)words.text, (size_t)len + 1, num);
-
-            back.text.append(num, len);
-#endif
         }
     }
 
-#ifdef _DEBUG
-    size_t lines_size = pLyric->lines.size();
-    if (lines_size > 1)
-    {
-        INSIDE_LYRIC_LINE& back = pLyric->lines.back();
-
-        int len = swprintf_s(num, L"{%d}", back.interval);
-        INSIDE_LYRIC_WORD& words = back.words.emplace_back();
-        auto& words_prev = back.words[back.words.size() - 2];
-        words.start = words_prev.start + words_prev.duration;
-        words.duration = 10;
-        words.t3 = 0;
-
-        words.text = back.words.front().text - len - 1;
-        words.size = len;
-        wcscpy_s((LPWSTR)words.text, (size_t)len + 1, num);
-
-        back.text.append(num, len);
-    }
-#endif
-
+    _dbg_append_interval_time(pLyric, pLyric->lines.size() - 1);
 }
 
 /// <summary>

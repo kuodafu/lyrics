@@ -91,7 +91,9 @@ HWND lyric_wnd_create(const LYRIC_WND_ARG* arg, PFN_LYRIC_WND_COMMAND pfnCommand
     wnd_info.scale(rc);
     wnd_info.shadowRadius = (float)wnd_info.scale(10);
     wnd_info.line1.align = 0;
-    wnd_info.line2.align = 0;
+    wnd_info.line2.align = 2;
+    wnd_info.mode = LYRIC_MODE::DOUBLE_ROW;
+
     const int width = rc.right - rc.left;
     const int height = rc.bottom - rc.top;
 
@@ -140,6 +142,20 @@ bool lyric_wnd_load_krc(HWND hWindowLyric, LPCVOID pKrcData, int nKrcDataLen)
     pWndInfo->nTimeOffset = lyric_behind_ahead(wnd_info.hLyric, 0);
     pWndInfo->line1.clear();
     pWndInfo->line2.clear();
+
+    int language = lyric_get_language(pWndInfo->hLyric);
+    LYRIC_WND_BUTTON_STATE b1 = __query(language, 1) ? LYRIC_WND_BUTTON_STATE_NORMAL : LYRIC_WND_BUTTON_STATE_DISABLE;
+    LYRIC_WND_BUTTON_STATE b2 = __query(language, 2) ? LYRIC_WND_BUTTON_STATE_NORMAL : LYRIC_WND_BUTTON_STATE_DISABLE;
+    lyric_wnd_set_btn_state(wnd_info, LYRIC_WND_BUTTON_ID_TRANSLATE1, b1);
+    lyric_wnd_set_btn_state(wnd_info, LYRIC_WND_BUTTON_ID_TRANSLATE2, b2);
+    lyric_wnd_set_btn_state(wnd_info, LYRIC_WND_BUTTON_ID_TRANSLATE1_SEL, b1);
+    lyric_wnd_set_btn_state(wnd_info, LYRIC_WND_BUTTON_ID_TRANSLATE2_SEL, b2);
+
+    if (language)
+        wnd_info.add_mode(LYRIC_MODE::EXISTTRANS);
+    else
+        wnd_info.del_mode(LYRIC_MODE::EXISTTRANS);
+
     if (!wnd_info.hLyric)
         return false;
 
@@ -163,6 +179,7 @@ bool lyric_wnd_load_krc(HWND hWindowLyric, LPCVOID pKrcData, int nKrcDataLen)
         }
         return 0.f;
     }, pWndInfo);
+
     return true;
 }
 

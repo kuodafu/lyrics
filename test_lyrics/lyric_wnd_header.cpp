@@ -27,6 +27,9 @@ bool LYRIC_WND_DX::re_create(LYRIC_WND_INFU* pWndInfo)
     SafeDelete(hCanvas);
     hCanvas = new CD2DRender(cxClient, cyClient);
 
+    SafeDelete(image_shadow);
+    image_shadow = __shadow_image(*hCanvas);
+
     if (!hFont)
         re_create_font(pWndInfo);
 
@@ -127,6 +130,7 @@ bool LYRIC_WND_DX::destroy(bool isDestroyFont)
     SafeDelete(hbrNormal);
     SafeDelete(hbrLight);
     SafeDelete(image);
+    SafeDelete(image_shadow);
     return true;
 }
 
@@ -195,7 +199,7 @@ LYRIC_WND_INFU::LYRIC_WND_INFU()
     rcWindow = { 0 };
     nLineDefWidth = 0;
     shadowRadius = 0.f;
-
+    mode = LYRIC_MODE::DOUBLE_ROW;
     pszDefText = L"该歌曲暂时没有歌词";
     nDefText = 9;
 

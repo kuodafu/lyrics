@@ -24,6 +24,7 @@ struct LYRIC_WND_DX
     NAMESPACE_D2D::CD2DFont* hFont;             // 绘画歌词的字体, 这个是设备无关字体, 设备失效不需要重新创建
 
     NAMESPACE_D2D::CD2DImage* image;            // 歌词窗口按钮需要的图片
+    NAMESPACE_D2D::CD2DImage* image_shadow;     // 阴影图片
     NAMESPACE_D2D::CD2DBrush* hbrBorder;        // 绘画歌词文本的边框画刷
     NAMESPACE_D2D::CD2DBrush* hbrWndBorder;     // 歌词窗口的边框画刷
     NAMESPACE_D2D::CD2DBrush* hbrWndBack;       // 歌词窗口的背景画刷
@@ -42,6 +43,7 @@ struct LYRIC_WND_DX
         hFont = nullptr;
         hCanvas = nullptr;
         image = nullptr;
+        image_shadow = nullptr;
         hbrBorder = nullptr;
         hbrWndBorder = nullptr;
         hbrWndBack = nullptr;
@@ -102,8 +104,10 @@ struct LYRIC_WND_BUTTON
 
     int     index{ -1 };    // 按钮索引, 当前鼠标移动到了哪个索引上, 这个索引就是 rcBtn 的下标
     int     indexDown{ -1 };// 按下索引
-    int     width{};      // 所有按钮的宽度
-    int     maxHeight{};  // 最大按钮的高度
+    int     width{};        // 所有按钮的宽度
+    int     height{};       // 所有按钮的高度
+    int     maxWidth{};     // 最大按钮的宽度
+    int     maxHeight{};    // 最大按钮的高度
 
 };
 
@@ -130,12 +134,15 @@ struct LYRIC_WND_DRAWTEXT_INFO
     LYRIC_LINE_STRUCT   line;       // 歌词行信息
     LYRIC_WND_CACHE_OBJ cache;      // 缓存对象指针
 
+    int         index;              // 歌词行号, 当前绘画的行号
+
     int         align;              // 对齐模式, 0=左对齐, 1=居中对齐, 2=右对齐
     D2D1_RECT_F rcText;             // 歌词文本绘画的位置, 这个位置是根据对齐模式计算的
 
+    float text_wtdth;               // 歌词文本宽度, 在绘画时会计算
+    float text_height;              // 歌词文本高度, 在绘画时会计算
+
     float nLightWidth;              // 歌词高亮位置, 大于0的话就是要绘画高亮区域
-    float layout_text_max_width;    // 文本布局的最大宽度, 这个值会比文本实际宽度大一些
-    float layout_text_max_height;   // 文本布局的最大高度, 这个值会比文本实际高度大一些
 
     LYRIC_WND_DRAWTEXT_INFO()
     {
@@ -145,12 +152,12 @@ struct LYRIC_WND_DRAWTEXT_INFO
 
     inline void clear()
     {
-        line = {0};
-        //index = -1;
+        line = {};
+        index = -1;
         rcText = {0};
         nLightWidth = 0.f;
-        layout_text_max_width = 0.f;
-        layout_text_max_height = 0.f;
+        text_wtdth = 0.f;
+        text_height = 0.f;
 
         cache.preIndex = -1;
         cache.preText = nullptr;
@@ -158,6 +165,19 @@ struct LYRIC_WND_DRAWTEXT_INFO
         cache.rcBounds = { 0 };
     }
 };
+
+enum class LYRIC_MODE : unsigned int
+{
+    DOUBLE_ROW      = 0x0000,   // 双行歌词
+    TRANSLATION1    = 0x0001,   // 翻译
+    TRANSLATION2    = 0x0002,   // 音译
+    SINGLE_ROW      = 0x0004,   // 单行显示
+
+    VERTICAL        = 0x10000,  // 竖屏模式
+    EXISTTRANS      = 0x20000,  // 存在翻译, 存在这个就判断歌词对齐模式, 否则默认双行
+
+};
+
 
 // 歌词窗口 USERDATA 里存放的是这个结构
 typedef struct LYRIC_WND_INFU
@@ -180,7 +200,24 @@ typedef struct LYRIC_WND_INFU
     RECT        rcWindow;       // 歌词窗口的位置, 整个窗口都是客户区, 这里记录的是屏幕位置, 绘画时的位置, 不保证是当前窗口的位置
     
     float       shadowRadius;   // 阴影半径
+    LYRIC_MODE  mode;           // 歌词显示模式
     
+    bool has_mode(LYRIC_MODE flag) const
+    {
+        using T = std::underlying_type_t<LYRIC_MODE>;
+        return (static_cast<T>(mode) & static_cast<T>(flag)) != 0;
+    }
+    void add_mode(LYRIC_MODE flag)
+    {
+        using T = std::underlying_type_t<LYRIC_MODE>;
+        mode = static_cast<LYRIC_MODE>(static_cast<T>(mode) | static_cast<T>(flag));
+    }
+    void del_mode(LYRIC_MODE flag)
+    {
+        using T = std::underlying_type_t<LYRIC_MODE>;
+        mode = static_cast<LYRIC_MODE>(static_cast<T>(mode) & ~static_cast<T>(flag));
+    }
+
     union
     {
         struct
@@ -198,6 +235,7 @@ typedef struct LYRIC_WND_INFU
             USHORT  change_btn : 1;     // 按钮部分是否有改变, 热点改变/按下改变等
             USHORT  change_font : 1;    // 字体有改变, 需要在绘画歌词文本的时候重新创建缓存
             USHORT  change_hbr : 1;     // 画刷有改变, 需要在绘画歌词文本的时候重新创建缓存
+            USHORT  change_trans : 1;   // 翻译部分, 需要在绘画歌词文本的时候重新创建缓存
         };    // 有窗口部分有改变的放这里, 里面的值为真的时候会往下走进行重画
         USHORT  change;
     };

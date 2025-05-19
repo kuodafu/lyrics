@@ -3,6 +3,15 @@
 
 NAMESPACE_D2D_BEGIN
 
+typedef struct EX_IMAGELOCK
+{
+    UINT width;
+    UINT height;
+    UINT stride;
+    void* pScan0;
+    IWICBitmapLock* pLock;
+}*PEX_IMAGELOCK, * LPEX_IMAGELOCK;
+
 class CD2DImage
 {
     IWICBitmapDecoder*  m_pDecoder;     // WIC位图解码器
@@ -17,6 +26,13 @@ public:
 
 public:
     ID2D1Bitmap1* GetBitmap(CD2DRender& d2dRender, HRESULT* phr = 0);
+
+    // 锁定图片数据
+    // flags = 1=读, 2=写, 3=读写
+    bool lock(UINT x, UINT y, UINT width, UINT height, DWORD flags, EX_IMAGELOCK* lockData);
+
+    // 取消锁定图片
+    bool unlock(EX_IMAGELOCK* lockData);
 
 
 private:

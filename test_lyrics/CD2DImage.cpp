@@ -151,6 +151,42 @@ ID2D1Bitmap1* CD2DImage::GetBitmap(CD2DRender& d2dRender, HRESULT* phr)
     return m_pBitmap;
 }
 
+bool CD2DImage::lock(UINT x, UINT y, UINT width, UINT height, DWORD flags, EX_IMAGELOCK* lockData)
+{
+    if (width == 0 || height == 0)
+        m_pFrame->GetSize(&width, &height);
+    
+    WICRect rc = { (INT)x, (INT)y, (INT)width, (INT)height };
+    CComPtr<IWICBitmapLock> pLock;
+    LRESULT hr = m_pFrame->Lock(&rc, flags, &pLock);
+    if (FAILED(hr))
+        return false;
+    UINT stride = 0;
+    hr = pLock->GetStride(&stride);
+    if (FAILED(hr))
+        return false;
+
+    UINT dwLen = 0;
+    WICInProcPointer pbData;
+    hr = pLock->GetDataPointer(&dwLen, &pbData);
+
+    if (FAILED(hr))
+        return false;
+
+    lockData->width = width;
+    lockData->height = height;
+    lockData->pLock = pLock;
+    lockData->pScan0 = pbData;
+    lockData->stride = stride;
+
+    pLock.Detach();
+    return true;
+}
+bool CD2DImage::unlock(EX_IMAGELOCK* lockData)
+{
+    SafeRelease(lockData->pLock);
+    return true;
+}
 void CD2DImage::_img_create_fromstream(IStream* stream)
 {
     auto& d2dInfo = d2d_get_info();

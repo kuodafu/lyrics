@@ -146,40 +146,70 @@ bool lrc_click_translate(LYRIC_WND_INFU& wnd_info, int id)
     {
     case LYRIC_WND_BUTTON_ID_TRANSLATE2:    // 音译按钮
         item.id = LYRIC_WND_BUTTON_ID_TRANSLATE2_SEL;
-        // 需要切换到 上面显示歌词文本, 下面显示音译文本的模式, 两个都居中对齐
+        wnd_info.add_mode(LYRIC_MODE::TRANSLATION2);
+        lrc_click_translate(wnd_info, LYRIC_WND_BUTTON_ID_TRANSLATE1_SEL);
         break;
     case LYRIC_WND_BUTTON_ID_TRANSLATE2_SEL:// 音译按钮, 选中模式
         item.id = LYRIC_WND_BUTTON_ID_TRANSLATE2;
-        // 切换回原来的歌词模式
+        wnd_info.del_mode(LYRIC_MODE::TRANSLATION2);
         break;
     case LYRIC_WND_BUTTON_ID_TRANSLATE1:    // 翻译按钮
         item.id = LYRIC_WND_BUTTON_ID_TRANSLATE1_SEL;
-        // 需要切换到 上面显示歌词文本, 下面显示翻译文本的模式, 两个都居中对齐
+        wnd_info.add_mode(LYRIC_MODE::TRANSLATION1);
+        lrc_click_translate(wnd_info, LYRIC_WND_BUTTON_ID_TRANSLATE2_SEL);
         break;
     case LYRIC_WND_BUTTON_ID_TRANSLATE1_SEL:// 翻译按钮, 选中模式
         item.id = LYRIC_WND_BUTTON_ID_TRANSLATE1;
-        // 切换回原来的歌词模式
+        wnd_info.del_mode(LYRIC_MODE::TRANSLATION1);
         break;
     default:
         return false;
     }
+    wnd_info.change_trans = 1; // 标记需要重新绘画翻译文本
     return true;
 }
+static void _lrc_v_h_mode(LYRIC_WND_INFU& wnd_info)
+{
+    lyric_wnd_load_image_recalc(wnd_info); // 重新加载图片, 切换到竖屏模式
+    wnd_info.change_btn = 1; // 标记需要重新绘画按钮
+    const bool is_vertical = wnd_info.has_mode(LYRIC_MODE::VERTICAL);
 
+
+    RECT rc;
+    GetWindowRect(wnd_info.hWnd, &rc);
+    if (is_vertical)
+    {
+        MoveWindow(wnd_info.hWnd, rc.left, 100, wnd_info.nMinWidth, 800, TRUE);
+
+    }
+    else
+    {
+        MoveWindow(wnd_info.hWnd, rc.left, rc.top, rc.right - rc.left, wnd_info.nMinHeight, TRUE);
+    }
+}
 void lrc_click_vmode(LYRIC_WND_INFU& wnd_info, int id)
 {
-    MessageBoxW(wnd_info.hWnd, L"切换到竖屏模式", L"提示", MB_OK);
+    LYRIC_WND_BUTTON_INFO* pItem = lrc_click_get_item(wnd_info, id);
+    if (pItem == nullptr)
+        return;
+    pItem->id = LYRIC_WND_BUTTON_ID_HORIZONTAL;
+    wnd_info.add_mode(LYRIC_MODE::VERTICAL);
+    _lrc_v_h_mode(wnd_info);
 }
 
 void lrc_click_hmode(LYRIC_WND_INFU& wnd_info, int id)
 {
-    MessageBoxW(wnd_info.hWnd, L"切换到横屏模式", L"提示", MB_OK);
+    LYRIC_WND_BUTTON_INFO* pItem = lrc_click_get_item(wnd_info, id);
+    if (pItem == nullptr)
+        return;
+    pItem->id = LYRIC_WND_BUTTON_ID_VERTICAL;
+    wnd_info.del_mode(LYRIC_MODE::VERTICAL);
+    _lrc_v_h_mode(wnd_info);
 }
 
 void lrc_click_makelrc(LYRIC_WND_INFU& wnd_info, int id)
 {
     MessageBoxW(wnd_info.hWnd, L"弹出制作歌词窗口", L"提示", MB_OK);
-
 }
 
 void lrc_click_font(LYRIC_WND_INFU& wnd_info, int id)

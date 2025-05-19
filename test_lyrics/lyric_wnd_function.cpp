@@ -196,9 +196,19 @@ LRESULT CALLBACK lyric_wnd_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
     case WM_GETMINMAXINFO:
     {
         MINMAXINFO* pMMI = (MINMAXINFO*)lParam;
-        pMMI->ptMinTrackSize.x = pWndInfo->nMinWidth;
-        pMMI->ptMinTrackSize.y = pWndInfo->nMinHeight;  // 高度不让改变, 调整字体会自动改变
-        pMMI->ptMaxTrackSize.y = pWndInfo->nMinHeight;
+        const bool is_vertical = pWndInfo->has_mode(LYRIC_MODE::VERTICAL);
+        if (is_vertical)
+        {
+            pMMI->ptMinTrackSize.y = pWndInfo->nMinHeight;
+            pMMI->ptMinTrackSize.x = pWndInfo->nMinWidth;   // 宽度不让改变, 调整字体会自动改变
+            pMMI->ptMaxTrackSize.x = pWndInfo->nMinWidth;
+        }
+        else
+        {
+            pMMI->ptMinTrackSize.x = pWndInfo->nMinWidth;
+            pMMI->ptMinTrackSize.y = pWndInfo->nMinHeight;  // 高度不让改变, 调整字体会自动改变
+            pMMI->ptMaxTrackSize.y = pWndInfo->nMinHeight;
+        }
         return 0;
     }
     case WM_NCHITTEST:
@@ -249,12 +259,24 @@ LRESULT lyric_wnd_OnHitTest(LYRIC_WND_INFU& wnd_info, UINT message, WPARAM wPara
     // 转换为窗口客户区坐标
     RECT rcWindow;
     GetWindowRect(wnd_info.hWnd, &rcWindow);
-
-    // 只检测左右两边, 高度不让调整
-    if (pt.x <= rcWindow.left + borderWidth)
-        return HTLEFT;         // 左边缘
-    if (pt.x >= rcWindow.right - borderWidth)
-        return HTRIGHT;        // 右边缘
+    
+    const bool is_vertical = wnd_info.has_mode(LYRIC_MODE::VERTICAL);
+    if (is_vertical)
+    {
+        // 纵向, 只检测上下两边, 宽度不让调整
+        if (pt.y <= rcWindow.top + borderWidth)
+            return HTTOP;          // 上边缘
+        if (pt.y >= rcWindow.bottom - borderWidth)
+            return HTBOTTOM;       // 下边缘
+    }
+    else
+    {
+        // 只检测左右两边, 高度不让调整
+        if (pt.x <= rcWindow.left + borderWidth)
+            return HTLEFT;         // 左边缘
+        if (pt.x >= rcWindow.right - borderWidth)
+            return HTRIGHT;        // 右边缘
+    }
 
     //// 检测鼠标是否在窗口边缘
     //if (pt.x <= rcWindow.left + borderWidth && pt.y <= rcWindow.top + borderWidth)

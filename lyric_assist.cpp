@@ -1,6 +1,8 @@
 #include "lyric_typedef.h"
 using namespace LYRIC_NAMESPACE;
 
+// 内部使用, 根据解析酷狗歌词的type确定歌词是否有翻译/音译, 1=翻译, 2=音译
+int _lyric_get_type_kg(int type);
 
 void LYRICCALL lyric_free(void* pStr)
 {
@@ -95,6 +97,7 @@ bool LYRICCALL lyric_get_line(HLYRIC hLyric, int indexLine, PLYRIC_LINE_STRUCT p
         if (language_size > 2)
             __debugbreak(); // 一般就一个翻译, 一个音译, 暂时没见过超过两个的, 超过的话断下查看一些
 
+        pRet->nType = lyric_get_language(hLyric);
         if (language_size > 0)
         {
             for (size_t i = 0; i < language_size; i++)
@@ -102,10 +105,12 @@ bool LYRICCALL lyric_get_line(HLYRIC hLyric, int indexLine, PLYRIC_LINE_STRUCT p
                 auto& item = pLyric->language[i];
                 if (!item.lines.empty())
                 {
+                    // type解析出来 0=音译, 1=翻译
+                    // 记录到变量里0=没有, 1=翻译, 2=音译, 3=两者都有
                     if (item.type == 0)
-                        pTranslate1 = &item.lines;
-                    else if (item.type == 1)
                         pTranslate2 = &item.lines;
+                    else if (item.type == 1)
+                        pTranslate1 = &item.lines;
                 }
             }
         }
@@ -116,14 +121,17 @@ bool LYRICCALL lyric_get_line(HLYRIC hLyric, int indexLine, PLYRIC_LINE_STRUCT p
             if (line.width == 0 && pLyric->pfnCalcText)
             {
                 // 这一行没有计算字宽度, 这里计算一下
-                float left = 0;
+                float left = 0.f, top = 0.f;
                 for (auto& word : line.words)
                 {
                     word.width = pLyric->pfnCalcText(pLyric->pUserData, word.text, word.size, &word.height);
                     word.left = left;
+                    word.top = top;
                     left += word.width;
+                    top += word.height;
                 }
                 line.width = left;
+                line.height = top;
             }
 
 
@@ -140,6 +148,7 @@ bool LYRICCALL lyric_get_line(HLYRIC hLyric, int indexLine, PLYRIC_LINE_STRUCT p
             pRet->nEnd          = line.start + line.duration;
             pRet->nWordCount    = (int)line.words.size();
             pRet->nWidth        = line.width;
+            pRet->nHeight       = line.height;
 
             return true;
         }
@@ -246,21 +255,6 @@ const wchar_t* LYRICCALL lyric_get_word_str(HLYRIC hLyric, int indexLine, int in
     return L"";
 }
 
-int LYRICCALL lyric_get_line_all_str(HLYRIC hLyric, const wchar_t** pArrayBuffer, int nBufferCount)
-{
-    auto pLyric = (PINSIDE_LYRIC_INFO)hLyric;
-    if (pLyric && pArrayBuffer && nBufferCount > 0)
-    {
-        int nCount = (int)pLyric->lines.size();
-        if (nCount > nBufferCount)
-            nCount = nBufferCount;
-        for (int i = 0; i < nCount; i++)
-            pArrayBuffer[i] = pLyric->lines[i].text.c_str();
-        return nCount;
-    }
-    return 0;
-}
-
 int LYRICCALL lyric_get_word_all_str(HLYRIC hLyric, int indexLine, const wchar_t** pArrayBuffer, int nBufferCount)
 {
     auto pLyric = (PINSIDE_LYRIC_INFO)hLyric;
@@ -280,8 +274,67 @@ int LYRICCALL lyric_get_word_all_str(HLYRIC hLyric, int indexLine, const wchar_t
     return 0;
 }
 
-wchar_t* LYRICCALL lyric_to_lrc(HLYRIC hLyric, int indexLine, int indexWord)
+int LYRICCALL lyric_get_line_all_str(HLYRIC hLyric, const wchar_t** pArrayBuffer, int nBufferCount)
 {
+    auto pLyric = (PINSIDE_LYRIC_INFO)hLyric;
+    if (pLyric && pArrayBuffer && nBufferCount > 0)
+    {
+        int nCount = (int)pLyric->lines.size();
+        if (nCount > nBufferCount)
+            nCount = nBufferCount;
+        for (int i = 0; i < nCount; i++)
+            pArrayBuffer[i] = pLyric->lines[i].text.c_str();
+        return nCount;
+    }
+    return 0;
+}
+
+wchar_t* LYRICCALL lyric_to_lrc(HLYRIC hLyric)
+{
+    if (!hLyric)
+        return nullptr;
+
+    /*
+    * 
+        [al:专辑名]
+        [ar:歌手名]
+        [au:歌词作者-作曲家]
+        [by:此LRC文件的创建者]
+        [offset:+/- 时间补偿值，以毫秒为单位，正值表示加快，负值表示延后]
+        [re:创建此LRC文件的播放器或编辑器]
+        [ti:歌词(歌曲)的标题]
+        [ve:程序的版本]
+    * 
+    */
+
+    auto pLyric = (PINSIDE_LYRIC_INFO)hLyric;
+    std::wstring lrc;
+    lrc.reserve(pLyric->lines.size() * 30); // 假设每行有30个字符
+
+    lrc.append(L"[al:").append(pLyric->al).append(L"]\r\n");
+    lrc.append(L"[ar:").append(pLyric->ar).append(L"]\r\n");
+    lrc.append(L"[by:").append(pLyric->by).append(L"]\r\n");
+    lrc.append(L"[ti:").append(pLyric->ti).append(L"]\r\n");
+    lrc.append(L"[offset:").append(pLyric->offset).append(L"]\r\n");
+
+    wchar_t szTime[40] = { 0 };
+
+    for (auto& line : pLyric->lines)
+    {
+        int s = line.start / 1000;
+        int m = s / 60;
+        int ms = line.start % 1000 / 10;
+        swprintf_s(szTime, L"[%02d:%02d.%02d]", m, s, ms);
+        lrc.append(szTime).append(line.text).append(L"\r\n");
+    }
+
+    if (!lrc.empty())
+    {
+        size_t len = lrc.size() + 1;
+        auto ret = (wchar_t*)malloc(len * 2);
+        memcpy(ret, lrc.c_str(), len * 2);
+        return ret;
+    }
 
     return nullptr;
 }
@@ -295,13 +348,17 @@ int LYRICCALL lyric_get_language(HLYRIC hLyric)
         for (auto& item : pLyric->language)
         {
             if (!item.lines.empty())
-            {
-                if (item.type == 0)
-                    ret |= 1;
-                else if (item.type == 1)
-                    ret |= 2;
-            }
+                ret |= _lyric_get_type_kg(item.type);
         }
     }
     return ret;
+}
+
+int _lyric_get_type_kg(int type)
+{
+    if (type == 0)
+        return 2;
+    if (type == 1)
+        return 1;
+    return 0;
 }

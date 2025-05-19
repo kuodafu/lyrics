@@ -192,6 +192,14 @@ void EnumerateKRCFiles(const std::wstring& directory) {
         auto p = lyric_parse((LPBYTE)data.c_str(), (int)data.size());
         LYRIC_CALC_STRUCT arg{};
 
+        int a = lyric_get_language(p);
+        if (a == 3)
+        {
+            OutputDebugStringW(L"这个歌词有双翻译: ");
+            OutputDebugStringW(filePath.c_str());
+            OutputDebugStringW(L"\n");
+        }
+
         // 定义随机数分布范围
         std::uniform_int_distribution<> dis(0, 400000);
         int r = dis(gen);
@@ -237,14 +245,20 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         m_list.InsertColumn(2, L"路径", 420);
         EnumerateMP3Files(LR"(I:\音乐\)");
 
-        //LPCWSTR file = LR"(I:\音乐\The Tech Thieves - Fake.mp3)";
-        //LPCWSTR file = LR"(I:\音乐\音乐\低调组合 - 终点起点.mp3)";
-        //LPCWSTR file = LR"(I:\音乐\音乐\低调组合 - 夜空中最亮的星.mp3)";
-        //LPCWSTR file = LR"(I:\音乐\陈奕迅 - 淘汰.mp3)";
-        //LPCWSTR file = LR"(I:\音乐\周杰伦\10-2006-依然范特西\周杰伦 - 本草纲目.mp3)";
-        //LPCWSTR file = LR"(I:\音乐\音乐\王菲 - 但愿人长久.mp3)";
-        LPCWSTR file = LR"(I:\音乐\音乐\Beyoncé - Halo.mp3)";
-        m_hStream = BASS_StreamCreateFile(FALSE, file, 0, 0, BASS_SAMPLE_FLOAT);
+        std::vector<LPCWSTR> files =
+        {
+            LR"(I:\音乐\The Tech Thieves - Fake.mp3)",
+            LR"(I:\音乐\音乐\低调组合 - 终点起点.mp3)",
+            LR"(I:\音乐\音乐\低调组合 - 夜空中最亮的星.mp3)",
+            LR"(I:\音乐\陈奕迅 - 淘汰.mp3)",
+            LR"(I:\音乐\周杰伦\10-2006-依然范特西\周杰伦 - 本草纲目.mp3)",
+            LR"(I:\音乐\音乐\王菲 - 但愿人长久.mp3)",
+            LR"(I:\音乐\音乐\Beyoncé - Halo.mp3)",
+            LR"(I:\音乐\音乐\和田光司 - Butter-Fly - tri.mp3)"
+        };
+
+
+        m_hStream = BASS_StreamCreateFile(FALSE, files.back(), 0, 0, BASS_SAMPLE_FLOAT);
         if (m_hStream)
         {
             BASS_ChannelPlay(m_hStream, FALSE);
@@ -264,15 +278,18 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         //_th.detach();
         // 枚举  目录下所有 krc文件
         //EnumerateKRCFiles(LR"(J:\cahce\kugou\Lyric)");
-        //LPCWSTR krc1 = LR"(J:\cahce\kugou\Lyric\The Tech Thieves - Fake-cf6d70385ebd673a9f423ed466bd200d-125671670-00000000.krc)";
-        //LPCWSTR krc1 = LR"(J:\cahce\kugou\Lyric\低调组合 - 终点起点-6257a78a9df6fb551f2324dbc08b4cf7-121741063-00000000.krc)";
-        //LPCWSTR krc1 = LR"(T:\移动机械硬盘\E源码备份\易语言备份\1自己写的源码\实用工具\播放器\lrc\低调组合 - 夜空中最亮的星.krc)";
-        //LPCWSTR krc1 = LR"(J:\cahce\kugou\Lyric\陈奕迅 - 淘汰-ea514c1f8eaee9f24dcd1f26575bac4f-135600792-00000000.krc)";
-        //LPCWSTR krc1 = LR"(J:\cahce\kugou\Lyric\周杰伦 - 本草纲目-50f657c1d53e3acb1381ef97e5cfabd2-108581021-00000000.krc)";
-        //LPCWSTR krc1 = LR"(J:\cahce\kugou\Lyric\王菲 - 但愿人长久-001e34650e0104930a54d570cb43f994-38649663-00000000.krc)";
-        LPCWSTR krc1 = LR"(J:\cahce\kugou\Lyric\Beyoncé - Halo-664a1f011f5751605630c6575de7e96f-202187358-00000000.krc)";
+        std::vector<LPCWSTR> krcs =
+        {
+            LR"(J:\cahce\kugou\Lyric\The Tech Thieves - Fake-cf6d70385ebd673a9f423ed466bd200d-125671670-00000000.krc)",
+            LR"(J:\cahce\kugou\Lyric\低调组合 - 终点起点-6257a78a9df6fb551f2324dbc08b4cf7-121741063-00000000.krc)",
+            LR"(T:\移动机械硬盘\E源码备份\易语言备份\1自己写的源码\实用工具\播放器\lrc\低调组合 - 夜空中最亮的星.krc)",
+            LR"(J:\cahce\kugou\Lyric\陈奕迅 - 淘汰-ea514c1f8eaee9f24dcd1f26575bac4f-135600792-00000000.krc)",
+            LR"(J:\cahce\kugou\Lyric\周杰伦 - 本草纲目-50f657c1d53e3acb1381ef97e5cfabd2-108581021-00000000.krc)",
+            LR"(J:\cahce\kugou\Lyric\王菲 - 但愿人长久-001e34650e0104930a54d570cb43f994-38649663-00000000.krc)",
+            LR"(J:\cahce\kugou\Lyric\和田光司 - Butter-Fly - tri-073ce978dbff1f0ecf82304a0097369b-202443788-00000000.krc)",
+        };
         std::string data;
-        read_file(krc1, data);
+        read_file(krcs.back(), data);
         LYRIC_WND_ARG arg{};
         lyric_wnd_get_default_arg(&arg);
         arg.rcWindow = { 300, 800, 1000, 1000 };

@@ -18,26 +18,33 @@ struct INSIDE_LYRIC_WORD
     int     t3;         // 暂时不知道这个值是干嘛的, 看了一下, 好像都是0
     float   width;      // 这一个字占用的文本宽度, 为0就是没有计算
     float   left;       // 前面所有字的宽度之和, 这个字的左边距
-    float   height;     // 这一个字占用的文本高度, 目前没什么用, 先记录着, 后续做什么个性歌词的时候会用到
+    float   top;        // 前面所有字的高度之和, 这个字的顶边距, 纵向歌词使用
+    float   height;     // 这一个字占用的文本高度
     LPCWSTR text;       // 歌词内容, 这里的指针是指向歌词对象里的 krc 字符串里的字
     int     size;       // 这个字的字符数
     INSIDE_LYRIC_WORD()
     {
         start = duration = t3 = size = 0;
         width = height = 0.0f;
+        top = 0.f;
         text = nullptr;
         left = 0;
     }
 };
 using INSIDE_LYRIC_WORDS = std::vector<INSIDE_LYRIC_WORD>;
 
+#ifndef MAXINT
+#define MAXINT ((INT)(((UINT)~((UINT)0)) >> 1))
+#endif
+
 // 一行歌词的结构, 记录这一行的开始时间, 持续时间, 歌词内容, 以及每一个字的结构
 struct INSIDE_LYRIC_LINE
 {
-    int                 start;      // 开始时间是基于这一行时间的开始
-    int                 duration;   // 这个字持续的时间
-    int                 interval;   // 距离下一行的间隔时间, 单位是毫秒, -1表示是最后一行
+    int                 start;      // 这一行的开始时间
+    int                 duration;   // 这一行持续的时间
+    int                 interval;   // 距离下一行的间隔时间, 单位是毫秒, MAXINT表示是最后一行
     float               width;      // 这一行歌词占用的文本宽度
+    float               height;     // 这一行歌词占用的文本高度, 纵向歌词使用
     std::wstring        text;       // 这一整行的歌词内容
     INSIDE_LYRIC_WORDS  words;      // 每一个字的结构
 
@@ -45,6 +52,7 @@ struct INSIDE_LYRIC_LINE
     {
         start = duration = 0;
         width = 0;
+        height = 0;
         interval = 0;
     }
 };

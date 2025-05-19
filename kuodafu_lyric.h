@@ -5,7 +5,6 @@ DECLARE_HANDLE(HLYRIC);
 
 #define LYRICCALL __stdcall
 
-
 struct LYRIC_LINE_STRUCT
 {
     const wchar_t*  pText;      // 行歌词文本
@@ -19,7 +18,9 @@ struct LYRIC_LINE_STRUCT
     int             nEnd;       // 行歌词结束时间, 单位是毫秒
     int             nWordCount; // 这一行歌词的字数, 英文是单词数, 这里的字不是字符也不是字节, 是根据歌词内容决定的
     
+    int             nType;      // 歌词类型, 1=有翻译, 2=有音译, 3=两者结合, 0=没有翻译或音译
     float           nWidth;     // 这一行文本占用的宽度, 单位是像素, 没有设置计算文本回调时值为0
+    float           nHeight;    // 这一行文本占用的高度, 单位是像素, 没有设置计算文本回调时值为0, 纵向使用
 };
 
 struct LYRIC_WORD_STRUCT
@@ -117,7 +118,7 @@ void LYRICCALL lyric_free(void* pStr);
 bool LYRICCALL lyric_calc_text_width(HLYRIC hLyric, LYRIC_PARSE_CALCTEXT pfnCalcText, void* pUserData);
 
 /// <summary>
-/// 重新计算歌词文字的宽度, 调用这个函数会重新计算歌词占用宽度, 用来确定歌词高亮位置, 字体被改变时调用
+/// 重新计算歌词文字的宽度, 调用这个函数会重新计算歌词占用宽度, 用来确定歌词高亮位置, 一般是字体被改变时调用
 /// </summary>
 /// <param name="hLyric">歌词句柄</param>
 /// <returns>返回是否处理成功</returns>
@@ -244,7 +245,7 @@ int LYRICCALL lyric_get_line_all_str(HLYRIC hLyric, const wchar_t** pArrayBuffer
 /// </summary>
 /// <param name="hLyric">歌词句柄</param>
 /// <returns>返回歌词文本指针, 失败返回0, 不使用时需要调用 lyric_free() 释放</returns>
-wchar_t* LYRICCALL lyric_to_lrc(HLYRIC hLyric, int indexLine, int indexWord);
+wchar_t* LYRICCALL lyric_to_lrc(HLYRIC hLyric);
 
 /// <summary>
 /// 获取歌词语言信息, 翻译歌词使用

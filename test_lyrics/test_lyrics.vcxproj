@@ -136,6 +136,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\cpp\_git_works\CommonCode\d2d\Color.h" />
+    <ClInclude Include="CCustomTextRenderer.h" />
     <ClInclude Include="CD2DBrush.h" />
     <ClInclude Include="CD2DFont.h" />
     <ClInclude Include="CD2DImage.h" />
@@ -150,6 +151,7 @@
     <ClInclude Include="tinyxml2.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="CCustomTextRenderer.cpp" />
     <ClCompile Include="CD2DBrush.cpp" />
     <ClCompile Include="CD2DFont.cpp" />
     <ClCompile Include="CD2DImage.cpp" />

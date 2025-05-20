@@ -6,13 +6,13 @@ using namespace NAMESPACE_D2D;
 
 NAMESPACE_LYRIC_WND_BEGIN
 
-bool _lyric_parse_xml(LYRIC_WND_INFU& wnd_info);
+bool _lyric_parse_xml(LYRIC_WND_INFO& wnd_info);
 LPCSTR _lyric_get_resource(int id, LPCWSTR type, DWORD* pSize);
 
 
-bool lyric_wnd_load_image_parse(LYRIC_WND_INFU& wnd_info, tinyxml2::XMLNode* node);
+bool lyric_wnd_load_image_parse(LYRIC_WND_INFO& wnd_info, tinyxml2::XMLNode* node);
 
-bool lyric_wnd_load_image_recalc(LYRIC_WND_INFU& wnd_info)
+bool lyric_wnd_load_image_recalc(LYRIC_WND_INFO& wnd_info)
 {
     if (!wnd_info.dx.image)
         lyric_wnd_load_image(wnd_info);
@@ -113,7 +113,7 @@ bool lyric_wnd_load_image_recalc(LYRIC_WND_INFU& wnd_info)
 }
 
 // 有可能被多次调用, 所以需要每次都清空一下, 设备失效的时候会重新调用
-bool lyric_wnd_load_image(LYRIC_WND_INFU& wnd_info)
+bool lyric_wnd_load_image(LYRIC_WND_INFO& wnd_info)
 {
     DWORD png_size = 0;
     LPCSTR png = _lyric_get_resource(IDR_PNG_LYRIC, L"PNG", &png_size);
@@ -123,7 +123,7 @@ bool lyric_wnd_load_image(LYRIC_WND_INFU& wnd_info)
     return lyric_wnd_load_image_recalc(wnd_info);
 }
 
-void lyric_wnd_calc_height(LYRIC_WND_INFU& wnd_info)
+void lyric_wnd_calc_height(LYRIC_WND_INFO& wnd_info)
 {
     const int _10 = wnd_info.scale(10);
     const int _20 = _10 * 2;
@@ -133,21 +133,21 @@ void lyric_wnd_calc_height(LYRIC_WND_INFU& wnd_info)
     if (is_vertical)
     {
         wnd_info.nLineTop1 = wnd_info.button.maxWidth + _20;
-        wnd_info.nLineTop2 = wnd_info.nLineTop1 + (int)wnd_info.nLineHeight + _10;
-        wnd_info.nMinWidth = wnd_info.nLineTop2 + (int)wnd_info.nLineHeight + _10;
+        wnd_info.nLineTop2 = wnd_info.nLineTop1 + (int)wnd_info.word_width + _10;
+        wnd_info.nMinWidth = wnd_info.nLineTop2 + (int)wnd_info.word_width + _10;
         wnd_info.nMinHeight = wnd_info.button.height + _50;;
     }
     else
     {
         wnd_info.nLineTop1 = wnd_info.button.maxHeight + _20;
-        wnd_info.nLineTop2 = wnd_info.nLineTop1 + (int)wnd_info.nLineHeight + _10;
+        wnd_info.nLineTop2 = wnd_info.nLineTop1 + (int)wnd_info.word_height + _10;
         wnd_info.nMinWidth = wnd_info.button.width + _50;
-        wnd_info.nMinHeight = wnd_info.nLineTop2 + (int)wnd_info.nLineHeight + _10;
+        wnd_info.nMinHeight = wnd_info.nLineTop2 + (int)wnd_info.word_height + _10;
     }
 
 
 }
-bool _lyric_parse_xml(LYRIC_WND_INFU& wnd_info)
+bool _lyric_parse_xml(LYRIC_WND_INFO& wnd_info)
 {
     DWORD xml_size = 0;
     LPCSTR xml = _lyric_get_resource(IDR_XML_LYRIC, L"XML", &xml_size);
@@ -190,7 +190,7 @@ LPCSTR _lyric_get_resource(int id, LPCWSTR type, DWORD* pSize)
     return nullptr;
 }
 // 解析xml里的位置信息, 记录起来
-bool lyric_wnd_load_image_parse(LYRIC_WND_INFU& wnd_info, tinyxml2::XMLNode* node)
+bool lyric_wnd_load_image_parse(LYRIC_WND_INFO& wnd_info, tinyxml2::XMLNode* node)
 {
     tinyxml2::XMLElement* ele = node->ToElement();
 
@@ -226,7 +226,7 @@ bool lyric_wnd_load_image_parse(LYRIC_WND_INFU& wnd_info, tinyxml2::XMLNode* nod
 
 
 
-int lyric_wnd_calc_button(LYRIC_WND_INFU& wnd_info, int& maxWidth, int& maxHeight, int offset)
+int lyric_wnd_calc_button(LYRIC_WND_INFO& wnd_info, int& maxWidth, int& maxHeight, int offset)
 {
     int& height = wnd_info.button.height;
     int width = 0;

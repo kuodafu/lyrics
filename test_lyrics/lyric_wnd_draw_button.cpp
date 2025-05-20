@@ -7,7 +7,7 @@ using namespace NAMESPACE_D2D;
 
 NAMESPACE_LYRIC_WND_BEGIN
 
-void lyric_wnd_draw_button(LYRIC_WND_INFU& wnd_info, const RECT& rcWindow)
+void lyric_wnd_draw_button(LYRIC_WND_INFO& wnd_info, const RECT& rcWindow)
 {
     if (!wnd_info.isFillBack)
         return;

@@ -6,23 +6,23 @@ using namespace NAMESPACE_D2D;
 NAMESPACE_LYRIC_WND_BEGIN
 
 // 绘画双行歌词
-void lyric_wnd_draw_double_row(LYRIC_WND_INFU& wnd_info, LYRIC_CALC_STRUCT& arg, const RECT& rcWindow);
+void lyric_wnd_draw_double_row(LYRIC_WND_INFO& wnd_info, LYRIC_CALC_STRUCT& arg, const RECT& rcWindow);
 
 // 绘画单行歌词
-void lyric_wnd_draw_single_row(LYRIC_WND_INFU& wnd_info, LYRIC_CALC_STRUCT& arg, const RECT& rcWindow);
+void lyric_wnd_draw_single_row(LYRIC_WND_INFO& wnd_info, LYRIC_CALC_STRUCT& arg, const RECT& rcWindow);
 
 // 绘画翻译/音译歌词, 这里肯定是双行
-void lyric_wnd_draw_translate(LYRIC_WND_INFU& wnd_info, LYRIC_CALC_STRUCT& arg, const RECT& rcWindow);
+void lyric_wnd_draw_translate(LYRIC_WND_INFO& wnd_info, LYRIC_CALC_STRUCT& arg, const RECT& rcWindow);
 
-void lyric_wnd_draw_line(LYRIC_WND_INFU& wnd_info, LYRIC_WND_DRAWTEXT_INFO& line_info, int nDrawLineIndex);
+void lyric_wnd_draw_line(LYRIC_WND_INFO& wnd_info, LYRIC_WND_DRAWTEXT_INFO& line_info, int nDrawLineIndex);
 
 // 把缓存的文本绘画出来
-void lyric_wnd_draw_cache_text(LYRIC_WND_INFU& wnd_info, LYRIC_WND_DRAWTEXT_INFO& draw_info, int nDrawLineIndex);
+void lyric_wnd_draw_cache_text(LYRIC_WND_INFO& wnd_info, LYRIC_WND_DRAWTEXT_INFO& draw_info, int nDrawLineIndex);
 
 
 
 // 绘画歌词文本的函数, 在这个函数把文本绘画出来
-void lyric_wnd_draw_lyric(LYRIC_WND_INFU& wnd_info, LYRIC_CALC_STRUCT& arg)
+void lyric_wnd_draw_lyric(LYRIC_WND_INFO& wnd_info, LYRIC_CALC_STRUCT& arg)
 {
     const RECT& rcWindow = wnd_info.rcWindow;
 
@@ -44,12 +44,14 @@ void lyric_wnd_draw_lyric(LYRIC_WND_INFU& wnd_info, LYRIC_CALC_STRUCT& arg)
 }
 
 // 绘画双行歌词
-void lyric_wnd_draw_double_row(LYRIC_WND_INFU& wnd_info, LYRIC_CALC_STRUCT& arg, const RECT& rcWindow)
+void lyric_wnd_draw_double_row(LYRIC_WND_INFO& wnd_info, LYRIC_CALC_STRUCT& arg, const RECT& rcWindow)
 {
     float nLightWidth = arg.word.nLeft + arg.nWidthWord;
+    float nLightHeight = arg.word.nTop + arg.nHeightWord;
 
     // 是否切换下一行, 当前位置超过歌词的30%后就切换到下一行
-    bool isSwitchLine = nLightWidth > arg.line.nWidth * 0.3;
+    bool isSwitchLine_H = nLightWidth > arg.line.nWidth * 0.3;
+    bool isSwitchLine_V = nLightHeight > arg.line.nHeight * 0.3;
 
     LYRIC_WND_DRAWTEXT_INFO* pLine1 = nullptr, * pLine2 = nullptr;
     if (arg.indexLine % 2 == 0)
@@ -74,30 +76,49 @@ void lyric_wnd_draw_double_row(LYRIC_WND_INFU& wnd_info, LYRIC_CALC_STRUCT& arg,
     }
 
     pLine1->line = arg.line;
-    pLine1->nLightWidth = nLightWidth;  // 当前行的高亮位置
+    pLine1->nLightWidth = nLightWidth;      // 当前行的高亮位置
+    pLine1->nLightHeight = nLightHeight;    // 当前行的高亮位置
 
-
-    // 如果需要换行, 那就获取下一行歌词信息保存到 pLine2, pLine2 高亮为0
-    if (isSwitchLine || arg.indexLine == 0)
+    if (wnd_info.has_mode(LYRIC_MODE::VERTICAL))
     {
-        if (arg.indexLine + 1 < arg.nLineCount)
-            lyric_get_line(wnd_info.hLyric, arg.indexLine + 1, &pLine2->line);
-        pLine2->nLightWidth = (arg.indexLine + 1 == arg.nLineCount) ? pLine2->line.nWidth : 0.0f;
+        // 如果需要换行, 那就获取下一行歌词信息保存到 pLine2, pLine2 高亮为0
+        if (isSwitchLine_V || arg.indexLine == 0)
+        {
+            if (arg.indexLine + 1 < arg.nLineCount)
+                lyric_get_line(wnd_info.hLyric, arg.indexLine + 1, &pLine2->line);
+            pLine2->nLightHeight = (arg.indexLine + 1 == arg.nLineCount) ? pLine2->line.nHeight : 0.0f;
+        }
+        else if (!isSwitchLine_V)
+        {
+            // 还不切换下一行, 另一行的歌词高亮是100%, 另一行歌词是当前行是上一行
+            lyric_get_line(wnd_info.hLyric, arg.indexLine - 1, &pLine2->line);
+            pLine2->nLightHeight = pLine2->line.nHeight;
+        }
     }
-    else if (!isSwitchLine)
+    else
     {
-        // 还不切换下一行, 另一行的歌词高亮是100%, 另一行歌词是当前行是上一行
-        lyric_get_line(wnd_info.hLyric, arg.indexLine - 1, &pLine2->line);
-        pLine2->nLightWidth = pLine2->line.nWidth;
+        // 如果需要换行, 那就获取下一行歌词信息保存到 pLine2, pLine2 高亮为0
+        if (isSwitchLine_H || arg.indexLine == 0)
+        {
+            if (arg.indexLine + 1 < arg.nLineCount)
+                lyric_get_line(wnd_info.hLyric, arg.indexLine + 1, &pLine2->line);
+            pLine2->nLightWidth = (arg.indexLine + 1 == arg.nLineCount) ? pLine2->line.nWidth : 0.0f;
+        }
+        else if (!isSwitchLine_H)
+        {
+            // 还不切换下一行, 另一行的歌词高亮是100%, 另一行歌词是当前行是上一行
+            lyric_get_line(wnd_info.hLyric, arg.indexLine - 1, &pLine2->line);
+            pLine2->nLightWidth = pLine2->line.nWidth;
+        }
     }
 
 }
 
-void lyric_wnd_draw_single_row(LYRIC_WND_INFU& wnd_info, LYRIC_CALC_STRUCT& arg, const RECT& rcWindow)
+void lyric_wnd_draw_single_row(LYRIC_WND_INFO& wnd_info, LYRIC_CALC_STRUCT& arg, const RECT& rcWindow)
 {
 }
 
-void lyric_wnd_draw_translate(LYRIC_WND_INFU& wnd_info, LYRIC_CALC_STRUCT& arg, const RECT& rcWindow)
+void lyric_wnd_draw_translate(LYRIC_WND_INFO& wnd_info, LYRIC_CALC_STRUCT& arg, const RECT& rcWindow)
 {
     float nLightWidth = arg.word.nLeft + arg.nWidthWord;
 
@@ -113,7 +134,7 @@ void lyric_wnd_draw_translate(LYRIC_WND_INFU& wnd_info, LYRIC_CALC_STRUCT& arg, 
 
 }
 
-void lyric_wnd_draw_line(LYRIC_WND_INFU& wnd_info, LYRIC_WND_DRAWTEXT_INFO& line_info, int nDrawLineIndex)
+void lyric_wnd_draw_line(LYRIC_WND_INFO& wnd_info, LYRIC_WND_DRAWTEXT_INFO& line_info, int nDrawLineIndex)
 {
     //TODO 这里可以做个判定选择哪种方式绘画歌词文本
     decltype(lyric_wnd_draw_text_geometry)* pfn_create_cache_bitmap = nullptr;
@@ -143,12 +164,12 @@ void lyric_wnd_draw_line(LYRIC_WND_INFU& wnd_info, LYRIC_WND_DRAWTEXT_INFO& line
         pfn_create_cache_bitmap(wnd_info, line_info, nDrawLineIndex);
 
     }
-    if(nDrawLineIndex == 1)
+
     lyric_wnd_draw_cache_text(wnd_info, line_info, nDrawLineIndex);
 
 }
 
-void lyric_wnd_draw_cache_text(LYRIC_WND_INFU& wnd_info, LYRIC_WND_DRAWTEXT_INFO& draw_info, int nDrawLineIndex)
+void lyric_wnd_draw_cache_text(LYRIC_WND_INFO& wnd_info, LYRIC_WND_DRAWTEXT_INFO& draw_info, int nDrawLineIndex)
 {
     // 从缓存里把数据拿出来画到目标上
     auto pfn_draw_bitmap = [&](ID2D1Bitmap* pBitmap)
@@ -170,10 +191,9 @@ void lyric_wnd_draw_cache_text(LYRIC_WND_INFU& wnd_info, LYRIC_WND_DRAWTEXT_INFO
 
         RECT& rcWindow = wnd_info.rcWindow;
 
-        const float _offset = (float)wnd_info.scale(10);
+        const float _offset = wnd_info.padding;
         //const float _offset = (draw_info.layout_text_max_height - wnd_info.nLineHeight) / 2;
         const int shadowRadius = (int)wnd_info.shadowRadius;    // 阴影向外扩散半径
-        const float shadowRadiusF = wnd_info.shadowRadius;      // 阴影向外扩散半径
 
         // 如果歌词宽度超过这个, 那就要在歌词高亮显示到窗口一半的时候调整左边位置
         const int cxScreen = rcWindow.right - rcWindow.left;        // 这个是整个窗口的宽度
@@ -183,7 +203,7 @@ void lyric_wnd_draw_cache_text(LYRIC_WND_INFU& wnd_info, LYRIC_WND_DRAWTEXT_INFO
         const D2D1_RECT_F& rcText = draw_info.rcText;
 
         // 最小的左边距离
-        const float min_left = cxBound - draw_info.text_wtdth - rcText.left + _offset / 2;
+        const float min_left = cxBound - draw_info.line.nWidth - rcText.left + _offset / 2;
 
 
         // 从位图的这个位置拿出来绘画, 就是拿整个位图数据
@@ -209,6 +229,13 @@ void lyric_wnd_draw_cache_text(LYRIC_WND_INFU& wnd_info, LYRIC_WND_DRAWTEXT_INFO
         rcBound.bottom = ((float)(rcWindow.bottom - rcWindow.top)) - wnd_info.shadowRadius;
         pRenderTarget->PushAxisAlignedClip(rcBound, D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
 
+        if (is_vertical)
+        {
+            if (nDrawLineIndex == 1)
+                text_left = (float)wnd_info.nLineTop1;
+            else
+                text_left = (float)wnd_info.nLineTop2;
+        }
 
         D2D1_RECT_F rcDst = { 0 };
         rcDst.left = text_left;
@@ -224,7 +251,7 @@ void lyric_wnd_draw_cache_text(LYRIC_WND_INFU& wnd_info, LYRIC_WND_DRAWTEXT_INFO
         {
             D2D1_RECT_F rcRgn = rcDst;
             float light_offset = 0.f;
-            if (draw_info.nLightWidth == draw_info.text_wtdth)
+            if (draw_info.nLightWidth == draw_info.text_width)
                 light_offset += _offset;
             float light_right = rcRgn.left + draw_info.nLightWidth + _offset + light_offset;
             if (isLigth)
@@ -262,7 +289,15 @@ void lyric_wnd_draw_cache_text(LYRIC_WND_INFU& wnd_info, LYRIC_WND_DRAWTEXT_INFO
         {
             // 计算高亮位置, 是通过第一行的高亮位置计算
             auto& line1 = wnd_info.line1;
-            draw_info.nLightWidth = line1.nLightWidth / line1.line.nWidth * draw_info.text_wtdth;
+            const bool is_vertical = wnd_info.has_mode(LYRIC_MODE::VERTICAL);
+            if (is_vertical)
+            {
+                draw_info.nLightHeight = line1.nLightHeight / line1.line.nHeight * draw_info.text_height;
+            }
+            else
+            {
+                draw_info.nLightWidth = line1.nLightWidth / line1.line.nWidth * draw_info.text_width;
+            }
         }
     }
 
@@ -275,7 +310,7 @@ void lyric_wnd_draw_cache_text(LYRIC_WND_INFU& wnd_info, LYRIC_WND_DRAWTEXT_INFO
 }
 
 
-void lyric_wnd_draw_calc_text_rect(LYRIC_WND_INFU& wnd_info,
+void lyric_wnd_draw_calc_text_rect(LYRIC_WND_INFO& wnd_info,
                                   LYRIC_WND_DRAWTEXT_INFO& draw_info,
                                   int nDrawLineIndex)
 {
@@ -285,9 +320,7 @@ void lyric_wnd_draw_calc_text_rect(LYRIC_WND_INFU& wnd_info,
     const int cyClient = rcWindow.bottom - rcWindow.top;
 
     const int nLeft = wnd_info.scale(16);
-    float height = (float)draw_info.text_height + wnd_info.scale(10);
-    float top = (float)(nDrawLineIndex == 1 ? wnd_info.nLineTop1 : wnd_info.nLineTop2);
-    float left = 0.f;
+
 
     int align = draw_info.align;
     if (wnd_info.has_mode(LYRIC_MODE::EXISTTRANS))
@@ -295,25 +328,57 @@ void lyric_wnd_draw_calc_text_rect(LYRIC_WND_INFU& wnd_info,
         if (wnd_info.has_mode(LYRIC_MODE::TRANSLATION1) || wnd_info.has_mode(LYRIC_MODE::TRANSLATION2))
             align = 1;  // 如果是翻译/音译, 那就强制居中对齐
     }
-    if (align == 1)
+    const bool is_vertical = wnd_info.has_mode(LYRIC_MODE::VERTICAL);
+    if (is_vertical)
     {
-        // 居中对齐
-        int nTemp = (cxClient - nLeft * 2 - (int)draw_info.text_wtdth) / 2;
-        left = (float)max(nLeft, nTemp);
-    }
-    else if (align == 2)
-    {
-        // 右对齐
-        int nTemp = cxClient - nLeft * 2 - (int)draw_info.text_wtdth;
-        left = (float)max(nLeft, nTemp);
+        float top = 0;
+        float left = (float)(nDrawLineIndex == 1 ? wnd_info.nLineTop1 : wnd_info.nLineTop2);
+        float width = (float)wnd_info.get_lyric_line_height();
+
+        if (align == 1)
+        {
+            // 居中对齐
+            int nTemp = (cyClient - nLeft * 2 - (int)draw_info.text_height) / 2;
+            top = (float)max(nLeft, nTemp);
+        }
+        else if (align == 2)
+        {
+            // 右对齐
+            int nTemp = cyClient - nLeft * 2 - (int)draw_info.text_height;
+            top = (float)max(nLeft, nTemp);
+        }
+        else
+        {
+            top = (float)nLeft;
+        }
+
+        draw_info.rcText = { left, top, left + width, top + draw_info.text_height };
     }
     else
     {
-        left = (float)nLeft;
+        float top = (float)(nDrawLineIndex == 1 ? wnd_info.nLineTop1 : wnd_info.nLineTop2);
+        float left = 0.f;
+        float height = (float)wnd_info.get_lyric_line_height();
+
+        if (align == 1)
+        {
+            // 居中对齐
+            int nTemp = (cxClient - nLeft * 2 - (int)draw_info.text_width) / 2;
+            left = (float)max(nLeft, nTemp);
+        }
+        else if (align == 2)
+        {
+            // 右对齐
+            int nTemp = cxClient - nLeft * 2 - (int)draw_info.text_width;
+            left = (float)max(nLeft, nTemp);
+        }
+        else
+        {
+            left = (float)nLeft;
+        }
+
+        draw_info.rcText = { left, top, left + draw_info.text_width, top + height };
     }
-
-    draw_info.rcText = { left, top, left + draw_info.text_wtdth, top + height };
-
 }
 
 NAMESPACE_LYRIC_WND_END

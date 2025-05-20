@@ -95,16 +95,24 @@ bool LYRICCALL lyric_calc(HLYRIC hLyric, int time, LYRIC_CALC_STRUCT* pRet)
         {
             // 下来这里是字的高亮宽度, 先计算时间百分比, 然后乘以字的宽度
             int nStartTime = 0;
-            int nEndTime = word.duration ? word.duration : 1;
-            int nNowTime = time - line.start - word.start;
+            float nEndTime = (float)(word.duration ? word.duration : 1);
+            float nNowTime = (float)(time - line.start - word.start);
 
-            int bili = (int)word.width;
-            int percentage = (nNowTime * bili + nEndTime / 2) / nEndTime;
-            int result = ((int)word.width * percentage + bili / 2) / bili;
+            float bili = word.width;
+            float percentage = (nNowTime * bili + nEndTime / 2) / nEndTime;
+            float result = (word.width * percentage + bili / 2) / bili;
             if (result > bili)
                 result = bili;
 
-            pRet->nWidthWord += result;
+            pRet->nWidthWord = result;
+
+            bili = word.height;
+            percentage = (nNowTime * bili + nEndTime / 2) / nEndTime;
+            result = (word.height * percentage + bili / 2) / bili;
+            if (result > bili)
+                result = bili;
+            pRet->nHeightWord = result;
+
 
         }
     }

@@ -5,15 +5,15 @@
 NAMESPACE_LYRIC_WND_BEGIN
 
 // 设置提示信息
-void lyric_wnd_set_tips(LYRIC_WND_INFU& wnd_info, LPCWSTR pszTips);
+void lyric_wnd_set_tips(LYRIC_WND_INFO& wnd_info, LPCWSTR pszTips);
 
 // 隐藏提示信息
-void lyric_wnd_hide_tips(LYRIC_WND_INFU& wnd_info);
+void lyric_wnd_hide_tips(LYRIC_WND_INFO& wnd_info);
 
 
 
 // 鼠标悬停在按钮上, 处理一下提示信息
-void lyric_wnd_button_hover(LYRIC_WND_INFU& wnd_info)
+void lyric_wnd_button_hover(LYRIC_WND_INFO& wnd_info)
 {
     auto& item = wnd_info.button.rcBtn[wnd_info.button.index];
     LPCWSTR pszTips = nullptr;
@@ -128,13 +128,13 @@ void lyric_wnd_button_hover(LYRIC_WND_INFU& wnd_info)
 
 }
 
-void lyric_wnd_button_leave(LYRIC_WND_INFU& wnd_info)
+void lyric_wnd_button_leave(LYRIC_WND_INFO& wnd_info)
 {
     lyric_wnd_hide_tips(wnd_info);
 }
 
 
-void lyric_wnd_set_tips(LYRIC_WND_INFU& wnd_info, LPCWSTR pszTips)
+void lyric_wnd_set_tips(LYRIC_WND_INFO& wnd_info, LPCWSTR pszTips)
 {
     TTTOOLINFOW ti = { 0 };
     ti.cbSize = sizeof(ti);
@@ -146,7 +146,7 @@ void lyric_wnd_set_tips(LYRIC_WND_INFU& wnd_info, LPCWSTR pszTips)
 
 }
 
-void lyric_wnd_hide_tips(LYRIC_WND_INFU& wnd_info)
+void lyric_wnd_hide_tips(LYRIC_WND_INFO& wnd_info)
 {
     TTTOOLINFOW ti = { 0 };
     ti.cbSize = sizeof(ti);

@@ -1,4 +1,5 @@
 #include "lyric_wnd_function.h"
+#include "CCustomTextRenderer.h"
 
 using namespace NAMESPACE_D2D;
 
@@ -14,9 +15,9 @@ inline void SafeDelete(_Ty*& p)
     p = nullptr;
 }
 
-bool LYRIC_WND_DX::re_create(LYRIC_WND_INFU* pWndInfo)
+bool LYRIC_WND_DX::re_create(LYRIC_WND_INFO* pWndInfo)
 {
-    LYRIC_WND_INFU& wnd_info = *pWndInfo;
+    LYRIC_WND_INFO& wnd_info = *pWndInfo;
     auto& clrNormal = wnd_info.clrNormal;
     auto& clrLight = wnd_info.clrLight;
     RECT rc;
@@ -52,11 +53,11 @@ bool LYRIC_WND_DX::re_create(LYRIC_WND_INFU* pWndInfo)
     return true;
 }
 
-bool LYRIC_WND_DX::re_create_brush(LYRIC_WND_INFU* pWndInfo, bool isLight)
+bool LYRIC_WND_DX::re_create_brush(LYRIC_WND_INFO* pWndInfo, bool isLight)
 {
     DWORD* pClr;
     int size;
-    LYRIC_WND_INFU& wnd_info = *pWndInfo;
+    LYRIC_WND_INFO& wnd_info = *pWndInfo;
     NAMESPACE_D2D::CD2DBrush_LinearGradient** ppBrush;
     if (isLight)
     {
@@ -79,14 +80,14 @@ bool LYRIC_WND_DX::re_create_brush(LYRIC_WND_INFU* pWndInfo, bool isLight)
     return *ppBrush != nullptr;
 }
 
-bool LYRIC_WND_DX::re_create_border(LYRIC_WND_INFU* pWndInfo)
+bool LYRIC_WND_DX::re_create_border(LYRIC_WND_INFO* pWndInfo)
 {
     SafeDelete(hbrBorder);
     hbrBorder = new CD2DBrush(*hCanvas, pWndInfo->clrBorder);
     return hbrBorder != nullptr;
 }
 
-bool LYRIC_WND_DX::re_create_font(LYRIC_WND_INFU* pWndInfo)
+bool LYRIC_WND_DX::re_create_font(LYRIC_WND_INFO* pWndInfo)
 {
     SafeDelete(hFont);
 
@@ -97,17 +98,51 @@ bool LYRIC_WND_DX::re_create_font(LYRIC_WND_INFU* pWndInfo)
     IDWriteTextLayout* pTextLayout = lyric_wnd_create_text_layout(pWndInfo->pszDefText, pWndInfo->nDefText, *hFont, 0, 0);
     if (pTextLayout)
     {
-        DWRITE_TEXT_METRICS metrics = { 0 };
-        pTextLayout->GetMetrics(&metrics);
+        float width = 0.f, height = 0.f;
+        pWndInfo->word_width = 0;
+        pWndInfo->word_height = 0;
+        pWndInfo->nLineDefWidth = 0;
+        pWndInfo->nLineDefHeight = 0;
+
+        CCustomTextRenderer renderer([&](void* clientDrawingContext,
+                                         FLOAT baselineOriginX,
+                                         FLOAT baselineOriginY,
+                                         DWRITE_MEASURING_MODE measuringMode,
+                                         DWRITE_GLYPH_RUN const* glyphRun,
+                                         DWRITE_GLYPH_RUN_DESCRIPTION const* glyphRunDescription,
+                                         IUnknown* clientDrawingEffect)
+        {
+            // 获取字体度量
+            for (UINT32 i = 0; i < glyphRun->glyphCount; ++i)
+            {
+                DWRITE_FONT_METRICS metrics{};
+                glyphRun->fontFace->GetMetrics(&metrics);
+
+                float designUnitsPerEm = (float)metrics.designUnitsPerEm;
+                float _height = glyphRun->fontEmSize * metrics.ascent / designUnitsPerEm;
+                float _width = (glyphRun->glyphAdvances ? glyphRun->glyphAdvances[i] : 0.0f);
+
+                if (pWndInfo->word_width < _width)
+                    pWndInfo->word_width = _width;      // 竖屏用宽度
+                if (pWndInfo->word_height < _height)
+                    pWndInfo->word_height = _height;    // 横屏用高度
+
+                wchar_t ch = glyphRunDescription && glyphRunDescription->string ? glyphRunDescription->string[i] : L'\0';
+
+                pWndInfo->nLineDefWidth += _width;      // 记录总宽度, 横屏用
+                pWndInfo->nLineDefHeight += _height;    // 记录总高度, 竖屏用
+
+            }
+        });
+        pTextLayout->Draw(0, &renderer, 0, 0);
+
         SafeRelease(pTextLayout);
-        pWndInfo->nLineDefWidth = metrics.widthIncludingTrailingWhitespace;
-        pWndInfo->nLineHeight = metrics.height;
     }
 
     return hFont != nullptr;
 }
 
-bool LYRIC_WND_DX::re_create_image(LYRIC_WND_INFU* pWndInfo)
+bool LYRIC_WND_DX::re_create_image(LYRIC_WND_INFO* pWndInfo)
 {
     SafeDelete(image);
     lyric_wnd_load_image(*pWndInfo);
@@ -135,7 +170,7 @@ bool LYRIC_WND_DX::destroy(bool isDestroyFont)
 }
 
 
-void LYRIC_WND_INFU::set_def_arg(const LYRIC_WND_ARG* arg)
+void LYRIC_WND_INFO::set_def_arg(const LYRIC_WND_ARG* arg)
 {
     // 有值就根据传递进来的值设置, 没有值就设置默认值
     LYRIC_WND_ARG def = { 0 };
@@ -163,6 +198,36 @@ void LYRIC_WND_INFU::set_def_arg(const LYRIC_WND_ARG* arg)
 
 }
 
+void LYRIC_WND_INFO::dpi_change(HWND hWnd)
+{
+    scale = hWnd;
+    const int _10 = scale(10);
+    if (dx.hFont)
+        dx.re_create_font(this);
+    padding = (float)(_10 / 2);
+    shadowRadius = (float)_10;
+
+}
+
+float LYRIC_WND_INFO::get_lyric_line_height() const
+{
+    if (has_mode(LYRIC_MODE::VERTICAL))
+    {
+        // 竖屏, 取宽度加上边距
+        return word_width + padding * 2;
+    }
+    return word_height + padding * 2;
+}
+
+float LYRIC_WND_INFO::get_lyric_line_width(float vl) const
+{
+    if (has_mode(LYRIC_MODE::VERTICAL))
+        return (vl ? vl : nLineDefHeight) + padding * 2;
+    
+    return (vl ? vl : nLineDefWidth) + padding * 2;
+}
+
+
 LYRIC_WND_CACHE_OBJ::LYRIC_WND_CACHE_OBJ()
 {
     preIndex = -1;
@@ -179,26 +244,11 @@ LYRIC_WND_CACHE_OBJ::~LYRIC_WND_CACHE_OBJ()
     SafeRelease(pBitmapLight);
 }
 
-LYRIC_WND_INFU::LYRIC_WND_INFU()
+LYRIC_WND_INFO::LYRIC_WND_INFO()
 {
-    hWnd = nullptr;
-    hTips = nullptr;
-    hLyric = nullptr;
+    const int clear_size = offsetof(LYRIC_WND_INFO, line1);
+    memset(this, 0, clear_size);
     prevIndexLine = -1;
-    prevWidth = 0;
-    nTimeOffset = 0;
-    nLineHeight = 0;
-    nCurrentTimeMS = 0;
-    isFillBack = 0;
-    status = 0;
-    change = 0;
-    nMinWidth = 0;
-    nMinHeight = 0;
-    nLineTop1 = 0;
-    nLineTop2 = 0;
-    rcWindow = { 0 };
-    nLineDefWidth = 0;
-    shadowRadius = 0.f;
     mode = LYRIC_MODE::DOUBLE_ROW;
     pszDefText = L"该歌曲暂时没有歌词";
     nDefText = 9;
@@ -211,15 +261,33 @@ LYRIC_WND_INFU::LYRIC_WND_INFU()
 }
 
 // 设置歌词窗口数据到窗口
-void lyric_wnd_set_data(HWND hWnd, PLYRIC_WND_INFU pWndInfo)
+void lyric_wnd_set_data(HWND hWnd, PLYRIC_WND_INFO pWndInfo)
 {
     SetWindowLongPtrW(hWnd, 0, (LONG_PTR)pWndInfo);
 }
 
 // 从窗口获取歌词窗口数据
-PLYRIC_WND_INFU lyric_wnd_get_data(HWND hWnd)
+PLYRIC_WND_INFO lyric_wnd_get_data(HWND hWnd)
 {
-    return (PLYRIC_WND_INFU)GetWindowLongPtrW(hWnd, 0);
+    return (PLYRIC_WND_INFO)GetWindowLongPtrW(hWnd, 0);
+}
+
+bool isLatinCharacter(wchar_t ch)
+{
+    return
+        // Printable ASCII characters: 0x21 ('!') to 0x7E ('~')
+        (ch >= 0x20 && ch <= 0x7E) ||
+
+        // Latin-1 Supplement
+        (ch >= 0x00C0 && ch <= 0x00D6) || // 
+        (ch >= 0x00D8 && ch <= 0x00F6) || // 
+        (ch >= 0x00F8 && ch <= 0x00FF) || // 
+
+        // Latin Extended-A
+        (ch >= 0x0100 && ch <= 0x017F) ||
+
+        // Latin Extended-B
+        (ch >= 0x0180 && ch <= 0x024F);
 }
 
 NAMESPACE_LYRIC_WND_END

@@ -30,6 +30,7 @@ struct LYRIC_WORD_STRUCT
     int             nStart;     // 字的开始时间, 单位是毫秒, 这个开始时间是相对歌词行的
     int             nEnd;       // 字的结束时间, 单位是毫秒
 
+    float           nTop;       // 这个字在这一行歌词里的顶边位置, 如果没有设置计算文本回调, 下面这几个值会返回0
     float           nLeft;      // 这个字在这一行歌词里的左边位置, 如果没有设置计算文本回调, 下面这几个值会返回0
     float           nWidth;     // 字占用的宽度
     float           nHeight;    // 字占用的高度, 一般来说整行都是一样的高度, 目前只处理这种
@@ -43,6 +44,7 @@ struct LYRIC_CALC_STRUCT
     int                 indexLine;  // 当前时间在整体歌词的那一行上, 从0开始
     int                 indexWord;  // 当前时间在这一行歌词的哪一个字上, 从0开始
     float               nWidthWord; // 传递这个时间字索引高亮占用的宽度, 用来确定高亮位置
+    float               nHeightWord;// 传递这个时间字索引高亮占用的高度, 用来确定高亮位置
     int                 nLineCount; // 歌词行数
     LYRIC_LINE_STRUCT   line;       // 歌词行信息
     LYRIC_WORD_STRUCT   word;       // 歌词字信息

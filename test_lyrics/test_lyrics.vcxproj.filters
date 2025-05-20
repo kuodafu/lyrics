@@ -57,6 +57,9 @@
     <ClInclude Include="lyric_wnd_header.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="CCustomTextRenderer.h">
+      <Filter>d2d</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="test_lyrics.cpp">
@@ -112,6 +115,9 @@
     </ClCompile>
     <ClCompile Include="lyric_wnd_draw_line.cpp">
       <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="CCustomTextRenderer.cpp">
+      <Filter>d2d</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

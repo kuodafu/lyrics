@@ -6,12 +6,12 @@ using namespace NAMESPACE_D2D;
 NAMESPACE_LYRIC_WND_BEGIN
 
 HRESULT DrawShadowRect(
-    LYRIC_WND_INFU& wnd_info,
+    LYRIC_WND_INFO& wnd_info,
     const RECT_F& rect,
     D2D1_COLOR_F shadowColor,
     ID2D1Bitmap** ppBitmapRet
 );
-void lyric_wnd_fill_background(LYRIC_WND_INFU& wnd_info);
+void lyric_wnd_fill_background(LYRIC_WND_INFO& wnd_info);
 
 
 
@@ -22,7 +22,7 @@ bool _canvas_drawimagegridPadding(CD2DRender& d2dRender, CD2DImage& img,
                                   BYTE alpha);
 
 
-HRESULT lyric_wnd_OnPaint(LYRIC_WND_INFU& wnd_info, bool isresize, LYRIC_CALC_STRUCT& arg)
+HRESULT lyric_wnd_OnPaint(LYRIC_WND_INFO& wnd_info, bool isresize, LYRIC_CALC_STRUCT& arg)
 {
     CD2DRender& hCanvas = *wnd_info.dx.hCanvas;
     RECT& rcWindow = wnd_info.rcWindow;
@@ -69,7 +69,7 @@ HRESULT lyric_wnd_OnPaint(LYRIC_WND_INFU& wnd_info, bool isresize, LYRIC_CALC_ST
 }
 
 HRESULT DrawShadowRect2(
-    LYRIC_WND_INFU& wnd_info,
+    LYRIC_WND_INFO& wnd_info,
     RECT_F& rect,
     D2D1_COLOR_F shadowColor
 )
@@ -110,7 +110,7 @@ HRESULT DrawShadowRect2(
 }
 
 HRESULT DrawShadowRect(
-    LYRIC_WND_INFU& wnd_info,
+    LYRIC_WND_INFO& wnd_info,
     const RECT_F& rect,
     D2D1_COLOR_F shadowColor,
     ID2D1Bitmap** ppBitmapRet
@@ -224,7 +224,7 @@ HRESULT DrawShadowRect(
 
 
 // Ìî³ä±³¾°, Ö»Ìî³ä±³¾°ÑÕÉ«ºÍ±ß¿ò
-void lyric_wnd_fill_background(LYRIC_WND_INFU& wnd_info)
+void lyric_wnd_fill_background(LYRIC_WND_INFO& wnd_info)
 {
     CD2DRender& hCanvas = *wnd_info.dx.hCanvas;
     RECT& rcWindow = wnd_info.rcWindow;

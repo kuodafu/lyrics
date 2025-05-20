@@ -175,6 +175,7 @@ bool LYRICCALL lyric_get_word(HLYRIC hLyric, int indexLine, int indexWord, PLYRI
                 pRet->nEnd      = word.start + word.duration;
 
                 pRet->nLeft     = word.left;
+                pRet->nTop      = word.top;
                 pRet->nWidth    = word.width;
                 pRet->nHeight   = word.height;
                 return true;

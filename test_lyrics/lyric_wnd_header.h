@@ -16,7 +16,7 @@
 NAMESPACE_LYRIC_WND_BEGIN
 
 
-struct LYRIC_WND_INFU;
+struct LYRIC_WND_INFO;
 // 歌词窗口dx相关的对象
 struct LYRIC_WND_DX
 {
@@ -61,19 +61,19 @@ struct LYRIC_WND_DX
     }
 
     // 重新创建所有对象
-    bool re_create(LYRIC_WND_INFU* pWndInfo);
+    bool re_create(LYRIC_WND_INFO* pWndInfo);
 
     // 重新创建画刷对象, 普通画刷/高亮画刷, 外部重新设置颜色的时候调用
-    bool re_create_brush(LYRIC_WND_INFU* pWndInfo, bool isLight);
+    bool re_create_brush(LYRIC_WND_INFO* pWndInfo, bool isLight);
 
     // 重新创建边框画刷
-    bool re_create_border(LYRIC_WND_INFU* pWndInfo);
+    bool re_create_border(LYRIC_WND_INFO* pWndInfo);
 
     // 重新创建字体对象, 外部重新设置字体的时候调用
-    bool re_create_font(LYRIC_WND_INFU* pWndInfo);
+    bool re_create_font(LYRIC_WND_INFO* pWndInfo);
 
     // 重新创建图片资源对象
-    bool re_create_image(LYRIC_WND_INFU* pWndInfo);
+    bool re_create_image(LYRIC_WND_INFO* pWndInfo);
 
     // 销毁所有设备相关的对象, 字体是设备无关对象, 可以选择是否销毁
     bool destroy(bool isDestroyFont);
@@ -139,10 +139,11 @@ struct LYRIC_WND_DRAWTEXT_INFO
     int         align;              // 对齐模式, 0=左对齐, 1=居中对齐, 2=右对齐
     D2D1_RECT_F rcText;             // 歌词文本绘画的位置, 这个位置是根据对齐模式计算的
 
-    float text_wtdth;               // 歌词文本宽度, 在绘画时会计算
-    float text_height;              // 歌词文本高度, 在绘画时会计算
+    float text_width;               // 歌词文本宽度, 在绘画时会计算, 会有翻译和音译, 所以需要计算
+    float text_height;              // 歌词文本高度, 在绘画时会计算, 计算每个字的时候只计算了普通歌词
 
     float nLightWidth;              // 歌词高亮位置, 大于0的话就是要绘画高亮区域
+    float nLightHeight;             // 歌词高亮位置, 大于0的话就是要绘画高亮区域
 
     LYRIC_WND_DRAWTEXT_INFO()
     {
@@ -156,7 +157,8 @@ struct LYRIC_WND_DRAWTEXT_INFO
         index = -1;
         rcText = {0};
         nLightWidth = 0.f;
-        text_wtdth = 0.f;
+        nLightHeight = 0.f;
+        text_width = 0.f;
         text_height = 0.f;
 
         cache.preIndex = -1;
@@ -180,15 +182,17 @@ enum class LYRIC_MODE : unsigned int
 
 
 // 歌词窗口 USERDATA 里存放的是这个结构
-typedef struct LYRIC_WND_INFU
+typedef struct LYRIC_WND_INFO
 {
     HWND        hWnd;           // 歌词窗口句柄
     HWND        hTips;          // 提示窗口句柄
     HLYRIC      hLyric;         // 歌词句柄
     int         prevIndexLine;  // 上一次绘画的歌词行号
     float       prevWidth;      // 上一次绘画的歌词宽度
-    float       nLineHeight;    // 一行歌词的高度
+    float       word_width;     // 一个汉字的宽度, 竖屏使用
+    float       word_height;    // 一个汉字的高度
     float       nLineDefWidth;  // 没有歌词时歌词的默认宽度
+    float       nLineDefHeight; // 没有歌词时歌词的默认高度, 竖屏使用
     LPCWSTR     pszDefText;     // 没有歌词时的默认文本
     int         nDefText;       // 默认文本长度
     int         nCurrentTimeMS; // 当前歌词播放时间
@@ -199,6 +203,8 @@ typedef struct LYRIC_WND_INFU
     int         nLineTop2;      // 第二行歌词的顶部位置
     RECT        rcWindow;       // 歌词窗口的位置, 整个窗口都是客户区, 这里记录的是屏幕位置, 绘画时的位置, 不保证是当前窗口的位置
     
+    float       padding;        // 歌词4个边的间距, 这个边就是预留给发光/阴影 超出的范围
+
     float       shadowRadius;   // 阴影半径
     LYRIC_MODE  mode;           // 歌词显示模式
     
@@ -252,9 +258,9 @@ typedef struct LYRIC_WND_INFU
     std::vector<DWORD>      clrLight;   // 高亮歌词画刷颜色组
     DWORD                   clrBorder;  // 歌词文本边框颜色
     CScale                  scale;      // 缩放比例
-    LYRIC_WND_INFU();
+    LYRIC_WND_INFO();
 
-    ~LYRIC_WND_INFU()
+    ~LYRIC_WND_INFO()
     {
         lyric_destroy(hLyric);
         DestroyWindow(hTips);
@@ -262,7 +268,16 @@ typedef struct LYRIC_WND_INFU
 
     void set_def_arg(const LYRIC_WND_ARG* arg);
 
-}*PLYRIC_WND_INFU;
+    // DPI改变时调用, 会重新计算字体, 位置偏移等信息
+    void dpi_change(HWND hWnd);
+
+    // 判断绘画歌词画布的宽度/高度, 竖屏返回的是宽度, 横屏返回的是高度
+    float get_lyric_line_height() const;
+    // 传递歌词文本宽度/高度, 返回画布需要的宽度, 
+    float get_lyric_line_width(float vl) const;
+
+
+}*PLYRIC_WND_INFO;
 
 
 NAMESPACE_LYRIC_WND_END

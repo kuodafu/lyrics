@@ -19,11 +19,11 @@ static HCURSOR m_hCursorHand;
 
 
 LRESULT CALLBACK lyric_wnd_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
-LRESULT lyric_wnd_OnTimer(LYRIC_WND_INFU& wnd_info, UINT message, WPARAM wParam, LPARAM lParam);
-LRESULT lyric_wnd_OnHitTest(LYRIC_WND_INFU& wnd_info, UINT message, WPARAM wParam, LPARAM lParam);
-LRESULT lyric_wnd_OnMouseMove(LYRIC_WND_INFU& wnd_info, UINT message, WPARAM wParam, LPARAM lParam);
-LRESULT lyric_wnd_OnLbuttonDown(LYRIC_WND_INFU& wnd_info, UINT message, WPARAM wParam, LPARAM lParam);
-LRESULT lyric_wnd_OnCaptureChanged(LYRIC_WND_INFU& wnd_info, UINT message, WPARAM wParam, LPARAM lParam);
+LRESULT lyric_wnd_OnTimer(LYRIC_WND_INFO& wnd_info, UINT message, WPARAM wParam, LPARAM lParam);
+LRESULT lyric_wnd_OnHitTest(LYRIC_WND_INFO& wnd_info, UINT message, WPARAM wParam, LPARAM lParam);
+LRESULT lyric_wnd_OnMouseMove(LYRIC_WND_INFO& wnd_info, UINT message, WPARAM wParam, LPARAM lParam);
+LRESULT lyric_wnd_OnLbuttonDown(LYRIC_WND_INFO& wnd_info, UINT message, WPARAM wParam, LPARAM lParam);
+LRESULT lyric_wnd_OnCaptureChanged(LYRIC_WND_INFO& wnd_info, UINT message, WPARAM wParam, LPARAM lParam);
 
 
 
@@ -77,13 +77,13 @@ HWND lyric_create_layered_window(const LYRIC_WND_ARG* arg)
 }
 
 // 绘画的时候没有创建对象, 那就需要创建默认对象
-void lyric_wnd_default_object(LYRIC_WND_INFU& wnd_info)
+void lyric_wnd_default_object(LYRIC_WND_INFO& wnd_info)
 {
     wnd_info.dx.re_create(&wnd_info);
 }
 
 
-bool lyric_wnd_invalidate(LYRIC_WND_INFU& wnd_info)
+bool lyric_wnd_invalidate(LYRIC_WND_INFO& wnd_info)
 {
     if (!wnd_info.dx.hCanvas)
         lyric_wnd_default_object(wnd_info);
@@ -129,7 +129,7 @@ bool lyric_wnd_invalidate(LYRIC_WND_INFU& wnd_info)
 
 LRESULT CALLBACK lyric_wnd_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    PLYRIC_WND_INFU pWndInfo = lyric_wnd_get_data(hWnd);
+    PLYRIC_WND_INFO pWndInfo = lyric_wnd_get_data(hWnd);
     if (!pWndInfo)
         return DefWindowProcW(hWnd, message, wParam, lParam);
 
@@ -143,6 +143,11 @@ LRESULT CALLBACK lyric_wnd_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
     //    HRESULT hr = DwmSetWindowAttribute(hWnd, DWMWA_NCRENDERING_POLICY, &pv, sizeof(pv));
     //    return 0;
     //}
+    case WM_DPICHANGED:
+    {
+        pWndInfo->dpi_change(hWnd);
+        break;
+    }
     case WM_MOUSEMOVE:
     {
         LRESULT ret = lyric_wnd_OnMouseMove(*pWndInfo, message, wParam, lParam);
@@ -219,7 +224,7 @@ LRESULT CALLBACK lyric_wnd_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
     return 0;
 }
 
-LRESULT lyric_wnd_OnTimer(LYRIC_WND_INFU& wnd_info, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT lyric_wnd_OnTimer(LYRIC_WND_INFO& wnd_info, UINT message, WPARAM wParam, LPARAM lParam)
 {
     HWND hWnd = wnd_info.hWnd;
     switch (wParam)
@@ -248,7 +253,7 @@ LRESULT lyric_wnd_OnTimer(LYRIC_WND_INFU& wnd_info, UINT message, WPARAM wParam,
     return 0;
 }
 
-LRESULT lyric_wnd_OnHitTest(LYRIC_WND_INFU& wnd_info, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT lyric_wnd_OnHitTest(LYRIC_WND_INFO& wnd_info, UINT message, WPARAM wParam, LPARAM lParam)
 {
     // 定义边缘检测的宽度
     const int borderWidth = wnd_info.scale(12) + (int)wnd_info.shadowRadius;
@@ -300,7 +305,7 @@ LRESULT lyric_wnd_OnHitTest(LYRIC_WND_INFU& wnd_info, UINT message, WPARAM wPara
     return HTCLIENT;
 }
 
-static int lyric_wnd_pt2index(LYRIC_WND_INFU& wnd_info, const POINT& pt)
+static int lyric_wnd_pt2index(LYRIC_WND_INFO& wnd_info, const POINT& pt)
 {
     int index = -1;
     for (auto& item : wnd_info.button.rcBtn)
@@ -312,7 +317,7 @@ static int lyric_wnd_pt2index(LYRIC_WND_INFU& wnd_info, const POINT& pt)
     return -1;
 }
 // 鼠标移动, 先判断是不是在按钮上
-LRESULT lyric_wnd_OnMouseMove(LYRIC_WND_INFU& wnd_info, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT lyric_wnd_OnMouseMove(LYRIC_WND_INFO& wnd_info, UINT message, WPARAM wParam, LPARAM lParam)
 {
     POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
     int index = lyric_wnd_pt2index(wnd_info, pt);
@@ -353,7 +358,7 @@ LRESULT lyric_wnd_OnMouseMove(LYRIC_WND_INFU& wnd_info, UINT message, WPARAM wPa
     return 0;
 }
 
-LRESULT lyric_wnd_OnLbuttonDown(LYRIC_WND_INFU& wnd_info, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT lyric_wnd_OnLbuttonDown(LYRIC_WND_INFO& wnd_info, UINT message, WPARAM wParam, LPARAM lParam)
 {
     if (wnd_info.button.index != -1)
     {
@@ -365,7 +370,7 @@ LRESULT lyric_wnd_OnLbuttonDown(LYRIC_WND_INFU& wnd_info, UINT message, WPARAM w
     }
     return DefWindowProcW(wnd_info.hWnd, WM_NCLBUTTONDOWN, HTCAPTION, lParam);
 }
-LRESULT lyric_wnd_OnCaptureChanged(LYRIC_WND_INFU& wnd_info, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT lyric_wnd_OnCaptureChanged(LYRIC_WND_INFO& wnd_info, UINT message, WPARAM wParam, LPARAM lParam)
 {
     if (wnd_info.button.indexDown != -1)
     {

@@ -4,24 +4,24 @@ using namespace NAMESPACE_D2D;
 
 NAMESPACE_LYRIC_WND_BEGIN
 // 通过id获取结构地址, 失败返回空指针
-LYRIC_WND_BUTTON_INFO* lrc_click_get_item(LYRIC_WND_INFU& wnd_info, int id);
+LYRIC_WND_BUTTON_INFO* lrc_click_get_item(LYRIC_WND_INFO& wnd_info, int id);
 
 
-void lrc_click_wrong(LYRIC_WND_INFU& wnd_info, int id);     // 歌词不对事件, 应该是要弹出个窗口搜索歌词
-bool lrc_click_translate(LYRIC_WND_INFU& wnd_info, int id); // 翻译相关按钮点击事件
-void lrc_click_vmode(LYRIC_WND_INFU& wnd_info, int id);     // 切换到竖屏模式
-void lrc_click_hmode(LYRIC_WND_INFU& wnd_info, int id);     // 切换到横屏模式
-void lrc_click_makelrc(LYRIC_WND_INFU& wnd_info, int id);   // 弹出制作歌词窗口
-void lrc_click_font(LYRIC_WND_INFU& wnd_info, int id);      // 字体放大缩小
-void lrc_click_lrc_ms(LYRIC_WND_INFU& wnd_info, int id);    // 歌词延后/提前
-void lrc_click_lock_un(LYRIC_WND_INFU& wnd_info, int id);   // 锁定/解锁
-void lrc_click_setting(LYRIC_WND_INFU& wnd_info, int id);   // 弹出设置窗口
-void lrc_click_close(LYRIC_WND_INFU& wnd_info, int id);     // 关闭窗口
-void lrc_click_lrc_color(LYRIC_WND_INFU& wnd_info, int id); // 设置字体颜色
-void lrc_click_menu(LYRIC_WND_INFU& wnd_info, int id);      // 菜单按钮
-bool lrc_click_play(LYRIC_WND_INFU& wnd_info, int id);      // 播放按钮相关事件, 播放, 暂停, 上一首, 下一首, 这里只能处理切换播放/暂停按钮样式
+void lrc_click_wrong(LYRIC_WND_INFO& wnd_info, int id);     // 歌词不对事件, 应该是要弹出个窗口搜索歌词
+bool lrc_click_translate(LYRIC_WND_INFO& wnd_info, int id); // 翻译相关按钮点击事件
+void lrc_click_vmode(LYRIC_WND_INFO& wnd_info, int id);     // 切换到竖屏模式
+void lrc_click_hmode(LYRIC_WND_INFO& wnd_info, int id);     // 切换到横屏模式
+void lrc_click_makelrc(LYRIC_WND_INFO& wnd_info, int id);   // 弹出制作歌词窗口
+void lrc_click_font(LYRIC_WND_INFO& wnd_info, int id);      // 字体放大缩小
+void lrc_click_lrc_ms(LYRIC_WND_INFO& wnd_info, int id);    // 歌词延后/提前
+void lrc_click_lock_un(LYRIC_WND_INFO& wnd_info, int id);   // 锁定/解锁
+void lrc_click_setting(LYRIC_WND_INFO& wnd_info, int id);   // 弹出设置窗口
+void lrc_click_close(LYRIC_WND_INFO& wnd_info, int id);     // 关闭窗口
+void lrc_click_lrc_color(LYRIC_WND_INFO& wnd_info, int id); // 设置字体颜色
+void lrc_click_menu(LYRIC_WND_INFO& wnd_info, int id);      // 菜单按钮
+bool lrc_click_play(LYRIC_WND_INFO& wnd_info, int id);      // 播放按钮相关事件, 播放, 暂停, 上一首, 下一首, 这里只能处理切换播放/暂停按钮样式
 
-void lyric_wnd_button_click(LYRIC_WND_INFU& wnd_info)
+void lyric_wnd_button_click(LYRIC_WND_INFO& wnd_info)
 {
     auto& item = wnd_info.button.rcBtn[wnd_info.button.indexDown];
     int id = item.id;
@@ -38,7 +38,7 @@ void lyric_wnd_button_click(LYRIC_WND_INFU& wnd_info)
     //OutputDebugStringW(buf);
 }
 
-bool lyric_wnd_call_event(LYRIC_WND_INFU& wnd_info, int id)
+bool lyric_wnd_call_event(LYRIC_WND_INFO& wnd_info, int id)
 {
     switch (id)
     {
@@ -98,7 +98,7 @@ bool lyric_wnd_call_event(LYRIC_WND_INFU& wnd_info, int id)
     return true;
 }
 
-bool lyric_wnd_set_btn_state(LYRIC_WND_INFU& wnd_info, int id, LYRIC_WND_BUTTON_STATE state)
+bool lyric_wnd_set_btn_state(LYRIC_WND_INFO& wnd_info, int id, LYRIC_WND_BUTTON_STATE state)
 {
     auto* pItem = lrc_click_get_item(wnd_info, id);
     if (!pItem)
@@ -108,7 +108,7 @@ bool lyric_wnd_set_btn_state(LYRIC_WND_INFU& wnd_info, int id, LYRIC_WND_BUTTON_
     return true;
 }
 
-LYRIC_WND_BUTTON_STATE lyric_wnd_get_btn_state(LYRIC_WND_INFU& wnd_info, int id)
+LYRIC_WND_BUTTON_STATE lyric_wnd_get_btn_state(LYRIC_WND_INFO& wnd_info, int id)
 {
     auto* pItem = lrc_click_get_item(wnd_info, id);
     if (!pItem)
@@ -118,7 +118,7 @@ LYRIC_WND_BUTTON_STATE lyric_wnd_get_btn_state(LYRIC_WND_INFU& wnd_info, int id)
 }
 
 
-LYRIC_WND_BUTTON_INFO* lrc_click_get_item(LYRIC_WND_INFU& wnd_info, int id)
+LYRIC_WND_BUTTON_INFO* lrc_click_get_item(LYRIC_WND_INFO& wnd_info, int id)
 {
     // 去枚举数组找到对应的按钮
     for (auto& item : wnd_info.button.rcBtn)
@@ -129,12 +129,12 @@ LYRIC_WND_BUTTON_INFO* lrc_click_get_item(LYRIC_WND_INFU& wnd_info, int id)
     return nullptr;
 }
 
-void lrc_click_wrong(LYRIC_WND_INFU& wnd_info, int id)
+void lrc_click_wrong(LYRIC_WND_INFO& wnd_info, int id)
 {
     MessageBoxW(wnd_info.hWnd, L"这里需要弹出一个搜索歌词的窗口, 应该由外部去实现", L"提示", MB_OK);
 }
 
-bool lrc_click_translate(LYRIC_WND_INFU& wnd_info, int id)
+bool lrc_click_translate(LYRIC_WND_INFO& wnd_info, int id)
 {
     LYRIC_WND_BUTTON_INFO* pItem = lrc_click_get_item(wnd_info, id);
     if (pItem == nullptr)
@@ -168,7 +168,7 @@ bool lrc_click_translate(LYRIC_WND_INFU& wnd_info, int id)
     wnd_info.change_trans = 1; // 标记需要重新绘画翻译文本
     return true;
 }
-static void _lrc_v_h_mode(LYRIC_WND_INFU& wnd_info)
+static void _lrc_v_h_mode(LYRIC_WND_INFO& wnd_info)
 {
     lyric_wnd_load_image_recalc(wnd_info); // 重新加载图片, 切换到竖屏模式
     wnd_info.change_btn = 1; // 标记需要重新绘画按钮
@@ -187,7 +187,7 @@ static void _lrc_v_h_mode(LYRIC_WND_INFU& wnd_info)
         MoveWindow(wnd_info.hWnd, rc.left, rc.top, rc.right - rc.left, wnd_info.nMinHeight, TRUE);
     }
 }
-void lrc_click_vmode(LYRIC_WND_INFU& wnd_info, int id)
+void lrc_click_vmode(LYRIC_WND_INFO& wnd_info, int id)
 {
     LYRIC_WND_BUTTON_INFO* pItem = lrc_click_get_item(wnd_info, id);
     if (pItem == nullptr)
@@ -197,7 +197,7 @@ void lrc_click_vmode(LYRIC_WND_INFU& wnd_info, int id)
     _lrc_v_h_mode(wnd_info);
 }
 
-void lrc_click_hmode(LYRIC_WND_INFU& wnd_info, int id)
+void lrc_click_hmode(LYRIC_WND_INFO& wnd_info, int id)
 {
     LYRIC_WND_BUTTON_INFO* pItem = lrc_click_get_item(wnd_info, id);
     if (pItem == nullptr)
@@ -207,12 +207,12 @@ void lrc_click_hmode(LYRIC_WND_INFU& wnd_info, int id)
     _lrc_v_h_mode(wnd_info);
 }
 
-void lrc_click_makelrc(LYRIC_WND_INFU& wnd_info, int id)
+void lrc_click_makelrc(LYRIC_WND_INFO& wnd_info, int id)
 {
     MessageBoxW(wnd_info.hWnd, L"弹出制作歌词窗口", L"提示", MB_OK);
 }
 
-void lrc_click_font(LYRIC_WND_INFU& wnd_info, int id)
+void lrc_click_font(LYRIC_WND_INFO& wnd_info, int id)
 {
     // 调整字体尺寸, 还要根据字体尺寸然后调整窗口尺寸, 然后重新创建字体
     int size = id == LYRIC_WND_BUTTON_ID_FONT_DOWN ? -2 : 2;
@@ -230,14 +230,14 @@ void lrc_click_font(LYRIC_WND_INFU& wnd_info, int id)
     MoveWindow(wnd_info.hWnd, rc.left, rc.top, rc.right - rc.left, wnd_info.nMinHeight, TRUE);
 }
 
-void lrc_click_lrc_ms(LYRIC_WND_INFU& wnd_info, int id)
+void lrc_click_lrc_ms(LYRIC_WND_INFO& wnd_info, int id)
 {
     int nTimeOffset = (id == LYRIC_WND_BUTTON_ID_BEHIND ? -500 : 500);
     wnd_info.nTimeOffset = lyric_behind_ahead(wnd_info.hLyric, nTimeOffset);
     wnd_info.change_btn = true;   // 标记按钮需要重新绘画
 }
 
-void lrc_click_lock_un(LYRIC_WND_INFU& wnd_info, int id)
+void lrc_click_lock_un(LYRIC_WND_INFO& wnd_info, int id)
 {
     DWORD styleEx = (DWORD)GetWindowLongPtrW(wnd_info.hWnd, GWL_EXSTYLE);
     wnd_info.isLock = (id == LYRIC_WND_BUTTON_ID_LOCK);
@@ -248,12 +248,12 @@ void lrc_click_lock_un(LYRIC_WND_INFU& wnd_info, int id)
     wnd_info.change_btn = true; // 标记按钮需要重新绘画
 }
 
-void lrc_click_setting(LYRIC_WND_INFU& wnd_info, int id)
+void lrc_click_setting(LYRIC_WND_INFO& wnd_info, int id)
 {
     MessageBoxW(wnd_info.hWnd, L"弹出设置窗口", L"提示", MB_OK);
 }
 
-void lrc_click_close(LYRIC_WND_INFU& wnd_info, int id)
+void lrc_click_close(LYRIC_WND_INFO& wnd_info, int id)
 {
     if (id == LYRIC_WND_BUTTON_ID_SHOW)
         SetWindowPos(wnd_info.hWnd, 0, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_SHOWWINDOW);
@@ -261,19 +261,19 @@ void lrc_click_close(LYRIC_WND_INFU& wnd_info, int id)
         SetWindowPos(wnd_info.hWnd, 0, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_HIDEWINDOW);
 }
 
-void lrc_click_lrc_color(LYRIC_WND_INFU& wnd_info, int id)
+void lrc_click_lrc_color(LYRIC_WND_INFO& wnd_info, int id)
 {
     // 这里酷狗使用的是点击后弹出选择配色的菜单, 选择后歌词颜色就变了
     // 内部定义几个配色, 点击按钮后切换到对应的颜色, 需要设置画刷颜色
 }
 
-void lrc_click_menu(LYRIC_WND_INFU& wnd_info, int id)
+void lrc_click_menu(LYRIC_WND_INFO& wnd_info, int id)
 {
     // 目前暂时没有使用
 
 }
 
-bool lrc_click_play(LYRIC_WND_INFU& wnd_info, int id)
+bool lrc_click_play(LYRIC_WND_INFO& wnd_info, int id)
 {
     switch (id)
     {

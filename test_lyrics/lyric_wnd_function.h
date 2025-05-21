@@ -27,6 +27,12 @@ void lyric_wnd_draw_calc_text_rect(LYRIC_WND_INFO& wnd_info,
                                    LYRIC_WND_DRAWTEXT_INFO& draw_info,
                                    int nDrawLineIndex);
 
+// 绘画竖屏歌词
+void lyric_wnd_draw_cache_text_v(LYRIC_WND_INFO& wnd_info, LYRIC_WND_DRAWTEXT_INFO& draw_info, ID2D1Bitmap* pBitmap);
+// 绘画横屏歌词
+void lyric_wnd_draw_cache_text_h(LYRIC_WND_INFO& wnd_info, LYRIC_WND_DRAWTEXT_INFO& draw_info, ID2D1Bitmap* pBitmap);
+
+
 
 HWND lyric_create_layered_window(const LYRIC_WND_ARG* arg);
 void lyric_wnd_default_object(LYRIC_WND_INFO& wnd_info);
@@ -43,7 +49,7 @@ bool lyric_wnd_load_image(LYRIC_WND_INFO& wnd_info);
 bool lyric_wnd_load_image_recalc(LYRIC_WND_INFO& wnd_info);
 
 // 绘画歌词窗口需要的按钮
-void lyric_wnd_draw_button(LYRIC_WND_INFO& wnd_info, const RECT& rcWindow);
+void lyric_wnd_draw_button(LYRIC_WND_INFO& wnd_info);
 
 // 歌词窗口上的按钮被点击
 void lyric_wnd_button_click(LYRIC_WND_INFO& wnd_info);
@@ -59,12 +65,15 @@ void lyric_wnd_button_hover(LYRIC_WND_INFO& wnd_info);
 // 鼠标离开按钮, 隐藏提示信息
 void lyric_wnd_button_leave(LYRIC_WND_INFO& wnd_info);
 
-// 计算需要绘画的按钮的总宽度, 计算好宽度后可以让所有按钮居中
-int lyric_wnd_calc_button(LYRIC_WND_INFO& wnd_info, int& maxWidth, int& maxHeight, int offset);
+// 计算按钮绘画需要的位置
+void lyric_wnd_calc_btn_pos(LYRIC_WND_INFO& wnd_info);
+
+// 重新设置翻译/音译按钮状态
+int lyric_wnd_set_state_translate(LYRIC_WND_INFO& wnd_info, int language);
 
 // 计算歌词窗口的高度, 整个窗口的高度, 调用前必须已经初始化了默认按钮, 还有字体
 // 高度是用按钮的高度 + 歌词占用一行高度 * 2 + 边距 得到的
-void lyric_wnd_calc_height(LYRIC_WND_INFO& wnd_info);
+void lyric_wnd_calc_wnd_pos(LYRIC_WND_INFO& wnd_info, bool isMoveWindow);
 
 // 创建文本布局, 计算文本, 还有绘画文本时使用, 统一设置文本间距
 // 这里统一都是不换行的文本布局, 左/顶对齐

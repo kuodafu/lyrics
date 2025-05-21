@@ -2,6 +2,7 @@
 #include <windowsx.h>
 #include "dwrite_1.h"
 #include <dwmapi.h>
+#include "GetMonitorRect.h"
 
 #pragma comment(lib, "dwmapi.lib")
 #pragma comment(lib, "dxguid.lib")
@@ -108,12 +109,19 @@ bool lyric_wnd_invalidate(LYRIC_WND_INFO& wnd_info)
     LYRIC_CALC_STRUCT arg = {0};
     // 这个函数百万次调用也就100多毫秒不到200, release在100毫秒以内
     // 完全支撑得起100帧的刷新率
+
+    //wnd_info.nCurrentTimeMS = 38048;
     lyric_calc(wnd_info.hLyric, wnd_info.nCurrentTimeMS, &arg);
 
     // 是否需要绘画歌词文本, 行数和上次记录的不一样, 或者宽度不一样, 那就为真, 需要重画
-    const bool isDrawString = arg.indexLine != wnd_info.prevIndexLine || arg.nWidthWord != wnd_info.prevWidth;
+    bool bLight = false;
+    if (wnd_info.has_mode(LYRIC_MODE::VERTICAL))
+        bLight = arg.nHeightWord != wnd_info.prevHeight;
+    else
+        bLight = arg.nWidthWord != wnd_info.prevWidth;
+    const bool isDrawString = arg.indexLine != wnd_info.prevIndexLine || bLight;
     const bool isDraw = isDrawString || wnd_info.change;
-
+    
     // 这里需要判断一下是否需要更新, 如果按钮没变化, 不是强制更新, 并且歌词文本也没变, 那就不需要重画
     if (!isDraw)
         return true;
@@ -123,6 +131,7 @@ bool lyric_wnd_invalidate(LYRIC_WND_INFO& wnd_info)
     wnd_info.change = 0;    // 把所有改变的标志位清零
     wnd_info.prevIndexLine = arg.indexLine;
     wnd_info.prevWidth = arg.nWidthWord;
+    wnd_info.prevHeight = arg.nHeightWord;
     return SUCCEEDED(hr);
 }
 
@@ -167,9 +176,27 @@ LRESULT CALLBACK lyric_wnd_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         return lyric_wnd_OnLbuttonDown(*pWndInfo, message, wParam, lParam);
     case WM_CAPTURECHANGED:
         return lyric_wnd_OnCaptureChanged(*pWndInfo, message, wParam, lParam);
+    case WM_MOVE:
     case WM_SIZE:
-        //InvalidateRect(hWnd, 0, 0);
+    {
+        LYRIC_WND_POS* pos = pWndInfo->has_mode(LYRIC_MODE::VERTICAL)
+            ? &pWndInfo->pos_v
+            : &pWndInfo->pos_h;
+
+        if (message == WM_MOVE)
+        {
+            pos->left = GET_X_LPARAM(lParam);
+            pos->top = GET_Y_LPARAM(lParam);
+        }
+        else
+        {
+            pos->width = LOWORD(lParam);
+            pos->height = HIWORD(lParam);
+        }
+        pos->right = pos->left + pos->width;
+        pos->bottom = pos->top + pos->height;
         return 0;
+    }
     case WM_PAINT:
     {
         PAINTSTRUCT ps;
@@ -198,15 +225,66 @@ LRESULT CALLBACK lyric_wnd_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
     //    }
     //    return 0;
     //}
+    case WM_DISPLAYCHANGE:
+    {
+        pWndInfo->get_monitor();
+        break;
+    }
+    case WM_WINDOWPOSCHANGING:
+    {
+        // 限制窗口不能超出屏幕范围
+        auto pPos = (WINDOWPOS*)lParam;
+        if ((pPos->flags & SWP_NOMOVE) == SWP_NOMOVE)
+            break;  // 有不移动的标志, 不处理
+
+        LYRIC_WND_POS* pos = pWndInfo->has_mode(LYRIC_MODE::VERTICAL)
+            ? &pWndInfo->pos_v
+            : &pWndInfo->pos_h;
+        const RECT& rcMonitorAll = pWndInfo->rcMonitor;
+
+        //POINT pt;
+        //GetCursorPos(&pt);
+        //const RECT* rcMonitor = nullptr;
+        //for (const RECT& rc : pWndInfo->rcMonitors)
+        //{
+        //    if (PtInRect(&rc, pt))
+        //    {
+        //        rcMonitor = &rc;
+        //        break;
+        //    }
+        //}
+        //if (!rcMonitor)
+        //    rcMonitor = &rcMonitorAll;
+
+
+        if (pPos->x < rcMonitorAll.left)
+            pPos->x = rcMonitorAll.left;   // 限制窗口左侧不能超出左边界
+        else if (pPos->x + pos->width > rcMonitorAll.right)
+            pPos->x = rcMonitorAll.right - pos->width; // 限制窗口右侧不能超出右边界
+
+        if (pPos->y < rcMonitorAll.top)
+            pPos->y = rcMonitorAll.top;    // 限制窗口顶部不能超出上边界
+        else if (pPos->y + pos->height > rcMonitorAll.bottom)
+            pPos->y = rcMonitorAll.bottom - pos->height;   // 限制窗口底部不能超出下边界
+
+
+        break;
+    }
     case WM_GETMINMAXINFO:
     {
         MINMAXINFO* pMMI = (MINMAXINFO*)lParam;
         const bool is_vertical = pWndInfo->has_mode(LYRIC_MODE::VERTICAL);
+        RECT rcWindow;
+        GetWindowRect(hWnd, &rcWindow);
+        const int cxClient = rcWindow.right - rcWindow.left;
+        const int cyClient = rcWindow.bottom - rcWindow.top;
+
         if (is_vertical)
         {
             pMMI->ptMinTrackSize.y = pWndInfo->nMinHeight;
             pMMI->ptMinTrackSize.x = pWndInfo->nMinWidth;   // 宽度不让改变, 调整字体会自动改变
             pMMI->ptMaxTrackSize.x = pWndInfo->nMinWidth;
+
         }
         else
         {
@@ -214,6 +292,7 @@ LRESULT CALLBACK lyric_wnd_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
             pMMI->ptMinTrackSize.y = pWndInfo->nMinHeight;  // 高度不让改变, 调整字体会自动改变
             pMMI->ptMaxTrackSize.y = pWndInfo->nMinHeight;
         }
+
         return 0;
     }
     case WM_NCHITTEST:
@@ -282,6 +361,9 @@ LRESULT lyric_wnd_OnHitTest(LYRIC_WND_INFO& wnd_info, UINT message, WPARAM wPara
         if (pt.x >= rcWindow.right - borderWidth)
             return HTRIGHT;        // 右边缘
     }
+
+    //if (PtInRect(&wnd_info.button.rc, pt))
+    //    return HTCLIENT;    // 鼠标在按钮范围内, 返回客户区坐标
 
     //// 检测鼠标是否在窗口边缘
     //if (pt.x <= rcWindow.left + borderWidth && pt.y <= rcWindow.top + borderWidth)

@@ -93,6 +93,7 @@ HWND lyric_wnd_create(const LYRIC_WND_ARG* arg, PFN_LYRIC_WND_COMMAND pfnCommand
 
     // 位置相关的放一起处理
     wnd_info.dpi_change(hWnd);
+    wnd_info.get_monitor();
 
     RECT rc = arg->rcWindow;
     wnd_info.scale(rc);
@@ -191,6 +192,7 @@ static float _lyric_wnd_load_krc_calc_text(lyric_wnd::PLYRIC_WND_INFO pWndInfo, 
     return width;
 }
 
+
 bool lyric_wnd_load_krc(HWND hWindowLyric, LPCVOID pKrcData, int nKrcDataLen)
 {
     using namespace lyric_wnd;
@@ -204,13 +206,8 @@ bool lyric_wnd_load_krc(HWND hWindowLyric, LPCVOID pKrcData, int nKrcDataLen)
     pWndInfo->line1.clear();
     pWndInfo->line2.clear();
 
-    int language = lyric_get_language(pWndInfo->hLyric);
-    LYRIC_WND_BUTTON_STATE b1 = __query(language, 1) ? LYRIC_WND_BUTTON_STATE_NORMAL : LYRIC_WND_BUTTON_STATE_DISABLE;
-    LYRIC_WND_BUTTON_STATE b2 = __query(language, 2) ? LYRIC_WND_BUTTON_STATE_NORMAL : LYRIC_WND_BUTTON_STATE_DISABLE;
-    lyric_wnd_set_btn_state(wnd_info, LYRIC_WND_BUTTON_ID_TRANSLATE1, b1);
-    lyric_wnd_set_btn_state(wnd_info, LYRIC_WND_BUTTON_ID_TRANSLATE2, b2);
-    lyric_wnd_set_btn_state(wnd_info, LYRIC_WND_BUTTON_ID_TRANSLATE1_SEL, b1);
-    lyric_wnd_set_btn_state(wnd_info, LYRIC_WND_BUTTON_ID_TRANSLATE2_SEL, b2);
+    int language = lyric_get_language(wnd_info.hLyric);
+    lyric_wnd_set_state_translate(*pWndInfo, language);
 
     if (language)
         wnd_info.add_mode(LYRIC_MODE::EXISTTRANS);

@@ -1,5 +1,6 @@
 #include "lyric_wnd_function.h"
 #include "CCustomTextRenderer.h"
+#include "GetMonitorRect.h"
 
 using namespace NAMESPACE_D2D;
 
@@ -204,8 +205,33 @@ void LYRIC_WND_INFO::dpi_change(HWND hWnd)
     const int _10 = scale(10);
     if (dx.hFont)
         dx.re_create_font(this);
-    padding = (float)(_10 / 2);
-    shadowRadius = (float)_10;
+    padding_text = (float)(_10 / 2);
+    shadowRadius = (float)10;
+    padding_wnd = (float)scale(8);
+    change_btn = true;
+    change_text = true;
+    change_wnd = true;
+}
+
+void LYRIC_WND_INFO::get_monitor()
+{
+    int len = GetMonitorRects(rcMonitors);
+    if (len == 0)
+    {
+        rcMonitor = { 0, 0, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN) };
+        rcMonitors = { rcMonitor };
+        return;
+    }
+
+    GetMonitorRect(&rcMonitor);
+    rcMonitor = {};
+    for (const RECT& rc : rcMonitors)
+    {
+        rcMonitor.left   = min(rcMonitor.left  , rc.left);
+        rcMonitor.top    = min(rcMonitor.top   , rc.top);
+        rcMonitor.right  = max(rcMonitor.right , rc.right);
+        rcMonitor.bottom = max(rcMonitor.bottom, rc.bottom);
+    }
 
 }
 
@@ -214,17 +240,17 @@ float LYRIC_WND_INFO::get_lyric_line_height() const
     if (has_mode(LYRIC_MODE::VERTICAL))
     {
         // 竖屏, 取宽度加上边距
-        return word_width + padding * 2;
+        return word_width + padding_text * 2;
     }
-    return word_height + padding * 2;
+    return word_height + padding_text * 2;
 }
 
 float LYRIC_WND_INFO::get_lyric_line_width(float vl) const
 {
     if (has_mode(LYRIC_MODE::VERTICAL))
-        return (vl ? vl : nLineDefHeight) + padding * 2;
+        return (vl ? vl : nLineDefHeight) + padding_text * 2;
     
-    return (vl ? vl : nLineDefWidth) + padding * 2;
+    return (vl ? vl : nLineDefWidth) + padding_text * 2;
 }
 
 
@@ -272,11 +298,26 @@ PLYRIC_WND_INFO lyric_wnd_get_data(HWND hWnd)
     return (PLYRIC_WND_INFO)GetWindowLongPtrW(hWnd, 0);
 }
 
-bool isLatinCharacter(wchar_t ch)
+bool isLatinCharacter(wchar_t ch) 
 {
     return
         // Printable ASCII characters: 0x21 ('!') to 0x7E ('~')
         (ch >= 0x20 && ch <= 0x7E) ||
+
+        (ch == L'（' || ch == L'）'
+         || ch == L'「' || ch == L'」'
+         || ch == L'【' || ch == L'】'
+         || ch == L'《' || ch == L'》'
+         || ch == L'〈' || ch == L'〉'
+         || ch == L'『' || ch == L'』'
+         || ch == L'〔' || ch == L'〕'
+         || ch == L'〖' || ch == L'〗'
+         || ch == L'‘' || ch == L'’'
+         || ch == L'“' || ch == L'”'
+         || ch == L'《' || ch == L'》'
+         || ch == L'〈' || ch == L'〉'
+         || ch == L'『' || ch == L'』'
+         ) ||
 
         // Latin-1 Supplement
         (ch >= 0x00C0 && ch <= 0x00D6) || // 
@@ -288,6 +329,17 @@ bool isLatinCharacter(wchar_t ch)
 
         // Latin Extended-B
         (ch >= 0x0180 && ch <= 0x024F);
+}
+
+int lyric_wnd_set_state_translate(LYRIC_WND_INFO& wnd_info, int language)
+{
+    LYRIC_WND_BUTTON_STATE b1 = __query(language, 1) ? LYRIC_WND_BUTTON_STATE_NORMAL : LYRIC_WND_BUTTON_STATE_DISABLE;
+    LYRIC_WND_BUTTON_STATE b2 = __query(language, 2) ? LYRIC_WND_BUTTON_STATE_NORMAL : LYRIC_WND_BUTTON_STATE_DISABLE;
+    lyric_wnd_set_btn_state(wnd_info, LYRIC_WND_BUTTON_ID_TRANSLATE1, b1);
+    lyric_wnd_set_btn_state(wnd_info, LYRIC_WND_BUTTON_ID_TRANSLATE2, b2);
+    lyric_wnd_set_btn_state(wnd_info, LYRIC_WND_BUTTON_ID_TRANSLATE1_SEL, b1);
+    lyric_wnd_set_btn_state(wnd_info, LYRIC_WND_BUTTON_ID_TRANSLATE2_SEL, b2);
+    return 0;
 }
 
 NAMESPACE_LYRIC_WND_END

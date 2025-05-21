@@ -104,8 +104,7 @@ struct LYRIC_WND_BUTTON
 
     int     index{ -1 };    // 按钮索引, 当前鼠标移动到了哪个索引上, 这个索引就是 rcBtn 的下标
     int     indexDown{ -1 };// 按下索引
-    int     width{};        // 所有按钮的宽度
-    int     height{};       // 所有按钮的高度
+    RECT    rc;             // 按钮实际绘画的位置, 单位是像素, 判断鼠标移动到这个位置就在按钮上
     int     maxWidth{};     // 最大按钮的宽度
     int     maxHeight{};    // 最大按钮的高度
 
@@ -180,6 +179,12 @@ enum class LYRIC_MODE : unsigned int
 
 };
 
+// 窗口位置信息, 横屏和竖屏使用的位置不一样
+struct LYRIC_WND_POS : RECT
+{
+    int width;
+    int height;
+};
 
 // 歌词窗口 USERDATA 里存放的是这个结构
 typedef struct LYRIC_WND_INFO
@@ -189,6 +194,7 @@ typedef struct LYRIC_WND_INFO
     HLYRIC      hLyric;         // 歌词句柄
     int         prevIndexLine;  // 上一次绘画的歌词行号
     float       prevWidth;      // 上一次绘画的歌词宽度
+    float       prevHeight;      // 上一次绘画的歌词宽度
     float       word_width;     // 一个汉字的宽度, 竖屏使用
     float       word_height;    // 一个汉字的高度
     float       nLineDefWidth;  // 没有歌词时歌词的默认宽度
@@ -202,11 +208,16 @@ typedef struct LYRIC_WND_INFO
     int         nLineTop1;      // 第一行歌词的顶部位置
     int         nLineTop2;      // 第二行歌词的顶部位置
     RECT        rcWindow;       // 歌词窗口的位置, 整个窗口都是客户区, 这里记录的是屏幕位置, 绘画时的位置, 不保证是当前窗口的位置
+    RECT        rcMonitor;      // 所有显示器合并后的矩形
     
-    float       padding;        // 歌词4个边的间距, 这个边就是预留给发光/阴影 超出的范围
+    float       padding_text;   // 歌词4个边的间距, 这个边就是预留给发光/阴影 超出的范围
+    float       padding_wnd;    // 窗口4个边的间距, 这个范围留空, 不让内容绘画到窗口边上
 
     float       shadowRadius;   // 阴影半径
     LYRIC_MODE  mode;           // 歌词显示模式
+
+    LYRIC_WND_POS pos_h;        // 横屏模式下的窗口位置
+    LYRIC_WND_POS pos_v;        // 竖屏模式下的窗口位置
     
     bool has_mode(LYRIC_MODE flag) const
     {
@@ -239,9 +250,7 @@ typedef struct LYRIC_WND_INFO
         {
             USHORT  change_wnd : 1;     // 窗口是否有改变
             USHORT  change_btn : 1;     // 按钮部分是否有改变, 热点改变/按下改变等
-            USHORT  change_font : 1;    // 字体有改变, 需要在绘画歌词文本的时候重新创建缓存
-            USHORT  change_hbr : 1;     // 画刷有改变, 需要在绘画歌词文本的时候重新创建缓存
-            USHORT  change_trans : 1;   // 翻译部分, 需要在绘画歌词文本的时候重新创建缓存
+            USHORT  change_text : 1;    // 字体有改变, 需要在绘画歌词文本的时候重新创建缓存
         };    // 有窗口部分有改变的放这里, 里面的值为真的时候会往下走进行重画
         USHORT  change;
     };
@@ -258,6 +267,7 @@ typedef struct LYRIC_WND_INFO
     std::vector<DWORD>      clrLight;   // 高亮歌词画刷颜色组
     DWORD                   clrBorder;  // 歌词文本边框颜色
     CScale                  scale;      // 缩放比例
+    std::vector<RECT>       rcMonitors; // 所有显示器的矩形, 记录每个屏幕的位置, 限制窗口移动范围
     LYRIC_WND_INFO();
 
     ~LYRIC_WND_INFO()
@@ -270,6 +280,8 @@ typedef struct LYRIC_WND_INFO
 
     // DPI改变时调用, 会重新计算字体, 位置偏移等信息
     void dpi_change(HWND hWnd);
+
+    void get_monitor();
 
     // 判断绘画歌词画布的宽度/高度, 竖屏返回的是宽度, 横屏返回的是高度
     float get_lyric_line_height() const;

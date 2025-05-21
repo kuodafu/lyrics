@@ -94,21 +94,10 @@ bool lyric_wnd_load_image_recalc(LYRIC_WND_INFO& wnd_info)
 
     // 设置默认按钮信息后, 给按钮设置一些状态
     int language = lyric_get_language(wnd_info.hLyric);
+    lyric_wnd_set_state_translate(wnd_info, language);
 
-    LYRIC_WND_BUTTON_STATE b1 = __query(language, 1) ? LYRIC_WND_BUTTON_STATE_NORMAL : LYRIC_WND_BUTTON_STATE_DISABLE;
-    LYRIC_WND_BUTTON_STATE b2 = __query(language, 2) ? LYRIC_WND_BUTTON_STATE_NORMAL : LYRIC_WND_BUTTON_STATE_DISABLE;
-
-    lyric_wnd_set_btn_state(wnd_info, LYRIC_WND_BUTTON_ID_TRANSLATE1, b1);
-    lyric_wnd_set_btn_state(wnd_info, LYRIC_WND_BUTTON_ID_TRANSLATE2, b2);
-
-    const int _10 = wnd_info.scale(10);
-    const int _20 = _10 * 2;
-    const int _50 = _10 * 5;
-
-    const int offset = _10;
-    wnd_info.button.width = lyric_wnd_calc_button(wnd_info, wnd_info.button.maxWidth, wnd_info.button.maxHeight, offset);
-
-    lyric_wnd_calc_height(wnd_info);
+    lyric_wnd_calc_btn_pos(wnd_info);
+    lyric_wnd_calc_wnd_pos(wnd_info, false);
     return true;
 }
 
@@ -123,30 +112,7 @@ bool lyric_wnd_load_image(LYRIC_WND_INFO& wnd_info)
     return lyric_wnd_load_image_recalc(wnd_info);
 }
 
-void lyric_wnd_calc_height(LYRIC_WND_INFO& wnd_info)
-{
-    const int _10 = wnd_info.scale(10);
-    const int _20 = _10 * 2;
-    const int _50 = _10 * 5;
-    const bool is_vertical = wnd_info.has_mode(LYRIC_MODE::VERTICAL);
 
-    if (is_vertical)
-    {
-        wnd_info.nLineTop1 = wnd_info.button.maxWidth + _20;
-        wnd_info.nLineTop2 = wnd_info.nLineTop1 + (int)wnd_info.word_width + _10;
-        wnd_info.nMinWidth = wnd_info.nLineTop2 + (int)wnd_info.word_width + _10;
-        wnd_info.nMinHeight = wnd_info.button.height + _50;;
-    }
-    else
-    {
-        wnd_info.nLineTop1 = wnd_info.button.maxHeight + _20;
-        wnd_info.nLineTop2 = wnd_info.nLineTop1 + (int)wnd_info.word_height + _10;
-        wnd_info.nMinWidth = wnd_info.button.width + _50;
-        wnd_info.nMinHeight = wnd_info.nLineTop2 + (int)wnd_info.word_height + _10;
-    }
-
-
-}
 bool _lyric_parse_xml(LYRIC_WND_INFO& wnd_info)
 {
     DWORD xml_size = 0;
@@ -224,82 +190,6 @@ bool lyric_wnd_load_image_parse(LYRIC_WND_INFO& wnd_info, tinyxml2::XMLNode* nod
     return true;
 }
 
-
-
-int lyric_wnd_calc_button(LYRIC_WND_INFO& wnd_info, int& maxWidth, int& maxHeight, int offset)
-{
-    int& height = wnd_info.button.height;
-    int width = 0;
-    maxHeight = 0;
-    maxWidth = 0;
-    height = 0;
-    const int offset2 = offset / 2;
-
-    const bool is_vertical = wnd_info.has_mode(LYRIC_MODE::VERTICAL);
-
-    int left = 0;
-    int top = 0;
-    int index = -1;
-    for (LYRIC_WND_BUTTON_INFO& item : wnd_info.button.rcBtn)
-    {
-        index++;
-        item.prcSrc = nullptr;
-        if (item.id == 0)
-        {
-            if (is_vertical)
-                item.rc.top = top + offset2;
-            else
-                item.rc.left = left + offset2;
-            left += offset;
-            top += offset;
-            width += offset;
-            height += offset;
-        }
-        else
-        {
-            auto& item_src = wnd_info.button.rcSrc[item.id - LYRIC_WND_BUTTON_ID_FIRST];
-            if (wnd_info.button.indexDown == index)
-            {
-                // 当前按钮是按下状态
-                item.prcSrc = &item_src.rcDown;
-            }
-            else if (wnd_info.button.index == index)
-            {
-                // 当前按钮是热点状态
-                item.prcSrc = &item_src.rcLight;
-            }
-            else if (__query(item.state, LYRIC_WND_BUTTON_STATE_DISABLE))
-            {
-                // 当前按钮是禁止状态
-                item.prcSrc = &item_src.rcDisable;
-            }
-            else
-            {
-                item.prcSrc = &item_src.rcNormal;   // 剩下的就是禁止状态
-            }
-            const RECT& rc = *item.prcSrc;
-            const int btn_width = rc.right - rc.left;
-            const int btn_height = rc.bottom - rc.top;
-            if (maxHeight < btn_height)
-                maxHeight = btn_height;
-            if (maxWidth < btn_width)
-                maxWidth = btn_width;
-
-            if (is_vertical)
-                item.rc.top = top;
-            else
-                item.rc.left = left;
-
-            left += btn_width + offset;
-            top += btn_height + offset;
-            width += btn_width + offset;
-            height += btn_height + offset;
-
-        }
-
-    }
-    return width;
-}
 
 
 

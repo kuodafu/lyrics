@@ -96,6 +96,10 @@ void lyric_wnd_draw_text_geometry_draw_cache(LYRIC_WND_INFO& wnd_info, LYRIC_WND
             pszText = line.pTranslate2, nLength = (UINT32)line.nTranslate2;
     }
 
+    //pszText = L"Think About It (想一想) - Avril Lavigne (艾薇儿·拉维尼)";
+    //pszText = L"Take it with no regrets and that is what I'll do";
+    //pszText = L"'Cause I can't be bought";
+    //nLength = (UINT32)wcslen(pszText);
 
     if (nLength && pszText && *pszText)
     {
@@ -166,7 +170,7 @@ void lyric_wnd_draw_text_geometry_draw_cache(LYRIC_WND_INFO& wnd_info, LYRIC_WND
 
 
     // 绘画左边顶边偏移的位置, 不从0开始, 画阴影部分会小于0, 这里偏移一些像素
-    const float _offset = wnd_info.padding;
+    const float _offset = wnd_info.padding_text;
     //const float _offset = 0;
 
     auto pfn_draw_text = [&](ID2D1LinearGradientBrush* hbrFill, ID2D1Bitmap*& pBitmap) -> void
@@ -256,31 +260,49 @@ void DrawGlyphGeometriesWithDebugText(
 
     D2D1_RECT_F max_bound_top{};
     D2D1_RECT_F max_bound_left{};
+    float min_left = 0;
+    float min_top = 0;
+    float max_right = 0;
+    float max_bottom = 0;
 
-    float max_width = 0;
     for (GlyphGeometryInfo& info : m_glyphGeometries)
     {
         if (!info.geometry)
             continue;
         auto& geometry = info.geometry;
 
-        hr = geometry->GetBounds(matrix, &info.bounds);
-        //if (max_bound_top.top > info.bounds.top)
-        //    max_bound_top = info.bounds;
-        //if (max_bound_left.left > info.bounds.left)
-        //    max_bound_left = info.bounds;
+        hr = geometry->GetBounds(nullptr, &info.bounds);
 
-        //if (max_width < (info.bounds.right - info.bounds.left))
-        //    max_width = info.bounds.right - info.bounds.left;
+        if (std::isfinite(info.bounds.left))
+        {
+            if (min_left > info.bounds.left)
+                min_left = info.bounds.left;
+            if (min_top > info.bounds.top)
+                min_top = info.bounds.top;
+            if (max_right < info.bounds.right)
+                max_right = info.bounds.right;
+            if (max_bottom < info.bounds.bottom)
+                max_bottom = info.bounds.bottom;
+
+            if (max_bound_top.top > info.bounds.top)
+                max_bound_top = info.bounds;
+            if (max_bound_left.left > info.bounds.left)
+                max_bound_left = info.bounds;
+        }
+
     }
 
-    max_bound_top = m_glyphGeometries.front().bounds;
-    max_bound_left = m_glyphGeometries.front().bounds;
-    max_width = max_bound_left.right - max_bound_left.left;
+    //max_bound_top = m_glyphGeometries.front().bounds;
+    //max_bound_left = m_glyphGeometries.front().bounds;
+    //max_width = max_bound_left.right - max_bound_left.left;
+
+    float max_width = max_right - min_left;
+    float max_height = max_bottom - min_top;
 
     float line_height = wnd_info.get_lyric_line_height();
-    float offset_y = (line_height - (max_bound_top.bottom - max_bound_top.top)) / 2 - 2;
-    float offset_x = (line_height - (max_width)) / 2 + 3;
+    float offset_y = (line_height - (max_height)) / 2 - 2;
+    //float offset_x = (line_height - (max_bound_top.right - max_bound_top.left)) / 2 + 2;
+    float offset_x = (line_height - (max_width)) / 2 + 2;
 
 
     D2D1_POINT_2F offset = {};
@@ -317,10 +339,10 @@ void DrawGlyphGeometriesWithDebugText(
         {
             float x = 0;
             if (info.vertical)
-                x = -max_bound_left.left + offset_x;
+                x =  0;
             else
-                x = -max_bound_left.left + (line_height - (bounds.right - bounds.left)) / 2;
-
+                x = (line_height - (bounds.right - bounds.left)) / 2;
+            //x = (line_height - (bounds.right - bounds.left)) / 2;
             const float y = info.vertical ? info.width : info.height;
             float _offset_y = (y - (bounds.bottom - bounds.top)) / 2;
 
@@ -452,7 +474,7 @@ void lyric_wnd_draw_geometry_DrawGlyphRun(LYRIC_WND_INFO& wnd_info,
 
                 // 修正中心点平移，额外减去 ascent
                 D2D1::Matrix3x2F translate = D2D1::Matrix3x2F::Translation(
-                    0,
+                    item.height / 4,
                     0
                 );
 

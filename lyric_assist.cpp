@@ -325,7 +325,7 @@ wchar_t* LYRICCALL lyric_to_lrc(HLYRIC hLyric)
         int s = line.start / 1000;
         int m = s / 60;
         int ms = line.start % 1000 / 10;
-        swprintf_s(szTime, L"[%02d:%02d.%02d]", m, s, ms);
+        swprintf_s(szTime, L"[%02d:%02d.%02d]", m, s % 60, ms);
         lrc.append(szTime).append(line.text).append(L"\r\n");
     }
 

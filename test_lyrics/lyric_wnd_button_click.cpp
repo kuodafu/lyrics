@@ -165,27 +165,18 @@ bool lrc_click_translate(LYRIC_WND_INFO& wnd_info, int id)
     default:
         return false;
     }
-    wnd_info.change_trans = 1; // 标记需要重新绘画翻译文本
+    wnd_info.change_text = 1;   // 标记文本改变, 需要重新创建文本缓存
     return true;
 }
 static void _lrc_v_h_mode(LYRIC_WND_INFO& wnd_info)
 {
-    lyric_wnd_load_image_recalc(wnd_info); // 重新加载图片, 切换到竖屏模式
-    wnd_info.change_btn = 1; // 标记需要重新绘画按钮
-    const bool is_vertical = wnd_info.has_mode(LYRIC_MODE::VERTICAL);
+    lyric_re_calc_text_width(wnd_info.hLyric);  // 重新计算歌词宽度
+    lyric_wnd_load_image_recalc(wnd_info);      // 重新加载图片, 切换到竖屏模式
+    wnd_info.change_btn = 1;    // 标记需要重新绘画按钮
+    wnd_info.change_text = 1;   // 标记文本改变, 需要重新创建文本缓存
 
+    lyric_wnd_calc_wnd_pos(wnd_info, true);
 
-    RECT rc;
-    GetWindowRect(wnd_info.hWnd, &rc);
-    if (is_vertical)
-    {
-        MoveWindow(wnd_info.hWnd, rc.left, 100, wnd_info.nMinWidth, 800, TRUE);
-
-    }
-    else
-    {
-        MoveWindow(wnd_info.hWnd, rc.left, rc.top, rc.right - rc.left, wnd_info.nMinHeight, TRUE);
-    }
 }
 void lrc_click_vmode(LYRIC_WND_INFO& wnd_info, int id)
 {
@@ -220,14 +211,11 @@ void lrc_click_font(LYRIC_WND_INFO& wnd_info, int id)
     wnd_info.lf.lfHeight += size;
     wnd_info.dx.re_create_font(&wnd_info);      // 调整尺寸后重新创建
     lyric_re_calc_text_width(wnd_info.hLyric);  // 重新计算歌词宽度
-    wnd_info.change_btn = true;                 // 标记按钮需要重新绘画
-    wnd_info.change_font = true;                // 标记字体已经改变, 需要重新创建歌词缓存
+    wnd_info.change_btn = 1;                    // 标记按钮需要重新绘画
+    wnd_info.change_text = 1;                   // 标记文本改变, 需要重新创建文本缓存
 
-    lyric_wnd_calc_height(wnd_info);
+    lyric_wnd_calc_wnd_pos(wnd_info, true);
 
-    RECT rc;
-    GetWindowRect(wnd_info.hWnd, &rc);
-    MoveWindow(wnd_info.hWnd, rc.left, rc.top, rc.right - rc.left, wnd_info.nMinHeight, TRUE);
 }
 
 void lrc_click_lrc_ms(LYRIC_WND_INFO& wnd_info, int id)
@@ -248,9 +236,34 @@ void lrc_click_lock_un(LYRIC_WND_INFO& wnd_info, int id)
     wnd_info.change_btn = true; // 标记按钮需要重新绘画
 }
 
+inline BOOL SetClipboard(LPCWSTR str, size_t size = -1)
+{
+    if (!str) return FALSE;
+    if (size == -1)
+        size = (int)(LONG_PTR)wcslen(str);
+    size_t len = size + 1;
+    HGLOBAL hMem = GlobalAlloc(GHND, len * 2);
+    if (!hMem)
+        return FALSE;
+    void* p = GlobalLock(hMem);
+    if (p)
+    {
+        memcpy(p, str, len * 2);
+        GlobalUnlock(hMem);
+        OpenClipboard(0);
+        EmptyClipboard();
+        SetClipboardData(CF_UNICODETEXT, hMem);
+        //GlobalFree(hMem);
+        CloseClipboard();
+    }
+    return TRUE;
+}
+
 void lrc_click_setting(LYRIC_WND_INFO& wnd_info, int id)
 {
-    MessageBoxW(wnd_info.hWnd, L"弹出设置窗口", L"提示", MB_OK);
+    wchar_t* text = lyric_to_lrc(wnd_info.hLyric);
+    SetClipboard(text);
+    lyric_free(text);
 }
 
 void lrc_click_close(LYRIC_WND_INFO& wnd_info, int id)

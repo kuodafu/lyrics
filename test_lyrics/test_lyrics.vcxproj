@@ -160,6 +160,8 @@
     <ClCompile Include="lyric_wnd_button_hover.cpp" />
     <ClCompile Include="lyric_wnd_draw_button.cpp" />
     <ClCompile Include="lyric_wnd_draw_line.cpp" />
+    <ClCompile Include="lyric_wnd_draw_line_hori.cpp" />
+    <ClCompile Include="lyric_wnd_draw_line_vert.cpp" />
     <ClCompile Include="lyric_wnd_draw_text_glow.cpp" />
     <ClCompile Include="d2d.cpp" />
     <ClCompile Include="lyric_wnd.cpp" />

@@ -29,6 +29,7 @@ HRESULT lyric_wnd_OnPaint(LYRIC_WND_INFO& wnd_info, bool isresize, LYRIC_CALC_ST
     const int cxClient = rcWindow.right - rcWindow.left;
     const int cyClient = rcWindow.bottom - rcWindow.top;
 
+    //wnd_info.isFillBack = true;
 
     if (isresize)
         hCanvas.resize(cxClient, cyClient);
@@ -44,7 +45,7 @@ HRESULT lyric_wnd_OnPaint(LYRIC_WND_INFO& wnd_info, bool isresize, LYRIC_CALC_ST
     //hCanvas->SetTextAntialiasMode(D2D1_TEXT_ANTIALIAS_MODE_GRAYSCALE);
 
     if (!wnd_info.isLock)   // 没锁定的时候才绘画按钮
-        lyric_wnd_draw_button(wnd_info, rcWindow);
+        lyric_wnd_draw_button(wnd_info);
 
     lyric_wnd_draw_lyric(wnd_info, arg);
 

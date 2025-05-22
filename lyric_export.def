@@ -11,3 +11,4 @@ EXPORTS
 	lyric_behind_ahead
 	lyric_to_lrc
 	lyric_free
+	lyric_decode2

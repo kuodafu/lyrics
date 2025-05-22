@@ -108,7 +108,7 @@ void lyric_wnd_draw_text_geometry_draw_cache(LYRIC_WND_INFO& wnd_info, LYRIC_WND
             return;
 
         //dxFormat->SetReadingDirection(DWRITE_READING_DIRECTION_BOTTOM_TO_TOP);
-        pTextLayout = lyric_wnd_create_text_layout(pszText, (UINT32)nLength, dxFormat, 0, 0);
+        lyric_wnd_create_text_layout(pszText, (UINT32)nLength, dxFormat, 0, 0, &pTextLayout);
 
         if (!pTextLayout)
             return;
@@ -175,17 +175,15 @@ void lyric_wnd_draw_text_geometry_draw_cache(LYRIC_WND_INFO& wnd_info, LYRIC_WND
 
     auto pfn_draw_text = [&](ID2D1LinearGradientBrush* hbrFill, ID2D1Bitmap*& pBitmap) -> void
     {
-        // 弄个新的渲染目标, 把数据绘画到这个目标上, 然后取出位图保存
-        CComPtr<ID2D1BitmapRenderTarget> pRender = nullptr;
-
         // 没有文本, 不需要绘画, 只需要把位图清空
         if (!pTextLayout && pBitmap)
         {
-            CComPtr<ID2D1Image> pOldImage;
+            ID2D1Image* pOldImage = nullptr;
             pRenderTarget->GetTarget(&pOldImage);
             pRenderTarget->SetTarget(pBitmap);
-            pRenderTarget->Clear(0);
+            pRenderTarget->Clear(nullptr);
             pRenderTarget->SetTarget(pOldImage);
+            SafeRelease(pOldImage);
             return;
         }
 
@@ -203,6 +201,9 @@ void lyric_wnd_draw_text_geometry_draw_cache(LYRIC_WND_INFO& wnd_info, LYRIC_WND
             height = wnd_info.get_lyric_line_height();
             width = wnd_info.get_lyric_line_width(draw_info.text_width);
         }
+
+        // 弄个新的渲染目标, 把数据绘画到这个目标上, 然后取出位图保存
+        ID2D1BitmapRenderTarget* pRender = nullptr;
 
         D2D1_SIZE_F size = D2D1::SizeF(width, height);
         hr = pRenderTarget->CreateCompatibleRenderTarget(size, &pRender);
@@ -223,14 +224,14 @@ void lyric_wnd_draw_text_geometry_draw_cache(LYRIC_WND_INFO& wnd_info, LYRIC_WND
         }
 
         hr = pRender->EndDraw();
-        if (FAILED(hr))
-            return;
-
-        // 绘画结束, 取出位图返回
-        //TODO 这里应该创建一个位图, 然后画到这个位图里面
-        // 这个位图的尺寸就是计算出来的边界矩形的大小
-
-        hr = pRender->GetBitmap(&pBitmap);
+        if (SUCCEEDED(hr))
+        {
+            // 绘画结束, 取出位图返回
+            //TODO 这里应该创建一个位图, 然后画到这个位图里面
+            // 这个位图的尺寸就是计算出来的边界矩形的大小
+            hr = pRender->GetBitmap(&pBitmap);
+        }
+        SafeRelease(pRender);
         return;
     };
 

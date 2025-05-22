@@ -96,7 +96,8 @@ bool LYRIC_WND_DX::re_create_font(LYRIC_WND_INFO* pWndInfo)
     lf.lfHeight = -MulDiv(lf.lfHeight, pWndInfo->scale, 72);
     hFont = new CD2DFont(&lf);
 
-    IDWriteTextLayout* pTextLayout = lyric_wnd_create_text_layout(pWndInfo->pszDefText, pWndInfo->nDefText, *hFont, 0, 0);
+    CComPtr<IDWriteTextLayout> pTextLayout;
+    lyric_wnd_create_text_layout(pWndInfo->pszDefText, pWndInfo->nDefText, *hFont, 0, 0, &pTextLayout);
     if (pTextLayout)
     {
         float width = 0.f, height = 0.f;
@@ -137,7 +138,6 @@ bool LYRIC_WND_DX::re_create_font(LYRIC_WND_INFO* pWndInfo)
         });
         pTextLayout->Draw(0, &renderer, 0, 0);
 
-        SafeRelease(pTextLayout);
     }
 
     return hFont != nullptr;
@@ -278,6 +278,9 @@ LYRIC_WND_INFO::LYRIC_WND_INFO()
     mode = LYRIC_MODE::DOUBLE_ROW;
     pszDefText = L"该歌曲暂时没有歌词";
     nDefText = 9;
+
+    pCritSec = new CRITICAL_SECTION;
+    InitializeCriticalSection(pCritSec);
 
     dx.clrBack = MAKEARGB(100, 0, 0, 0);
     clrBorder = MAKEARGB(255, 33, 33, 33);

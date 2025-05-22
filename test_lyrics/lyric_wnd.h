@@ -94,14 +94,15 @@ HWND lyric_wnd_create(const LYRIC_WND_ARG* arg, PFN_LYRIC_WND_COMMAND pfnCommand
 /// <param name="hWindowLyric">lyric_wnd_create() 返回的窗口句柄</param>
 /// <param name="pKrcData">krc文件数据指针</param>
 /// <param name="nKrcDataLen">krc文件数据尺寸</param>
+/// <param name="isDecrypted">krc数据是否已经解密了, isDecrypted 为true时, pData指向UTF16编码的KRC解密后的数据, nSize表示pData的字符数</param>
 /// <returns>返回是否加载成功</returns>
-bool lyric_wnd_load_krc(HWND hWindowLyric, LPCVOID pKrcData, int nKrcDataLen);
+bool lyric_wnd_load_krc(HWND hWindowLyric, LPCVOID pKrcData, int nKrcDataLen, bool isDecrypted);
 
 /// <summary>
-/// 更新歌词显示, 这个速度还可以, 百万次调用也就几百毫秒, 200帧都能稳定显示
+/// 更新播放时间, 歌词显示是根据这个时间来显示的
 /// </summary>
 /// <param name="hWindowLyric">歌词窗口句柄</param>
-/// <param name="nCurrentTimeMS">要更新的世界, 单位是毫秒</param>
+/// <param name="nCurrentTimeMS">要更新的时间, 单位是毫秒</param>
 /// <returns>返回是否更新成功</returns>
 bool lyric_wnd_update(HWND hWindowLyric, int nCurrentTimeMS);
 

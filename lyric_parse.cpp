@@ -28,16 +28,23 @@ LYRIC_NAMESPACE_END
 //////////////////////////////////////////////////////////////////////////
 // 下面这里是公开出去的接口
 
-HLYRIC LYRICCALL lyric_parse(const void* pData, int nSize)
+HLYRIC LYRICCALL lyric_parse(const void* pData, int nSize, bool isDecrypted)
 {
     if (!pData || nSize <= 0)
         return nullptr;
     using namespace LYRIC_NAMESPACE;
     auto pLyric = new INSIDE_LYRIC_INFO;
-    if (!lyric_decode(pData, nSize, pLyric->krc))
+    if (isDecrypted)
     {
-        delete pLyric;
-        return nullptr;
+        pLyric->krc.assign((LPCWSTR)pData, nSize);
+    }
+    else
+    {
+        if (!lyric_decode(pData, nSize, pLyric->krc))
+        {
+            delete pLyric;
+            return nullptr;
+        }
     }
 
     LPWSTR pStart = &pLyric->krc[0];
@@ -98,6 +105,8 @@ HLYRIC LYRICCALL lyric_parse(const void* pData, int nSize)
     if (language)
         lyric_parse_tget_translate(pLyric, language);
 
+    if (pLyric->lines.size() > 300)
+        __debugbreak();
     return (HLYRIC)pLyric;
 }
 
@@ -108,6 +117,25 @@ void LYRICCALL lyric_destroy(HLYRIC pData)
     delete pLyric;
 }
 
+LPWSTR LYRICCALL lyric_decode2(const void* pData, int nSize)
+{
+    const BYTE zh[] = { 64, 71, 97, 119, 94, 50, 116, 71, 81, 54, 49, 45, 206, 210, 110, 105 };
+    std::string lyric((LPCSTR)pData + 4, nSize - 4);
+    for (int i = 0; i < nSize - 4; i++)
+        lyric[i] ^= zh[i % 16];
+
+    uLongf destLen = (nSize - 4) * 10;
+    std::string u8(destLen, 0);
+
+    int err = uncompress((Bytef*)&u8[0], &destLen, (const Bytef*)lyric.data(), (uLongf)lyric.size());
+    if (err != Z_OK)
+        return nullptr;
+    u8.resize(destLen);
+    auto krc = charset_stl::U2W(u8);
+    auto p = new wchar_t[krc.size() + 1];
+    wcsncpy_s(p, krc.size() + 1, krc.c_str(), krc.size());
+    return p;
+}
 
 // 公开的接口到这里结束
 //////////////////////////////////////////////////////////////////////////
@@ -145,6 +173,8 @@ bool lyric_decode(const void* pData, int nSize, std::wstring& krc)
     krc = charset_stl::U2W(u8);
     return true;
 }
+
+
 
 // 调试状态下把时间间隔加入到歌词尾部方便调试
 #if DEBUG_SHOW_TIME
@@ -293,6 +323,7 @@ void lyric_parse_text(PINSIDE_LYRIC_INFO pLyric, LPWSTR pStart, LPWSTR pEnd)
             _dbg_append_interval_time(pLyric, lines_size - 2);
 
         }
+
     }
 
     _dbg_append_interval_time(pLyric, pLyric->lines.size() - 1);
@@ -306,6 +337,7 @@ void lyric_parse_text(PINSIDE_LYRIC_INFO pLyric, LPWSTR pStart, LPWSTR pEnd)
 /// <param name="pEnd"></param>
 void lyric_parse_tget_translate(PINSIDE_LYRIC_INFO pLyric, LPCWSTR language)
 {
+    //return;
     auto languageA = charset_stl::W2A(language);
     std::string base_de_data(languageA.size(), 0);
 

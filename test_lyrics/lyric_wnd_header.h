@@ -7,6 +7,7 @@
 #include <CScale.h>
 #include <vector>
 #include <string>
+#include <mutex>
 #include "../kuodafu_lyric.h"
 
 #define NAMESPACE_LYRIC_WND lyric_wnd
@@ -127,6 +128,45 @@ struct LYRIC_WND_CACHE_OBJ
     ~LYRIC_WND_CACHE_OBJ();
 };
 
+class CCriticalSection
+{
+public:
+    CCriticalSection(LPCRITICAL_SECTION cs) : m_cs(cs)
+    {
+        Lock();
+    }
+    CCriticalSection(LPCRITICAL_SECTION cs, const std::try_to_lock_t&) : m_cs(cs)
+    {
+        Lock();
+    }
+    CCriticalSection(LPCRITICAL_SECTION cs, const std::adopt_lock_t&) : m_cs(cs)
+    {
+    }
+    ~CCriticalSection()
+    {
+        Unlock();
+    }
+    bool TryLock()
+    {
+        is_unlock = TryEnterCriticalSection(m_cs);
+        return is_unlock;
+    }
+    void Lock()
+    {
+        EnterCriticalSection(m_cs);
+        is_unlock = true;
+    }
+    void Unlock()
+    {
+        if (is_unlock)
+            LeaveCriticalSection(m_cs);
+        m_cs = nullptr;
+    }
+private:
+    LPCRITICAL_SECTION m_cs{};
+    bool is_unlock{};
+};
+
 // 记录绘画文本需要的数据, 路径, 阴影方式都是使用这个结构, 一行对应一个结构
 struct LYRIC_WND_DRAWTEXT_INFO
 {
@@ -218,6 +258,8 @@ typedef struct LYRIC_WND_INFO
 
     LYRIC_WND_POS pos_h;        // 横屏模式下的窗口位置
     LYRIC_WND_POS pos_v;        // 竖屏模式下的窗口位置
+
+    LPCRITICAL_SECTION pCritSec;    // 歌词加载的临界区, 防止有线程释放了歌词, 然后窗口线程去查询
     
     bool has_mode(LYRIC_MODE flag) const
     {
@@ -274,6 +316,8 @@ typedef struct LYRIC_WND_INFO
     {
         lyric_destroy(hLyric);
         DestroyWindow(hTips);
+        DeleteCriticalSection(pCritSec);
+        delete pCritSec;
     }
 
     void set_def_arg(const LYRIC_WND_ARG* arg);

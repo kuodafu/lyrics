@@ -71,6 +71,12 @@ HWND lyric_create_layered_window(const LYRIC_WND_ARG* arg)
     if (!hWnd)
         return nullptr;
 
+    SetTimer(hWnd, 2000, 10, [](HWND hWnd, UINT message, UINT_PTR id, DWORD t)
+    {
+        PLYRIC_WND_INFO pWndInfo = lyric_wnd_get_data(hWnd);
+        lyric_wnd_invalidate(*pWndInfo);
+    });
+
     //DWMNCRENDERINGPOLICY pv = DWMNCRP_ENABLED;
     //HRESULT hr = DwmSetWindowAttribute(hWnd, DWMWA_NCRENDERING_POLICY, &pv, sizeof(pv));
 
@@ -86,6 +92,17 @@ void lyric_wnd_default_object(LYRIC_WND_INFO& wnd_info)
 
 bool lyric_wnd_invalidate(LYRIC_WND_INFO& wnd_info)
 {
+    // 上锁, 尝试进入, 能进入就说明没有在修改歌词信息, 往下执行
+    CCriticalSection cs(wnd_info.pCritSec, std::adopt_lock_t());
+    if (!cs.TryLock())
+        return false;   // 进入失败就不继续处理
+
+    //static bool asdas;
+    //if (asdas)
+    //    return true;
+    //asdas = true;
+
+
     if (!wnd_info.dx.hCanvas)
         lyric_wnd_default_object(wnd_info);
     if (!wnd_info.dx.hCanvas)
@@ -122,6 +139,7 @@ bool lyric_wnd_invalidate(LYRIC_WND_INFO& wnd_info)
     const bool isDrawString = arg.indexLine != wnd_info.prevIndexLine || bLight;
     const bool isDraw = isDrawString || wnd_info.change;
     
+
     // 这里需要判断一下是否需要更新, 如果按钮没变化, 不是强制更新, 并且歌词文本也没变, 那就不需要重画
     if (!isDraw)
         return true;
@@ -148,8 +166,8 @@ LRESULT CALLBACK lyric_wnd_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
     {
     //case WM_CREATE:
     //{
-    //    DWMNCRENDERINGPOLICY pv = DWMNCRP_ENABLED;
-    //    HRESULT hr = DwmSetWindowAttribute(hWnd, DWMWA_NCRENDERING_POLICY, &pv, sizeof(pv));
+    //    //DWMNCRENDERINGPOLICY pv = DWMNCRP_ENABLED;
+    //    //HRESULT hr = DwmSetWindowAttribute(hWnd, DWMWA_NCRENDERING_POLICY, &pv, sizeof(pv));
     //    return 0;
     //}
     case WM_DPICHANGED:
@@ -478,16 +496,16 @@ LRESULT lyric_wnd_OnCaptureChanged(LYRIC_WND_INFO& wnd_info, UINT message, WPARA
     return 0;
 }
 
-IDWriteTextLayout* lyric_wnd_create_text_layout(LPCWSTR str, int len, IDWriteTextFormat* dxFormat, float layoutWidth, float layoutHeight)
+bool lyric_wnd_create_text_layout(LPCWSTR str, int len, IDWriteTextFormat* dxFormat, float layoutWidth, float layoutHeight, IDWriteTextLayout** ppTextLayout)
 {
     if (!str)
-        return nullptr;
+        return false;
     IDWriteTextLayout* pDWriteTextLayout = 0;
     auto& d2dInfo = d2d_get_info();
     HRESULT hr = d2dInfo.pDWriteFactory->CreateTextLayout(str, (UINT32)len, dxFormat,
                                                           layoutWidth, layoutHeight, &pDWriteTextLayout);
     if (FAILED(hr))
-        return nullptr;
+        return false;
 
     pDWriteTextLayout->SetWordWrapping(DWRITE_WORD_WRAPPING_NO_WRAP);           // 不换行
     pDWriteTextLayout->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING);         // 左对齐
@@ -507,8 +525,8 @@ IDWriteTextLayout* lyric_wnd_create_text_layout(LPCWSTR str, int len, IDWriteTex
     //        1.0f,  // 最小前进宽度 (字符的最小总宽度)
     //        range);
     //}
-
-    return pDWriteTextLayout;
+    *ppTextLayout = pDWriteTextLayout;
+    return true;
 }
 
 NAMESPACE_LYRIC_WND_END

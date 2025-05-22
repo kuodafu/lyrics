@@ -77,7 +77,7 @@ void lyric_wnd_calc_wnd_pos(LYRIC_WND_INFO& wnd_info, bool isMoveWindow);
 
 // 创建文本布局, 计算文本, 还有绘画文本时使用, 统一设置文本间距
 // 这里统一都是不换行的文本布局, 左/顶对齐
-IDWriteTextLayout* lyric_wnd_create_text_layout(LPCWSTR str, int len, IDWriteTextFormat* dxFormat, float layoutWidth, float layoutHeight);
+bool lyric_wnd_create_text_layout(LPCWSTR str, int len, IDWriteTextFormat* dxFormat, float layoutWidth, float layoutHeight, IDWriteTextLayout** ppTextLayout);
 
 NAMESPACE_D2D::CD2DImage* __shadow_image(NAMESPACE_D2D::CD2DRender& d2dRender);
 

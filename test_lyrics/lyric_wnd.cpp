@@ -193,15 +193,17 @@ static float _lyric_wnd_load_krc_calc_text(lyric_wnd::PLYRIC_WND_INFO pWndInfo, 
 }
 
 
-bool lyric_wnd_load_krc(HWND hWindowLyric, LPCVOID pKrcData, int nKrcDataLen)
+bool lyric_wnd_load_krc(HWND hWindowLyric, LPCVOID pKrcData, int nKrcDataLen, bool isDecrypted)
 {
     using namespace lyric_wnd;
     PLYRIC_WND_INFO pWndInfo = lyric_wnd_get_data(hWindowLyric);
     if (!pWndInfo)
         return false;
+    CCriticalSection cs(pWndInfo->pCritSec);    // 上锁, 防止这里不是窗口线程调用, 窗口线程会不停的访问歌词结构
+
     lyric_destroy(pWndInfo->hLyric);
     LYRIC_WND_INFO& wnd_info = *pWndInfo;
-    wnd_info.hLyric = lyric_parse(pKrcData, nKrcDataLen);
+    wnd_info.hLyric = lyric_parse(pKrcData, nKrcDataLen, isDecrypted);
     pWndInfo->nTimeOffset = lyric_behind_ahead(wnd_info.hLyric, 0);
     pWndInfo->line1.clear();
     pWndInfo->line2.clear();
@@ -226,9 +228,9 @@ bool lyric_wnd_load_krc(HWND hWindowLyric, LPCVOID pKrcData, int nKrcDataLen)
         if (!pWndInfo->dx.hFont)
             lyric_wnd_default_object(*pWndInfo);
 
-        IDWriteTextLayout* pTextLayout = lyric_wnd_create_text_layout(pText, nTextLen, *pWndInfo->dx.hFont, 0, 0);
+        CComPtr<IDWriteTextLayout> pTextLayout;
+        lyric_wnd_create_text_layout(pText, nTextLen, *pWndInfo->dx.hFont, 0, 0, &pTextLayout);
         float width = _lyric_wnd_load_krc_calc_text(pWndInfo, pTextLayout, pRetHeight);
-        SafeRelease(pTextLayout);
         return width;
     }, pWndInfo);
 
@@ -245,7 +247,7 @@ bool lyric_wnd_update(HWND hWindowLyric, int nCurrentTimeMS)
     LYRIC_WND_INFO& wnd_info = *pWndInfo;
     wnd_info.nCurrentTimeMS = nCurrentTimeMS;
     //InvalidateRect(hWindowLyric, 0, 0);   // 使用这个方式会卡, 不知道啥情况, 直接调用重画吧
-    lyric_wnd_invalidate(wnd_info);
+    //lyric_wnd_invalidate(wnd_info);
     return true;
 }
 

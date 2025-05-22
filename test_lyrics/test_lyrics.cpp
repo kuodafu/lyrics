@@ -11,9 +11,16 @@
 #include <control/CListView.h>
 #include "lyric_wnd.h"
 #include <WaitObject.h>
+#include "../charset_stl.h"
+#include <winsock2.h>
+#include <cJSON/cJSON.h>
+
+#include <ixwebsocket/IXWebSocket.h>
 
 #include "bass.h"
 
+#pragma comment(lib, "Crypt32.lib")
+#pragma comment(lib, "Bcrypt.lib")
 #pragma comment(lib, "bass.lib")
 
 // 全局变量:
@@ -22,6 +29,10 @@ static HSTREAM m_hStream;      // 音乐播放句柄
 static HWND m_hLyricWindow;    // 歌词窗口句柄
 static HWND m_hWnd;            // 主窗口句柄
 static CListView m_list;
+static ix::WebSocket g_ws;
+static bool g_ws_connected = false;
+constexpr LPCSTR WS_URL = "ws://127.0.0.1:6520";
+static std::mutex m_mtx_message;
 
 // 此代码模块中包含的函数的前向声明:
 BOOL                InitInstance(HINSTANCE, int);
@@ -29,6 +40,8 @@ bool init_dpi();
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 bool OnCommand(HWND hWnd, WPARAM wParam, LPARAM lParam);
 int CALLBACK OnLyricCommand(HWND hWindowLyric, int id, LPARAM lParam);
+void connect_ws(LPCSTR url);
+void ws_OnMessage(cJSON* data, LPCSTR type);
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -38,6 +51,15 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
+    WSADATA wsaData;
+    int wsaResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
+    if (wsaResult != 0)
+    {
+        wchar_t buf[100];
+        swprintf_s(buf, L"WSAStartup 调用失败, 无法初始化ws, 错误码: %d", wsaResult);
+        MessageBoxW(0, buf, L"WebSokect初始化失败", MB_ICONERROR);
+        return 0;
+    }
 
     init_dpi();
     // 执行应用程序初始化:
@@ -55,6 +77,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         DispatchMessage(&msg);
     }
 
+    g_ws.stop();
+    BASS_Free();
+    WSACleanup();
     return (int) msg.wParam;
 }
 
@@ -189,7 +214,7 @@ void EnumerateKRCFiles(const std::wstring& directory) {
 
         std::string data;
         read_file(filePath.c_str(), data);
-        auto p = lyric_parse((LPBYTE)data.c_str(), (int)data.size());
+        auto p = lyric_parse((LPBYTE)data.c_str(), (int)data.size(), false);
         LYRIC_CALC_STRUCT arg{};
 
         int a = lyric_get_language(p);
@@ -224,6 +249,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     {
         m_hWnd = hWnd;
         BASS_Init(-1, 44100, 0, hWnd, NULL);
+        SetTimer(hWnd, 300, 10000, [](HWND hWnd, UINT message, UINT_PTR id, DWORD t)
+        {
+            if (g_ws_connected)
+                return;
+            connect_ws(WS_URL);
+        });
         int left = 100;
         int top = 20;
         auto pfn_create = [&](int id, LPCWSTR name)
@@ -237,6 +268,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
         pfn_create(ID_LOCK, L"锁定歌词");
         pfn_create(ID_SHOW, L"歌词可视");
+
+        pfn_create(IDOK, L"测试内存泄漏");
 
         m_list.create(hWnd, left + 150, 10, 1000, 800, 0x00000200, 0x56000045, 0x00010423, 0);
         m_list.SetFont(CWndBase::CreateFontW(L"微软雅黑", -18));
@@ -258,14 +291,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         };
 
 
-        m_hStream = BASS_StreamCreateFile(FALSE, files.back(), 0, 0, BASS_SAMPLE_FLOAT);
-        if (m_hStream)
-        {
-            BASS_ChannelPlay(m_hStream, FALSE);
-            BASS_ChannelSetPosition(m_hStream, BASS_ChannelSeconds2Bytes(m_hStream, 10.), BASS_POS_BYTE);
-        }
+        //m_hStream = BASS_StreamCreateFile(FALSE, files.back(), 0, 0, BASS_SAMPLE_FLOAT);
+        //if (m_hStream)
+        //{
+        //    BASS_ChannelPlay(m_hStream, FALSE);
+        //    BASS_ChannelSetPosition(m_hStream, BASS_ChannelSeconds2Bytes(m_hStream, 10.), BASS_POS_BYTE);
+        //}
         SetTimer(hWnd, 100, 1000, 0);
-        SetTimer(hWnd, 200, 10, 0);
+        //SetTimer(hWnd, 200, 10, 0);
 
         //std::thread _th([hWnd]()
         //{
@@ -295,8 +328,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         arg.rcWindow = { 300, 800, 1000, 1000 };
         //arg.pszFontName = L"黑体";
         m_hLyricWindow = lyric_wnd_create(&arg, OnLyricCommand, 0);
-        lyric_wnd_load_krc(m_hLyricWindow, data.c_str(), (int)data.size());
-        lyric_wnd_call_event(m_hLyricWindow, LYRIC_WND_BUTTON_ID_PLAY);
+        lyric_wnd_load_krc(m_hLyricWindow, data.c_str(), (int)data.size(), false);
+        //lyric_wnd_call_event(m_hLyricWindow, LYRIC_WND_BUTTON_ID_PLAY);
+
+        connect_ws(WS_URL);
+
         break;
     }
     case WM_TIMER:
@@ -376,7 +412,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             if (!krc_name.empty())
                 read_file(krc_name.c_str(), data);
 
-            lyric_wnd_load_krc(m_hLyricWindow, data.c_str(), (int)data.size());
+            lyric_wnd_load_krc(m_hLyricWindow, data.c_str(), (int)data.size(), false);
             lyric_wnd_call_event(m_hLyricWindow, LYRIC_WND_BUTTON_ID_PLAY);
             break;
         }
@@ -462,6 +498,46 @@ static bool SetCheck(HWND hWnd, bool isCheck)
     return SendMessageW(hWnd, BM_SETCHECK, isCheck ? BST_CHECKED : BST_UNCHECKED, 0);
 }
 
+LPCWSTR psz_krc = LR"_KRC_([ti:It's Not Right (&friends Remake) (Radio Edit)]
+[ar:Gianni Romano/Emanuele Esposito/&Friends/Helen Tesfazghi]
+[al:It's Not Right (&friends Remake) (Radio Edit)]
+[by:]
+[offset:0]
+[language:eyJjb250ZW50IjogW3sibHlyaWNDb250ZW50IjogW1siVE1FXHU0ZWFiXHU2NzA5XHU2NzJjXHU3ZmZiXHU4YmQxXHU0ZjVjXHU1NGMxXHU3Njg0XHU4NDU3XHU0ZjVjXHU2NzQzIl0sIFsiIl0sIFsiIl0sIFsiXHU4ZmQ5XHU2NjJmXHU0ZTBkXHU1YmY5XHU3Njg0IFx1NGY0Nlx1NmNhMVx1NTE3M1x1N2NmYiJdLCBbIlx1OGZkOVx1NjYyZlx1NGUwZFx1NWJmOVx1NzY4NCBcdTRmNDZcdTZjYTFcdTUxNzNcdTdjZmIiXSwgWyJcdTY1ZTBcdThiYmFcdTU5ODJcdTRmNTVcdTYyMTFcdTkwZmRcdTg5ODFcdTYyMTBcdTUyOWYiXSwgWyJcdThmZDlcdTY4MzdcdTRlMGRcdTViZjkiXSwgWyJcdThmZDlcdTY4MzdcdTRlMGRcdTViZjkiXSwgWyJcdThmZDlcdTY2MmZcdTRlMGRcdTViZjlcdTc2ODQgXHU0ZjQ2XHU2Y2ExXHU1MTczXHU3Y2ZiIl0sIFsiXHU4ZmQ5XHU2NjJmXHU0ZTBkXHU1YmY5XHU3Njg0IFx1NGY0Nlx1NmNhMVx1NTE3M1x1N2NmYiJdLCBbIlx1OGZkOVx1NjYyZlx1NGUwZFx1NWJmOVx1NzY4NCBcdTRmNDZcdTZjYTFcdTUxNzNcdTdjZmIiXSwgWyJcdTY1ZTBcdThiYmFcdTU5ODJcdTRmNTVcdTYyMTFcdTkwZmRcdTg5ODFcdTYyMTBcdTUyOWYiXSwgWyJcdThmZDlcdTY2MmZcdTRlMGRcdTViZjlcdTc2ODQgXHU0ZjQ2XHU2Y2ExXHU1MTczXHU3Y2ZiIl0sIFsiXHU2NWUwXHU4YmJhXHU1OTgyXHU0ZjU1XHU2MjExXHU5MGZkXHU4OTgxXHU2MjEwXHU1MjlmIl0sIFsiXHU2NTM2XHU2MmZlXHU0ZjYwXHU3Njg0XHU4ODRjXHU2NzRlXHU3OWJiXHU1ZjAwXHU1NDI3Il0sIFsiXHU0ZjExXHU2MGYzXHU1MThkXHU2NzY1XHU2MjdlXHU2MjExIl0sIFsiXHU4ZmQ5XHU2NjJmXHU0ZTBkXHU1YmY5XHU3Njg0IFx1NGY0Nlx1NmNhMVx1NTE3M1x1N2NmYiJdLCBbIlx1NjVlMFx1OGJiYVx1NTk4Mlx1NGY1NVx1NjIxMVx1OTBmZFx1ODk4MVx1NjIxMFx1NTI5ZiJdLCBbIlx1NTE3M1x1OTVlOFx1NTQwZVx1OGJmN1x1NjI4YVx1OTRhNVx1NTMxOVx1NzU1OVx1NGUwYiJdLCBbIlx1NjIxMVx1NWI4MVx1NjEzZlx1NWI2NFx1NzJlY1x1NGU1Zlx1NGUwZFx1NjEzZlx1OTZiZVx1OGZjNyJdLCBbIlx1OGZkOVx1NjYyZlx1NGUwZFx1NWJmOVx1NzY4NCBcdTRmNDZcdTZjYTFcdTUxNzNcdTdjZmIiXSwgWyJcdTY1ZTBcdThiYmFcdTU5ODJcdTRmNTVcdTYyMTFcdTkwZmRcdTg5ODFcdTYyMTBcdTUyOWYiXSwgWyJcdTY1MzZcdTYyZmVcdTRmNjBcdTc2ODRcdTg4NGNcdTY3NGVcdTc5YmJcdTVmMDBcdTU0MjciXSwgWyJcdTRmMTFcdTYwZjNcdTUxOGRcdTY3NjVcdTYyN2VcdTYyMTEiXSwgWyJcdThmZDlcdTY2MmZcdTRlMGRcdTViZjlcdTc2ODQgXHU0ZjQ2XHU2Y2ExXHU1MTczXHU3Y2ZiIl0sIFsiXHU2NWUwXHU4YmJhXHU1OTgyXHU0ZjU1XHU2MjExXHU5MGZkXHU4OTgxXHU2MjEwXHU1MjlmIl0sIFsiXHU1MTczXHU5NWU4XHU1NDBlXHU4YmY3XHU2MjhhXHU5NGE1XHU1MzE5XHU3NTU5XHU0ZTBiIl0sIFsiXHU2MjExXHU1YjgxXHU2MTNmXHU1YjY0XHU3MmVjXHU0ZTVmXHU0ZTBkXHU2MTNmXHU5NmJlXHU4ZmM3Il0sIFsiXHU4ZmQ5XHU2NjJmXHU0ZTBkXHU1YmY5XHU3Njg0IFx1NGY0Nlx1NmNhMVx1NTE3M1x1N2NmYiJdLCBbIlx1OGZkOVx1NjYyZlx1NGUwZFx1NWJmOVx1NzY4NCBcdTRmNDZcdTZjYTFcdTUxNzNcdTdjZmIiXSwgWyJcdTY1ZTBcdThiYmFcdTU5ODJcdTRmNTVcdTYyMTFcdTkwZmRcdTg5ODFcdTYyMTBcdTUyOWYiXSwgWyJcdThmZDlcdTY4MzdcdTRlMGRcdTViZjkiXV0sICJ0eXBlIjogMSwgImxhbmd1YWdlIjogMH1dLCAiY29udGVudFYyIjogW10sICJ2ZXJzaW9uIjogMX0=]
+[0,501]<0,35,0>It's <36,35,0>Not <72,35,0>Right (&<108,35,0>friends <143,35,0>Remake) (<179,35,0>Radio <215,35,0>Edit) - <251,35,0>Gianni <287,35,0>Romano/<323,35,0>Emanuele <359,35,0>Esposito/&<394,35,0>Friends/<430,35,0>Helen <466,35,0>Tesfazghi
+[502,501]<0,35,0>Lyrics <36,35,0>by：<72,35,0>Fred <108,35,0>Jerkins <143,35,0>Iii/<179,35,0>Isaac <215,35,0>Phillips/<251,35,0>Lashawn <287,35,0>Ameen <323,35,0>Daniels/<359,35,0>Toni <394,35,0>Estes/<430,35,0>Rodney <466,35,0>Jerkins
+[1004,501]<0,35,0>Composed <36,35,0>by：<72,35,0>Fred <108,35,0>Jerkins <143,35,0>Iii/<179,35,0>Isaac <215,35,0>Phillips/<251,35,0>Lashawn <287,35,0>Ameen <323,35,0>Daniels/<359,35,0>Toni <394,35,0>Estes/<430,35,0>Rodney <466,35,0>Jerkins
+[1506,9096]<0,207,0>It's <207,385,0>not <592,480,0>right <7463,185,0>but <7648,327,0>it's <7975,1121,0>okay
+[16921,5503]<0,272,0>It's <272,472,0>not <744,610,0>right <3658,211,0>but <3869,310,0>it's <4179,1324,0>okay
+[24601,5279]<0,367,0>I'm <367,408,0>gonna <775,481,0>make <1256,527,0>it <1783,1549,0>anyway <3720,1559,0>anyway
+[32616,1377]<0,191,0>It's <191,383,0>not <574,803,0>right
+[48239,1301]<0,207,0>It's <207,498,0>not <705,596,0>right
+[63771,9378]<0,231,0>It's <231,472,0>not <703,737,0>right <7679,176,0>but <7855,232,0>it's <8087,1291,0>okay
+[79430,9146]<0,227,0>It's <227,474,0>not <701,674,0>right <7565,196,0>but <7761,377,0>it's <8138,1008,0>okay
+[95017,5353]<0,263,0>It's <263,472,0>not <735,504,0>right <3728,208,0>but <3936,174,0>it's <4110,1243,0>okay
+[102656,5316]<0,336,0>I'm <336,466,0>gonna <802,511,0>make <1313,500,0>it <1813,1547,0>anyway <3760,1556,0>anyway
+[110629,3159]<0,214,0>It's <214,440,0>not <654,546,0>right <1703,176,0>but <1879,249,0>it's <2128,1031,0>okay
+[114229,3448]<0,430,0>I'm <430,472,0>gonna <902,451,0>make <1353,518,0>it <1871,1577,0>anyway
+[118084,3566]<0,439,0>Pack <439,536,0>your <975,661,0>bags <2007,401,0>up <2408,536,0>and <2944,622,0>leave
+[122027,3768]<0,407,0>Don't <407,490,0>you <897,375,0>dare <1272,168,0>come <1440,447,0>running <1887,464,0>back <2351,485,0>to <2836,932,0>me
+[126146,3381]<0,293,0>It's <293,458,0>not <751,583,0>right <1702,239,0>but <1941,346,0>it's <2287,1094,0>okay
+[129815,3656]<0,498,0>I'm <498,449,0>gonna <947,486,0>make <1433,518,0>it <1951,1705,0>anyway
+[133767,3451]<0,201,0>Close <201,290,0>the <491,265,0>door <756,670,0>behind <1426,490,0>you <1916,456,0>leave <2372,473,0>your <2845,606,0>key
+[137602,4212]<0,138,0>I'd <138,373,0>rather <511,356,0>be <867,561,0>alone <1428,591,0>than <2019,1659,0>unhappy <3678,534,0>yeah
+[141981,3017]<0,152,0>It's <152,400,0>not <552,545,0>right <1480,232,0>but <1712,320,0>it's <2032,985,0>okay
+[145397,3554]<0,480,0>I'm <480,512,0>gonna <992,448,0>make <1440,457,0>it <1897,1657,0>anyway
+[149317,3689]<0,466,0>Pack <466,534,0>your <1000,608,0>bags <1952,505,0>up <2457,463,0>and <2920,769,0>leave
+[153252,3689]<0,443,0>Don't <443,511,0>you <954,312,0>dare <1266,168,0>come <1434,439,0>running <1873,490,0>back <2363,567,0>to <2930,759,0>me
+[157517,3241]<0,209,0>It's <209,452,0>not <661,535,0>right <1513,273,0>but <1786,351,0>it's <2137,1104,0>okay
+[161017,3646]<0,463,0>I'm <463,496,0>gonna <959,405,0>make <1364,627,0>it <1991,1655,0>anyway
+[164951,3507]<0,317,0>Close <317,204,0>the <521,390,0>door <911,489,0>behind <1400,533,0>you <1933,473,0>leave <2406,586,0>your <2992,515,0>key
+[168728,4230]<0,165,0>I'd <165,424,0>rather <589,449,0>be <1038,495,0>alone <1533,544,0>than <2077,1769,0>unhappy <3846,384,0>yeah
+[172958,9409]<0,304,0>It's <304,519,0>not <823,599,0>right <7742,185,0>but <7927,319,0>it's <8246,1163,0>okay
+[188726,5251]<0,212,0>It's <212,444,0>not <656,599,0>right <3751,162,0>but <3913,182,0>it's <4095,1156,0>okay
+[196310,5401]<0,369,0>I'm <369,489,0>gonna <858,447,0>make <1305,479,0>it <1784,1521,0>anyway <3690,1711,0>anyway
+[204279,1432]<0,263,0>It's <263,512,0>not <775,657,0>right)_KRC_";
+
+
 // “关于”框的消息处理程序。
 bool OnCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 {
@@ -477,6 +553,32 @@ bool OnCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
     case ID_SHOW:
         lyric_wnd_call_event(m_hLyricWindow, isCheck ? LYRIC_WND_BUTTON_ID_SHOW : LYRIC_WND_BUTTON_ID_CLOSE);
         break;
+    case IDOK:
+    {
+        break;
+        LPWSTR lyric_decode2(const void* pData, int nSize);
+        std::string krc;
+        read_file(LR"(J:\cahce\kugou\Lyric\和田光司 - Butter-Fly - tri-073ce978dbff1f0ecf82304a0097369b-202443788-00000000.krc)", krc);
+        LPWSTR p = lyric_decode2(krc.c_str(), krc.size());
+        auto s = GetTickCount64();
+        //psz_krc = p;
+        std::thread _t([&]()
+        {
+            for (int i = 0; i < 100000000; i++)
+            {
+                lyric_wnd_load_krc(m_hLyricWindow, psz_krc, (int)wcslen(psz_krc), true);
+
+            }
+
+        });
+        _t.detach();
+        s = GetTickCount64() - s;
+        wchar_t buffer[50];
+        swprintf_s(buffer, L"耗时: %lldms\n", s);
+        MessageBoxW(hWnd, buffer, L"耗时", 0);
+
+        break;
+    }
     default:
         return false;
     }
@@ -501,24 +603,140 @@ int CALLBACK OnLyricCommand(HWND hWindowLyric, int id, LPARAM lParam)
         break;
     case LYRIC_WND_BUTTON_ID_NEXT:
     case LYRIC_WND_BUTTON_ID_PREV:
-    {
-        double d_pos = BASS_ChannelBytes2Seconds(m_hStream, BASS_ChannelGetPosition(m_hStream, BASS_POS_BYTE));
-        double new_pos = id == LYRIC_WND_BUTTON_ID_NEXT ? 10. : -10.;
-        BASS_ChannelSetPosition(m_hStream, BASS_ChannelSeconds2Bytes(m_hStream, d_pos + new_pos), BASS_POS_BYTE);
-        break;
-    }
     case LYRIC_WND_BUTTON_ID_PLAY:
-    {
-        BASS_ChannelPlay(m_hStream, FALSE);
-        break;
-    }
     case LYRIC_WND_BUTTON_ID_PAUSE:
     {
-        BASS_ChannelPause(m_hStream);
+        if (!g_ws_connected)
+            break;
+        LPCSTR command = "";
+        switch (id)
+        {
+        case LYRIC_WND_BUTTON_ID_NEXT:
+            command = "next";
+            break;
+        case LYRIC_WND_BUTTON_ID_PREV:
+            command = "prev";
+            break;
+        case LYRIC_WND_BUTTON_ID_PLAY:
+        case LYRIC_WND_BUTTON_ID_PAUSE:
+            command = "toggle";
+            break;
+        default:
+            break;
+        }
+
+        cJSON* json = cJSON_CreateObject();
+        cJSON_AddStringToObject(json, "type", "control");
+        cJSON* data = cJSON_AddObjectToObject(json, "data");
+        cJSON_AddStringToObject(data, "command", command);
+        char* str = cJSON_PrintUnformatted(json);
+
+        g_ws.sendText(str);
+        cJSON_Delete(json);
+        cJSON_free(str);
+
+        //double d_pos = BASS_ChannelBytes2Seconds(m_hStream, BASS_ChannelGetPosition(m_hStream, BASS_POS_BYTE));
+        //double new_pos = id == LYRIC_WND_BUTTON_ID_NEXT ? 10. : -10.;
+        //BASS_ChannelSetPosition(m_hStream, BASS_ChannelSeconds2Bytes(m_hStream, d_pos + new_pos), BASS_POS_BYTE);
         break;
     }
+    //case LYRIC_WND_BUTTON_ID_PLAY:
+    //{
+    //    //BASS_ChannelPlay(m_hStream, FALSE);
+    //    break;
+    //}
+    //case LYRIC_WND_BUTTON_ID_PAUSE:
+    //{
+    //    BASS_ChannelPause(m_hStream);
+    //    break;
+    //}
     default:
         break;
     }
     return 0;
+}
+
+
+void connect_ws(LPCSTR url)
+{
+    //_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+    //return;
+    // 设置连接地址
+    g_ws.setUrl(url);
+    //g_ws.disableAutomaticReconnection();
+
+    // 设置回调
+    g_ws.setOnMessageCallback([](const ix::WebSocketMessagePtr& msg)
+    {
+        if (msg->type == ix::WebSocketMessageType::Open)
+        {
+            g_ws_connected = true;
+        }
+        else if (msg->type == ix::WebSocketMessageType::Message)
+        {
+            cJSON* json = cJSON_Parse(msg->str.c_str());
+            if (json)
+            {
+                LPCSTR type = cJSON_GetStringValue(cJSON_GetObjectItem(json, "type"));
+                cJSON* data = cJSON_GetObjectItem(json, "data");
+                if (type && *type && data)
+                    ws_OnMessage(data, type);
+                cJSON_Delete(json);
+            }
+        }
+        else if (msg->type == ix::WebSocketMessageType::Close)
+        {
+            std::wstring w = charset_stl::U2W(msg->closeInfo.reason);
+            wchar_t buffer[1024];
+            swprintf_s(buffer, L"[close] Connection closed. Code: %d, Reason: %s\n", msg->closeInfo.code, w.c_str());
+            OutputDebugStringW(buffer);
+            g_ws_connected = false;
+        }
+        else if (msg->type == ix::WebSocketMessageType::Error)
+        {
+            std::wstring w = charset_stl::U2W(msg->errorInfo.reason);
+            OutputDebugStringW(L"[error] ");
+            OutputDebugStringW(w.c_str());
+            OutputDebugStringW(L"\n");
+            //__debugbreak();
+        }
+
+    });
+
+    // 启动连接
+    g_ws.start();
+}
+
+
+void ws_OnMessage(cJSON* data, LPCSTR type)
+{
+    // 歌词这个不是线程安全, 得加锁处理
+    std::lock_guard<std::mutex> lock(m_mtx_message);
+
+#define _cmp(_s) (_stricmp(type, _s) == 0)
+    if (_cmp("lyrics"))
+    {
+        double currentTime = cJSON_GetNumberValue(cJSON_GetObjectItem(data, "currentTime"));
+        LPCSTR lyricsData = cJSON_GetStringValue(cJSON_GetObjectItem(data, "lyricsData"));
+        auto w = charset_stl::U2W(lyricsData);
+        lyric_wnd_load_krc(m_hLyricWindow, w.c_str(), (int)w.size(), true);
+        lyric_wnd_update(m_hLyricWindow, (int)(currentTime * 1000.));
+        return;
+    }
+
+    if (_cmp("playerState"))
+    {
+        bool isPlaying = cJSON_IsTrue(cJSON_GetObjectItem(data, "isPlaying"));
+        if (isPlaying)
+            lyric_wnd_call_event(m_hLyricWindow, LYRIC_WND_BUTTON_ID_PLAY);
+        else
+            lyric_wnd_call_event(m_hLyricWindow, LYRIC_WND_BUTTON_ID_PAUSE);
+
+        double currentTime = cJSON_GetNumberValue(cJSON_GetObjectItem(data, "currentTime"));
+        lyric_wnd_update(m_hLyricWindow, (int)(currentTime * 1000.));
+        return;
+    }
+
+
+
 }

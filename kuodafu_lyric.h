@@ -90,10 +90,9 @@ typedef float (LYRICCALL* LYRIC_PARSE_CALCTEXT)(void* pUserData, LPCWSTR pText, 
 /// </summary>
 /// <param name="pData">输入, 需要解密的歌词数据</param>
 /// <param name="nSize">输入, 歌词数据的长度</param>
-/// <param name="pfnCalcText">可以为空指针, 这个是个回调函数, 用来计算文字的占用宽度, 根据文字宽度确定高亮位置</param>
-/// <param name="pUserData">传递到 pfnCalcText 里的用户数据</param>
+/// <param name="isDecrypted">krc数据是否已经解密了, isDecrypted 为true时, pData指向UTF16编码的KRC解密后的数据, nSize表示pData的字符数</param>
 /// <returns>返回解密后的数据, 不使用时需要调用 lyric_destroy 销毁句柄</returns>
-HLYRIC LYRICCALL lyric_parse(const void* pData, int nSize);
+HLYRIC LYRICCALL lyric_parse(const void* pData, int nSize, bool isDecrypted);
 
 /// <summary>
 /// 销毁 lyric_parse() 返回的歌词句柄

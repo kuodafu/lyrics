@@ -13,40 +13,43 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="接口声明">
+      <UniqueIdentifier>{8487e8a2-3c33-46a1-a271-563d84204034}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="framework.h">
+    <ClInclude Include="src\lyric\framework.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="pch.h">
+    <ClInclude Include="src\lyric\pch.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="kuodafu_lyric.h">
-      <Filter>源文件</Filter>
+    <ClInclude Include="src\lyric\lyric_typedef.h">
+      <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="lyric_typedef.h">
-      <Filter>源文件</Filter>
+    <ClInclude Include="src\lyric\kuodafu_lyric.h">
+      <Filter>接口声明</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="dllmain.cpp">
+    <ClCompile Include="src\lyric\dllmain.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="pch.cpp">
+    <ClCompile Include="src\lyric\pch.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="lyric_parse.cpp">
+    <ClCompile Include="src\lyric\lyric_parse.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="lyric_calc.cpp">
+    <ClCompile Include="src\lyric\lyric_calc.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="lyric_assist.cpp">
+    <ClCompile Include="src\lyric\lyric_assist.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="lyric_export.def">
+    <None Include="src\lyric\lyric_export.def">
       <Filter>源文件</Filter>
     </None>
   </ItemGroup>

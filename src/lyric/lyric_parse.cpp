@@ -1,18 +1,15 @@
 #include "lyric_typedef.h"
 #include <zlib.h>
+#include <cjson/cJSON.h>
 
-#include "charset_stl.h"
-#include "base64.h"
+#include "../charset_stl.h"
+#include "../base64.h"
 
 #ifdef _DEBUG
 #   define DEBUG_SHOW_TIME 0
 #endif
 
 
-extern "C"
-{
-#include <cjson/cJSON.h>
-}
 
 LYRIC_NAMESPACE_BEGIN
 

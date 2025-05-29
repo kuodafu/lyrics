@@ -5,7 +5,7 @@ VisualStudioVersion = 17.13.35931.197
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lyrics", "lyrics.vcxproj", "{066DB818-4C7F-4CBC-A6EF-3CFB6848576B}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "test_lyrics", "test_lyrics\test_lyrics.vcxproj", "{D4C30D90-6531-4E0F-8156-4C7EE6F9AFFF}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lyrics_wnd", "lyrics_wnd.vcxproj", "{D4C30D90-6531-4E0F-8156-4C7EE6F9AFFF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -13,6 +13,10 @@ Global
 		Debug|x86 = Debug|x86
 		Release|x64 = Release|x64
 		Release|x86 = Release|x86
+		static_d|x64 = static_d|x64
+		static_d|x86 = static_d|x86
+		Static|x64 = Static|x64
+		Static|x86 = Static|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{066DB818-4C7F-4CBC-A6EF-3CFB6848576B}.Debug|x64.ActiveCfg = Debug|x64
@@ -23,6 +27,14 @@ Global
 		{066DB818-4C7F-4CBC-A6EF-3CFB6848576B}.Release|x64.Build.0 = Release|x64
 		{066DB818-4C7F-4CBC-A6EF-3CFB6848576B}.Release|x86.ActiveCfg = Release|Win32
 		{066DB818-4C7F-4CBC-A6EF-3CFB6848576B}.Release|x86.Build.0 = Release|Win32
+		{066DB818-4C7F-4CBC-A6EF-3CFB6848576B}.static_d|x64.ActiveCfg = static_d|x64
+		{066DB818-4C7F-4CBC-A6EF-3CFB6848576B}.static_d|x64.Build.0 = static_d|x64
+		{066DB818-4C7F-4CBC-A6EF-3CFB6848576B}.static_d|x86.ActiveCfg = static_d|Win32
+		{066DB818-4C7F-4CBC-A6EF-3CFB6848576B}.static_d|x86.Build.0 = static_d|Win32
+		{066DB818-4C7F-4CBC-A6EF-3CFB6848576B}.Static|x64.ActiveCfg = Static|x64
+		{066DB818-4C7F-4CBC-A6EF-3CFB6848576B}.Static|x64.Build.0 = Static|x64
+		{066DB818-4C7F-4CBC-A6EF-3CFB6848576B}.Static|x86.ActiveCfg = Static|Win32
+		{066DB818-4C7F-4CBC-A6EF-3CFB6848576B}.Static|x86.Build.0 = Static|Win32
 		{D4C30D90-6531-4E0F-8156-4C7EE6F9AFFF}.Debug|x64.ActiveCfg = Debug|x64
 		{D4C30D90-6531-4E0F-8156-4C7EE6F9AFFF}.Debug|x64.Build.0 = Debug|x64
 		{D4C30D90-6531-4E0F-8156-4C7EE6F9AFFF}.Debug|x86.ActiveCfg = Debug|Win32
@@ -31,6 +43,14 @@ Global
 		{D4C30D90-6531-4E0F-8156-4C7EE6F9AFFF}.Release|x64.Build.0 = Release|x64
 		{D4C30D90-6531-4E0F-8156-4C7EE6F9AFFF}.Release|x86.ActiveCfg = Release|Win32
 		{D4C30D90-6531-4E0F-8156-4C7EE6F9AFFF}.Release|x86.Build.0 = Release|Win32
+		{D4C30D90-6531-4E0F-8156-4C7EE6F9AFFF}.static_d|x64.ActiveCfg = static_d|x64
+		{D4C30D90-6531-4E0F-8156-4C7EE6F9AFFF}.static_d|x64.Build.0 = static_d|x64
+		{D4C30D90-6531-4E0F-8156-4C7EE6F9AFFF}.static_d|x86.ActiveCfg = static_d|Win32
+		{D4C30D90-6531-4E0F-8156-4C7EE6F9AFFF}.static_d|x86.Build.0 = static_d|Win32
+		{D4C30D90-6531-4E0F-8156-4C7EE6F9AFFF}.Static|x64.ActiveCfg = Static|x64
+		{D4C30D90-6531-4E0F-8156-4C7EE6F9AFFF}.Static|x64.Build.0 = Static|x64
+		{D4C30D90-6531-4E0F-8156-4C7EE6F9AFFF}.Static|x86.ActiveCfg = Static|Win32
+		{D4C30D90-6531-4E0F-8156-4C7EE6F9AFFF}.Static|x86.Build.0 = Static|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

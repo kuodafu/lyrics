@@ -18,116 +18,116 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="targetver.h">
+    <ClInclude Include="src\lyric_wnd\targetver.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="lyric_exe_header.h">
+    <ClInclude Include="src\lyric_wnd\lyric_exe_header.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\cpp\_git_works\CommonCode\d2d\Color.h">
       <Filter>d2d</Filter>
     </ClInclude>
-    <ClInclude Include="lyric_wnd.h">
+    <ClInclude Include="src\lyric_wnd\lyric_wnd.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="d2d.h">
+    <ClInclude Include="src\lyric_wnd\d2d.h">
       <Filter>d2d</Filter>
     </ClInclude>
-    <ClInclude Include="CD2DFont.h">
+    <ClInclude Include="src\lyric_wnd\CD2DFont.h">
       <Filter>d2d</Filter>
     </ClInclude>
-    <ClInclude Include="CD2DBrush.h">
+    <ClInclude Include="src\lyric_wnd\CD2DBrush.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="CD2DRender.h">
+    <ClInclude Include="src\lyric_wnd\CD2DRender.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="lyric_wnd_function.h">
+    <ClInclude Include="src\lyric_wnd\lyric_wnd_function.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="tinyxml2.h">
+    <ClInclude Include="src\lyric_wnd\resource.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="resource.h">
+    <ClInclude Include="src\lyric_wnd\CD2DImage.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="CD2DImage.h">
+    <ClInclude Include="src\lyric_wnd\lyric_wnd_header.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="lyric_wnd_header.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="CCustomTextRenderer.h">
+    <ClInclude Include="src\lyric_wnd\CCustomTextRenderer.h">
       <Filter>d2d</Filter>
+    </ClInclude>
+    <ClInclude Include="src\lyric_wnd\tinyxml2.h">
+      <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="test_lyrics.cpp">
+    <ClCompile Include="src\lyric_wnd\test_lyrics.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="lyric_wnd.cpp">
+    <ClCompile Include="src\lyric_wnd\lyric_wnd.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="d2d.cpp">
+    <ClCompile Include="src\lyric_wnd\d2d.cpp">
       <Filter>d2d</Filter>
     </ClCompile>
-    <ClCompile Include="CD2DFont.cpp">
+    <ClCompile Include="src\lyric_wnd\CD2DFont.cpp">
       <Filter>d2d</Filter>
     </ClCompile>
-    <ClCompile Include="CD2DBrush.cpp">
+    <ClCompile Include="src\lyric_wnd\CD2DBrush.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="CD2DRender.cpp">
+    <ClCompile Include="src\lyric_wnd\CD2DRender.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="lyric_wnd_function.cpp">
+    <ClCompile Include="src\lyric_wnd\lyric_wnd_function.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="lyric_wnd_draw_text_glow.cpp">
+    <ClCompile Include="src\lyric_wnd\lyric_wnd_draw_text_glow.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="tinyxml2.cpp">
+    <ClCompile Include="src\lyric_wnd\tinyxml2.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="lyric_wnd_load_image.cpp">
+    <ClCompile Include="src\lyric_wnd\lyric_wnd_load_image.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="CD2DImage.cpp">
+    <ClCompile Include="src\lyric_wnd\CD2DImage.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="lyric_wnd_draw_button.cpp">
+    <ClCompile Include="src\lyric_wnd\lyric_wnd_draw_button.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="lyric_wnd_button_click.cpp">
+    <ClCompile Include="src\lyric_wnd\lyric_wnd_button_click.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="lyric_wnd_button_hover.cpp">
+    <ClCompile Include="src\lyric_wnd\lyric_wnd_button_hover.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="lyric_wnd_draw_text_geometry.cpp">
+    <ClCompile Include="src\lyric_wnd\lyric_wnd_draw_text_geometry.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="lyric_wnd_header.cpp">
+    <ClCompile Include="src\lyric_wnd\lyric_wnd_header.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="lyric_wnd_OnPaint.cpp">
+    <ClCompile Include="src\lyric_wnd\lyric_wnd_OnPaint.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="lyric_wnd_draw_line.cpp">
+    <ClCompile Include="src\lyric_wnd\lyric_wnd_draw_line.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="CCustomTextRenderer.cpp">
+    <ClCompile Include="src\lyric_wnd\CCustomTextRenderer.cpp">
       <Filter>d2d</Filter>
     </ClCompile>
-    <ClCompile Include="lyric_wnd_draw_line_hori.cpp">
+    <ClCompile Include="src\lyric_wnd\lyric_wnd_draw_line_hori.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="lyric_wnd_draw_line_vert.cpp">
+    <ClCompile Include="src\lyric_wnd\lyric_wnd_draw_line_vert.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="test_lyrics.rc">
+    <ResourceCompile Include="src\lyric_wnd\lyric_wnd.rc">
       <Filter>资源文件</Filter>
     </ResourceCompile>
   </ItemGroup>

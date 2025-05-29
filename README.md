@@ -1,23 +1,27 @@
-# lyric
+# lyric / lyric_wnd / lyric_show
 
-**lyric** 是一个开源项目，由扩大福开发，使用 MIT 协议授权。
+**lyric**、**lyric_wnd**、**lyric_show** 是一组由 **扩大福** 开发的开源 C++ 项目，使用 [Apache License 2.0](./LICENSE) 协议授权。
 
 ## 项目简介
 
-> 这里写一句话介绍这个项目是干什么的。例如：
+这三个项目旨在为播放器添加歌词支持, 功能分别如下:
 
-lyric 是一个用于 xxx 的 C++ 库，支持 xxx 功能，适用于 xxx 场景。
+> **lyric**: 用于解析、获取和设置歌词信息的核心库.
+> **lyric_wnd**: 基于 `lyric` 实现的桌面歌词显示器, 可将歌词渲染在桌面上.
+> **lyric_show**: 基于 `lyric`，用于生成歌词秀页面, 可获取已排版好的可视化歌词内容.
+
+
 
 ## 特性
 
-- 支持 xxx
-- 跨平台兼容（Windows / Linux / macOS）
+- 基于 C++ 开发，接口简洁易用
+- 支持 Windows 平台
 - 轻量、无外部依赖
-- MIT 协议，免费商用
+- Apache 2.0 协议，支持商业使用
 
 ## 使用方式
 
-> 示例：
+> 示例:
 
 ```cpp
 #include "lyric.h"

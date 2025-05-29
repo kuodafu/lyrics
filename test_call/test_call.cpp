@@ -1,17 +1,25 @@
 ﻿#include <control/WndControl6_0.h>
 
-#include "lyric_exe_header.h"
+#include <SDKDDKVer.h>
+#define WIN32_LEAN_AND_MEAN             // 从 Windows 头文件中排除极少使用的内容
+// Windows 头文件
+#include <windows.h>
+// C 运行时头文件
+#include <stdlib.h>
+#include <malloc.h>
+#include <memory.h>
+#include <tchar.h>
 #include <string>
 #include <random>
 #include <thread>
 
 #include <read_file.h>
-#include "../kuodafu_lyric.h"
+#include <kuodafu_lyric.h>
 #include <control/WndBase.h>
 #include <control/CListView.h>
-#include "lyric_wnd.h"
+#include <kuodafu_lyric_wnd.h>
 #include <WaitObject.h>
-#include "../charset_stl.h"
+#include "../src/charset_stl.h"
 #include <winsock2.h>
 #include <cJSON/cJSON.h>
 
@@ -19,6 +27,7 @@
 
 #include "bass.h"
 
+#pragma comment(lib, "Ws2_32.lib")
 #pragma comment(lib, "Crypt32.lib")
 #pragma comment(lib, "Bcrypt.lib")
 #pragma comment(lib, "bass.lib")
@@ -29,10 +38,10 @@ static HSTREAM m_hStream;      // 音乐播放句柄
 static HWND m_hLyricWindow;    // 歌词窗口句柄
 static HWND m_hWnd;            // 主窗口句柄
 static CListView m_list;
-static ix::WebSocket g_ws;
 static bool g_ws_connected = false;
 constexpr LPCSTR WS_URL = "ws://127.0.0.1:6520";
-static std::mutex m_mtx_message;
+static ix::WebSocket g_ws;
+//static std::mutex m_mtx_message;
 
 // 此代码模块中包含的函数的前向声明:
 BOOL                InitInstance(HINSTANCE, int);
@@ -44,9 +53,9 @@ void connect_ws(LPCSTR url);
 void ws_OnMessage(cJSON* data, LPCSTR type);
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
-                     _In_opt_ HINSTANCE hPrevInstance,
-                     _In_ LPWSTR    lpCmdLine,
-                     _In_ int       nCmdShow)
+                      _In_opt_ HINSTANCE hPrevInstance,
+                      _In_ LPWSTR    lpCmdLine,
+                      _In_ int       nCmdShow)
 {
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
@@ -63,7 +72,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     init_dpi();
     // 执行应用程序初始化:
-    if (!InitInstance (hInstance, nCmdShow))
+    if (!InitInstance(hInstance, nCmdShow))
     {
         return FALSE;
     }
@@ -77,10 +86,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         DispatchMessage(&msg);
     }
 
-    g_ws.stop();
+    //g_ws.stop();
     BASS_Free();
     WSACleanup();
-    return (int) msg.wParam;
+    return (int)msg.wParam;
 }
 
 
@@ -103,17 +112,17 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
     LPCWSTR szWindowClass = L"歌词测试";
     wcex.cbSize = sizeof(WNDCLASSEX);
 
-    wcex.style          = CS_HREDRAW | CS_VREDRAW;
-    wcex.lpfnWndProc    = WndProc;
-    wcex.cbClsExtra     = 0;
-    wcex.cbWndExtra     = 0;
-    wcex.hInstance      = hInstance;
-    wcex.hIcon          = LoadIcon(nullptr, IDI_APPLICATION);
-    wcex.hCursor        = LoadCursor(nullptr, IDC_ARROW);
-    wcex.hbrBackground  = (HBRUSH)(COLOR_WINDOW+1);
-    wcex.lpszMenuName   = 0;
-    wcex.lpszClassName  = szWindowClass;
-    wcex.hIconSm        = wcex.hIcon;
+    wcex.style = CS_HREDRAW | CS_VREDRAW;
+    wcex.lpfnWndProc = WndProc;
+    wcex.cbClsExtra = 0;
+    wcex.cbWndExtra = 0;
+    wcex.hInstance = hInstance;
+    wcex.hIcon = LoadIcon(nullptr, IDI_APPLICATION);
+    wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
+    wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+    wcex.lpszMenuName = 0;
+    wcex.lpszClassName = szWindowClass;
+    wcex.hIconSm = wcex.hIcon;
 
     RegisterClassExW(&wcex);
 
@@ -176,10 +185,10 @@ std::wstring find_krc(LPCWSTR name)
 
     if (hFind == INVALID_HANDLE_VALUE)
         return {};
-    
+
     do
     {
-        for(wchar_t& ch : findFileData.cFileName)
+        for (wchar_t& ch : findFileData.cFileName)
             ch = towlower(ch);
 
         if (wcsstr(findFileData.cFileName, name))
@@ -556,28 +565,6 @@ bool OnCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
     case IDOK:
     {
         break;
-        LPWSTR lyric_decode2(const void* pData, int nSize);
-        std::string krc;
-        read_file(LR"(J:\cahce\kugou\Lyric\和田光司 - Butter-Fly - tri-073ce978dbff1f0ecf82304a0097369b-202443788-00000000.krc)", krc);
-        LPWSTR p = lyric_decode2(krc.c_str(), krc.size());
-        auto s = GetTickCount64();
-        //psz_krc = p;
-        std::thread _t([&]()
-        {
-            for (int i = 0; i < 100000000; i++)
-            {
-                lyric_wnd_load_krc(m_hLyricWindow, psz_krc, (int)wcslen(psz_krc), true);
-
-            }
-
-        });
-        _t.detach();
-        s = GetTickCount64() - s;
-        wchar_t buffer[50];
-        swprintf_s(buffer, L"耗时: %lldms\n", s);
-        MessageBoxW(hWnd, buffer, L"耗时", 0);
-
-        break;
     }
     default:
         return false;
@@ -631,7 +618,7 @@ int CALLBACK OnLyricCommand(HWND hWindowLyric, int id, LPARAM lParam)
         cJSON_AddStringToObject(data, "command", command);
         char* str = cJSON_PrintUnformatted(json);
 
-        g_ws.sendText(str);
+        //g_ws.sendText(str);
         cJSON_Delete(json);
         cJSON_free(str);
 
@@ -659,84 +646,84 @@ int CALLBACK OnLyricCommand(HWND hWindowLyric, int id, LPARAM lParam)
 
 void connect_ws(LPCSTR url)
 {
-    //_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-    //return;
-    // 设置连接地址
-    g_ws.setUrl(url);
-    //g_ws.disableAutomaticReconnection();
+    ////_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+    ////return;
+    //// 设置连接地址
+    //g_ws.setUrl(url);
+    ////g_ws.disableAutomaticReconnection();
 
-    // 设置回调
-    g_ws.setOnMessageCallback([](const ix::WebSocketMessagePtr& msg)
-    {
-        if (msg->type == ix::WebSocketMessageType::Open)
-        {
-            g_ws_connected = true;
-        }
-        else if (msg->type == ix::WebSocketMessageType::Message)
-        {
-            cJSON* json = cJSON_Parse(msg->str.c_str());
-            if (json)
-            {
-                LPCSTR type = cJSON_GetStringValue(cJSON_GetObjectItem(json, "type"));
-                cJSON* data = cJSON_GetObjectItem(json, "data");
-                if (type && *type && data)
-                    ws_OnMessage(data, type);
-                cJSON_Delete(json);
-            }
-        }
-        else if (msg->type == ix::WebSocketMessageType::Close)
-        {
-            std::wstring w = charset_stl::U2W(msg->closeInfo.reason);
-            wchar_t buffer[1024];
-            swprintf_s(buffer, L"[close] Connection closed. Code: %d, Reason: %s\n", msg->closeInfo.code, w.c_str());
-            OutputDebugStringW(buffer);
-            g_ws_connected = false;
-        }
-        else if (msg->type == ix::WebSocketMessageType::Error)
-        {
-            std::wstring w = charset_stl::U2W(msg->errorInfo.reason);
-            OutputDebugStringW(L"[error] ");
-            OutputDebugStringW(w.c_str());
-            OutputDebugStringW(L"\n");
-            //__debugbreak();
-        }
+    //// 设置回调
+    //g_ws.setOnMessageCallback([](const ix::WebSocketMessagePtr& msg)
+    //{
+    //    if (msg->type == ix::WebSocketMessageType::Open)
+    //    {
+    //        g_ws_connected = true;
+    //    }
+    //    else if (msg->type == ix::WebSocketMessageType::Message)
+    //    {
+    //        cJSON* json = cJSON_Parse(msg->str.c_str());
+    //        if (json)
+    //        {
+    //            LPCSTR type = cJSON_GetStringValue(cJSON_GetObjectItem(json, "type"));
+    //            cJSON* data = cJSON_GetObjectItem(json, "data");
+    //            if (type && *type && data)
+    //                ws_OnMessage(data, type);
+    //            cJSON_Delete(json);
+    //        }
+    //    }
+    //    else if (msg->type == ix::WebSocketMessageType::Close)
+    //    {
+    //        std::wstring w = charset_stl::U2W(msg->closeInfo.reason);
+    //        wchar_t buffer[1024];
+    //        swprintf_s(buffer, L"[close] Connection closed. Code: %d, Reason: %s\n", msg->closeInfo.code, w.c_str());
+    //        OutputDebugStringW(buffer);
+    //        g_ws_connected = false;
+    //    }
+    //    else if (msg->type == ix::WebSocketMessageType::Error)
+    //    {
+    //        std::wstring w = charset_stl::U2W(msg->errorInfo.reason);
+    //        OutputDebugStringW(L"[error] ");
+    //        OutputDebugStringW(w.c_str());
+    //        OutputDebugStringW(L"\n");
+    //        //__debugbreak();
+    //    }
 
-    });
+    //});
 
-    // 启动连接
-    g_ws.start();
+    //// 启动连接
+    //g_ws.start();
 }
 
 
 void ws_OnMessage(cJSON* data, LPCSTR type)
 {
-    // 歌词这个不是线程安全, 得加锁处理
-    std::lock_guard<std::mutex> lock(m_mtx_message);
-
-#define _cmp(_s) (_stricmp(type, _s) == 0)
-    if (_cmp("lyrics"))
-    {
-        double currentTime = cJSON_GetNumberValue(cJSON_GetObjectItem(data, "currentTime"));
-        LPCSTR lyricsData = cJSON_GetStringValue(cJSON_GetObjectItem(data, "lyricsData"));
-        auto w = charset_stl::U2W(lyricsData);
-        lyric_wnd_load_krc(m_hLyricWindow, w.c_str(), (int)w.size(), true);
-        lyric_wnd_update(m_hLyricWindow, (int)(currentTime * 1000.));
-        return;
-    }
-
-    if (_cmp("playerState"))
-    {
-        bool isPlaying = cJSON_IsTrue(cJSON_GetObjectItem(data, "isPlaying"));
-        if (isPlaying)
-            lyric_wnd_call_event(m_hLyricWindow, LYRIC_WND_BUTTON_ID_PLAY);
-        else
-            lyric_wnd_call_event(m_hLyricWindow, LYRIC_WND_BUTTON_ID_PAUSE);
-
-        double currentTime = cJSON_GetNumberValue(cJSON_GetObjectItem(data, "currentTime"));
-        lyric_wnd_update(m_hLyricWindow, (int)(currentTime * 1000.));
-        return;
-    }
-
+//    // 歌词这个不是线程安全, 得加锁处理
+//    std::lock_guard<std::mutex> lock(m_mtx_message);
+//
+//#define _cmp(_s) (_stricmp(type, _s) == 0)
+//    if (_cmp("lyrics"))
+//    {
+//        double currentTime = cJSON_GetNumberValue(cJSON_GetObjectItem(data, "currentTime"));
+//        LPCSTR lyricsData = cJSON_GetStringValue(cJSON_GetObjectItem(data, "lyricsData"));
+//        auto w = charset_stl::U2W(lyricsData);
+//        lyric_wnd_load_krc(m_hLyricWindow, w.c_str(), (int)w.size(), true);
+//        lyric_wnd_update(m_hLyricWindow, (int)(currentTime * 1000.));
+//        return;
+//    }
+//
+//    if (_cmp("playerState"))
+//    {
+//        bool isPlaying = cJSON_IsTrue(cJSON_GetObjectItem(data, "isPlaying"));
+//        if (isPlaying)
+//            lyric_wnd_call_event(m_hLyricWindow, LYRIC_WND_BUTTON_ID_PLAY);
+//        else
+//            lyric_wnd_call_event(m_hLyricWindow, LYRIC_WND_BUTTON_ID_PAUSE);
+//
+//        double currentTime = cJSON_GetNumberValue(cJSON_GetObjectItem(data, "currentTime"));
+//        lyric_wnd_update(m_hLyricWindow, (int)(currentTime * 1000.));
+//        return;
+//    }
+//
 
 
 }

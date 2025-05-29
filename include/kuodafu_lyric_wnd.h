@@ -1,5 +1,34 @@
+/*
+ * Copyright (c) 2025 扩大福 (121007124@qq.com)
+ *
+ * Author      : 扩大福
+ * Website     : https://www.kuodafu.com
+ * Project     : https://github.com/kuodafu/lyrics
+ * QQ Group    : 121007124, 20752843
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+
+ /*
+ * 本文件是桌面歌词导出的函数接口.
+ */
+
 #pragma once
 #include <windows.h>
+
+#define LYRICCALL __stdcall
+
 
 // 歌词窗口按钮ID, 目前就这几个默认按钮
 enum LYRIC_WND_BUTTON_ID
@@ -76,7 +105,7 @@ typedef int (CALLBACK* PFN_LYRIC_WND_COMMAND)(HWND hWindowLyric, int id, LPARAM 
 /// 获取创建窗口的默认参数
 /// </summary>
 /// <param name="arg">接收默认参数的结构</param>
-void lyric_wnd_get_default_arg(LYRIC_WND_ARG* arg);
+void LYRICCALL lyric_wnd_get_default_arg(LYRIC_WND_ARG* arg);
 
 /// <summary>
 /// 创建一个歌词窗口, 这个窗口是分层窗口, 主要显示歌词用
@@ -85,7 +114,7 @@ void lyric_wnd_get_default_arg(LYRIC_WND_ARG* arg);
 /// <param name="pfnCommand">按钮被点击回调函数</param>
 /// <param name="lParam">传递到 pfnCommand() 函数里的参数</param>
 /// <returns>返回窗口句柄</returns>
-HWND lyric_wnd_create(const LYRIC_WND_ARG* arg, PFN_LYRIC_WND_COMMAND pfnCommand, LPARAM lParam);
+HWND LYRICCALL lyric_wnd_create(const LYRIC_WND_ARG* arg, PFN_LYRIC_WND_COMMAND pfnCommand, LPARAM lParam);
 
 /// <summary>
 /// 歌词窗口加载krc歌词, krc是酷狗歌词格式, 加载后可以调用更新函数显示
@@ -96,7 +125,7 @@ HWND lyric_wnd_create(const LYRIC_WND_ARG* arg, PFN_LYRIC_WND_COMMAND pfnCommand
 /// <param name="nKrcDataLen">krc文件数据尺寸</param>
 /// <param name="isDecrypted">krc数据是否已经解密了, isDecrypted 为true时, pData指向UTF16编码的KRC解密后的数据, nSize表示pData的字符数</param>
 /// <returns>返回是否加载成功</returns>
-bool lyric_wnd_load_krc(HWND hWindowLyric, LPCVOID pKrcData, int nKrcDataLen, bool isDecrypted);
+bool LYRICCALL lyric_wnd_load_krc(HWND hWindowLyric, LPCVOID pKrcData, int nKrcDataLen, bool isDecrypted);
 
 /// <summary>
 /// 更新播放时间, 歌词显示是根据这个时间来显示的
@@ -104,7 +133,7 @@ bool lyric_wnd_load_krc(HWND hWindowLyric, LPCVOID pKrcData, int nKrcDataLen, bo
 /// <param name="hWindowLyric">歌词窗口句柄</param>
 /// <param name="nCurrentTimeMS">要更新的时间, 单位是毫秒</param>
 /// <returns>返回是否更新成功</returns>
-bool lyric_wnd_update(HWND hWindowLyric, int nCurrentTimeMS);
+bool LYRICCALL lyric_wnd_update(HWND hWindowLyric, int nCurrentTimeMS);
 
 /// <summary>
 /// 给歌词设置歌词文本颜色, 目前只支持普通颜色和高亮颜色
@@ -114,7 +143,7 @@ bool lyric_wnd_update(HWND hWindowLyric, int nCurrentTimeMS);
 /// <param name="pClr">颜色数组, ARGB颜色值</param>
 /// <param name="nCount">颜色数组差一点</param>
 /// <returns>返回是否设置成功</returns>
-bool lyric_wnd_set_color(HWND hWindowLyric, bool isLight, DWORD* pClr, int nCount);
+bool LYRICCALL lyric_wnd_set_color(HWND hWindowLyric, bool isLight, DWORD* pClr, int nCount);
 
 /// <summary>
 /// 设置歌词文本字体, 高亮个普通都使用同一个字体, 就是使用不同颜色而已
@@ -125,7 +154,7 @@ bool lyric_wnd_set_color(HWND hWindowLyric, bool isLight, DWORD* pClr, int nCoun
 /// <param name="isBold">是否加粗</param>
 /// <param name="isItalic">是否斜体</param>
 /// <returns>返回是否设置成功</returns>
-bool lyric_wnd_set_font(HWND hWindowLyric, LPCWSTR pszName, int nSize, bool isBold, bool isItalic);
+bool LYRICCALL lyric_wnd_set_font(HWND hWindowLyric, LPCWSTR pszName, int nSize, bool isBold, bool isItalic);
 
 /// <summary>
 /// 设置歌词窗口背景色, ARGB颜色值
@@ -133,7 +162,7 @@ bool lyric_wnd_set_font(HWND hWindowLyric, LPCWSTR pszName, int nSize, bool isBo
 /// <param name="hWindowLyric">歌词窗口句柄</param>
 /// <param name="clr">背景颜色ARGB颜色值</param>
 /// <returns>返回是否设置成功</returns>
-bool lyric_wnd_set_clr_back(HWND hWindowLyric, DWORD clr);
+bool LYRICCALL lyric_wnd_set_clr_back(HWND hWindowLyric, DWORD clr);
 
 /// <summary>
 /// 设置歌词窗口歌词文本边框颜色, ARGB颜色值
@@ -141,7 +170,7 @@ bool lyric_wnd_set_clr_back(HWND hWindowLyric, DWORD clr);
 /// <param name="hWindowLyric">歌词窗口句柄</param>
 /// <param name="clr">ARGB颜色值</param>
 /// <returns>返回是否设置成功</returns>
-bool lyric_wnd_set_clr_border(HWND hWindowLyric, DWORD clr);
+bool LYRICCALL lyric_wnd_set_clr_border(HWND hWindowLyric, DWORD clr);
 
 /// <summary>
 /// 获取歌词窗口的配置信息, 应该需要把这个保存到某个地方, 等创建的时候传递进来还原
@@ -149,7 +178,7 @@ bool lyric_wnd_set_clr_border(HWND hWindowLyric, DWORD clr);
 /// <param name="hWindowLyric">歌词窗口句柄</param>
 /// <param name="arg">参考返回歌词窗口的配置信息, 返回的内容不可修改</param>
 /// <returns></returns>
-bool lyric_wnd_get_config(HWND hWindowLyric, LYRIC_WND_ARG* arg);
+bool LYRICCALL lyric_wnd_get_config(HWND hWindowLyric, LYRIC_WND_ARG* arg);
 
 /// <summary>
 /// 调用歌词窗口的事件
@@ -157,7 +186,7 @@ bool lyric_wnd_get_config(HWND hWindowLyric, LYRIC_WND_ARG* arg);
 /// <param name="hWindowLyric">歌词窗口句柄</param>
 /// <param name="id">触发的事件ID</param>
 /// <returns>返回是否调用成功</returns>
-bool lyric_wnd_call_event(HWND hWindowLyric, LYRIC_WND_BUTTON_ID id);
+bool LYRICCALL lyric_wnd_call_event(HWND hWindowLyric, LYRIC_WND_BUTTON_ID id);
 
 /// <summary>
 /// 设置按钮状态
@@ -166,7 +195,7 @@ bool lyric_wnd_call_event(HWND hWindowLyric, LYRIC_WND_BUTTON_ID id);
 /// <param name="id">按钮ID</param>
 /// <param name="state">要设置的状态</param>
 /// <returns>返回是否调用成功</returns>
-bool lyric_wnd_set_button_state(HWND hWindowLyric, LYRIC_WND_BUTTON_ID id, LYRIC_WND_BUTTON_STATE state);
+bool LYRICCALL lyric_wnd_set_button_state(HWND hWindowLyric, LYRIC_WND_BUTTON_ID id, LYRIC_WND_BUTTON_STATE state);
 
 /// <summary>
 /// 获取按钮状态
@@ -174,6 +203,6 @@ bool lyric_wnd_set_button_state(HWND hWindowLyric, LYRIC_WND_BUTTON_ID id, LYRIC
 /// <param name="hWindowLyric">歌词窗口句柄</param>
 /// <param name="id">按钮ID</param>
 /// <returns>返回按钮状态</returns>
-LYRIC_WND_BUTTON_STATE lyric_wnd_get_button_state(HWND hWindowLyric, LYRIC_WND_BUTTON_ID id);
+LYRIC_WND_BUTTON_STATE LYRICCALL lyric_wnd_get_button_state(HWND hWindowLyric, LYRIC_WND_BUTTON_ID id);
 
 

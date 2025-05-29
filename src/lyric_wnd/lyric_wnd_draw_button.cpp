@@ -1,5 +1,4 @@
 #include "lyric_wnd_function.h"
-#include <tstr.h>
 
 using namespace NAMESPACE_D2D;
 

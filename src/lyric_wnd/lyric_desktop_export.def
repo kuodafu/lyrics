@@ -1,0 +1,14 @@
+LIBRARY
+EXPORTS
+    lyric_wnd_get_default_arg
+    lyric_wnd_create
+    lyric_wnd_load_krc
+    lyric_wnd_update
+    lyric_wnd_set_color
+    lyric_wnd_set_font
+    lyric_wnd_set_clr_back
+    lyric_wnd_set_clr_border
+    lyric_wnd_get_config
+    lyric_wnd_call_event
+    lyric_wnd_set_button_state
+    lyric_wnd_get_button_state

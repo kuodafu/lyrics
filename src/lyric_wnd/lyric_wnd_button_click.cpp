@@ -32,13 +32,13 @@ void lyric_wnd_button_click(LYRIC_WND_INFO& wnd_info)
     if (r != 0)
         return; // 返回值不是0, 表示要拦截事件, 不处理
 
-    lyric_wnd_call_event(wnd_info, id);
+    lyric_wnd_call_evt(wnd_info, id);
     //wchar_t buf[100];
     //swprintf_s(buf, L"按钮%d被按下了, id = %d\n", wnd_info.button.indexDown, id);
     //OutputDebugStringW(buf);
 }
 
-bool lyric_wnd_call_event(LYRIC_WND_INFO& wnd_info, int id)
+bool lyric_wnd_call_evt(LYRIC_WND_INFO& wnd_info, int id)
 {
     switch (id)
     {

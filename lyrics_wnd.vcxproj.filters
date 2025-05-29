@@ -9,26 +9,19 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
     </Filter>
-    <Filter Include="资源文件">
-      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
-    </Filter>
     <Filter Include="d2d">
       <UniqueIdentifier>{127ebc57-ead0-41d5-951a-ac60e440406e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="接口声明">
+      <UniqueIdentifier>{8562aeb5-fdff-4e50-9075-e14320750e71}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\lyric_wnd\targetver.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="src\lyric_wnd\lyric_exe_header.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\cpp\_git_works\CommonCode\d2d\Color.h">
       <Filter>d2d</Filter>
-    </ClInclude>
-    <ClInclude Include="src\lyric_wnd\lyric_wnd.h">
-      <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="src\lyric_wnd\d2d.h">
       <Filter>d2d</Filter>
@@ -60,11 +53,14 @@
     <ClInclude Include="src\lyric_wnd\tinyxml2.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="include\kuodafu_lyric.h">
+      <Filter>接口声明</Filter>
+    </ClInclude>
+    <ClInclude Include="include\kuodafu_lyric_wnd.h">
+      <Filter>接口声明</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\lyric_wnd\test_lyrics.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="src\lyric_wnd\lyric_wnd.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -125,18 +121,8 @@
     <ClCompile Include="src\lyric_wnd\lyric_wnd_draw_line_vert.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="src\lyric_wnd\lyric_wnd.rc">
-      <Filter>资源文件</Filter>
-    </ResourceCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <Xml Include="res\lyric_image.xml" />
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="res\lyric_image.png">
-      <Filter>资源文件</Filter>
-    </Image>
+    <ClCompile Include="src\lyric_wnd\lyric_wnd_main.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

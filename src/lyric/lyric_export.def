@@ -1,14 +1,22 @@
 LIBRARY
 EXPORTS
-	lyric_parse
-	lyric_destroy
-	lyric_calc
-	lyric_get_line_count
-	lyric_get_line
-	lyric_calc_text_width
-	lyric_get_language
-	lyric_re_calc_text_width
-	lyric_behind_ahead
-	lyric_to_lrc
-	lyric_free
-	lyric_decode2
+    lyric_parse
+    lyric_destroy
+    lyric_free
+    lyric_calc_text_width
+    lyric_re_calc_text_width
+    lyric_calc
+    lyric_behind_ahead
+    lyric_get_info
+    lyric_get_line_count
+    lyric_get_word_count
+    lyric_get_line
+    lyric_get_word
+    lyric_get_all_line
+    lyric_get_all_word
+    lyric_get_line_str
+    lyric_get_word_str
+    lyric_get_word_all_str
+    lyric_get_line_all_str
+    lyric_to_lrc
+    lyric_get_language

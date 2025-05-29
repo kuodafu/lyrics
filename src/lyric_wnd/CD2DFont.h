@@ -22,7 +22,6 @@ class CD2DFont
 
 public:
     CD2DFont(LPCWSTR name, LONG lfHeight, FONTSTYLE fontStyle);
-    CD2DFont(const LOGFONTA* logFont);
     CD2DFont(const LOGFONTW* logFont);
     ~CD2DFont();
     operator IDWriteInlineObject* () { return m_pWriteInlineObject; }

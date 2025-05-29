@@ -1,6 +1,5 @@
 #include "CD2DFont.h"
 #include <string>
-#include <charset_stl.h>
 
 NAMESPACE_D2D_BEGIN
 
@@ -24,18 +23,6 @@ CD2DFont::CD2DFont(LPCWSTR name, LONG lfHeight, FONTSTYLE fontStyle)
         m_logFont.lfStrikeOut = (style & (int)FONTSTYLE::FontStyleStrikeout) ? 1 : 0;
     }
     create(&m_logFont);
-}
-
-CD2DFont::CD2DFont(const LOGFONTA* logFont)
-{
-    m_dxFormat = nullptr;
-    m_pWriteInlineObject = nullptr;
-    auto w = (charset_stl::A2W)(logFont->lfFaceName);
-
-    LOGFONTW lf = { 0 };
-    memcpy(&lf, logFont, sizeof(LOGFONTA));
-    wcscpy_s(lf.lfFaceName, w.c_str());
-    create(&lf);
 }
 
 CD2DFont::CD2DFont(const LOGFONTW* logFont)

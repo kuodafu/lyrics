@@ -55,7 +55,7 @@ void lyric_wnd_draw_button(LYRIC_WND_INFO& wnd_info);
 void lyric_wnd_button_click(LYRIC_WND_INFO& wnd_info);
 
 // 调用指定事件
-bool lyric_wnd_call_event(LYRIC_WND_INFO& wnd_info, int id);
+bool lyric_wnd_call_evt(LYRIC_WND_INFO& wnd_info, int id);
 
 bool lyric_wnd_set_btn_state(LYRIC_WND_INFO& wnd_info, int id, LYRIC_WND_BUTTON_STATE state);
 LYRIC_WND_BUTTON_STATE lyric_wnd_get_btn_state(LYRIC_WND_INFO& wnd_info, int id);

@@ -1,5 +1,4 @@
 #include "lyric_wnd_function.h"
-#include <control/CControlDraw.h>
 
 using namespace NAMESPACE_D2D;
 

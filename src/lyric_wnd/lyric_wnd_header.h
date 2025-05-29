@@ -1,14 +1,14 @@
 #pragma once
-#include "lyric_wnd.h"
+#include <kuodafu_lyric_wnd.h>
 #include "CD2DRender.h"
 #include "CD2DFont.h"
 #include "CD2DBrush.h"
 #include "CD2DImage.h"
-#include <CScale.h>
+#include "../CScale.h"
 #include <vector>
 #include <string>
 #include <mutex>
-#include "../kuodafu_lyric.h"
+#include <kuodafu_lyric.h>
 
 #define NAMESPACE_LYRIC_WND lyric_wnd
 #define NAMESPACE_LYRIC_WND_BEGIN namespace NAMESPACE_LYRIC_WND{

@@ -3,8 +3,7 @@
     一个透明窗口, 显示一行/两行歌词, 歌词顶部有一些按钮操作
 */
 
-#include "lyric_wnd.h"
-#include "lyric_exe_header.h"
+#include <kuodafu_lyric_wnd.h>
 #include <string>
 #include <unordered_map>
 #include "lyric_wnd_function.h"
@@ -17,7 +16,7 @@ using namespace NAMESPACE_D2D;
 #define TIMERID_UPDATE_LYRIC 1000   // 时钟ID, 更新歌词
 
 
-void lyric_wnd_get_default_arg(LYRIC_WND_ARG* arg)
+void LYRICCALL lyric_wnd_get_default_arg(LYRIC_WND_ARG* arg)
 {
     //static DWORD clrNormal[] =
     //{
@@ -66,7 +65,7 @@ void lyric_wnd_get_default_arg(LYRIC_WND_ARG* arg)
 
 }
 
-HWND lyric_wnd_create(const LYRIC_WND_ARG* arg, PFN_LYRIC_WND_COMMAND pfnCommand, LPARAM lParam)
+HWND LYRICCALL lyric_wnd_create(const LYRIC_WND_ARG* arg, PFN_LYRIC_WND_COMMAND pfnCommand, LPARAM lParam)
 {
     using namespace lyric_wnd;
 
@@ -193,7 +192,7 @@ static float _lyric_wnd_load_krc_calc_text(lyric_wnd::PLYRIC_WND_INFO pWndInfo, 
 }
 
 
-bool lyric_wnd_load_krc(HWND hWindowLyric, LPCVOID pKrcData, int nKrcDataLen, bool isDecrypted)
+bool LYRICCALL lyric_wnd_load_krc(HWND hWindowLyric, LPCVOID pKrcData, int nKrcDataLen, bool isDecrypted)
 {
     using namespace lyric_wnd;
     PLYRIC_WND_INFO pWndInfo = lyric_wnd_get_data(hWindowLyric);
@@ -237,7 +236,7 @@ bool lyric_wnd_load_krc(HWND hWindowLyric, LPCVOID pKrcData, int nKrcDataLen, bo
     return true;
 }
 
-bool lyric_wnd_update(HWND hWindowLyric, int nCurrentTimeMS)
+bool LYRICCALL lyric_wnd_update(HWND hWindowLyric, int nCurrentTimeMS)
 {
     using namespace lyric_wnd;
     PLYRIC_WND_INFO pWndInfo = lyric_wnd_get_data(hWindowLyric);
@@ -251,7 +250,7 @@ bool lyric_wnd_update(HWND hWindowLyric, int nCurrentTimeMS)
     return true;
 }
 
-bool lyric_wnd_set_color(HWND hWindowLyric, bool isLight, DWORD* pClr, int nCount)
+bool LYRICCALL lyric_wnd_set_color(HWND hWindowLyric, bool isLight, DWORD* pClr, int nCount)
 {
     using namespace lyric_wnd;
         PLYRIC_WND_INFO pWndInfo = lyric_wnd_get_data(hWindowLyric);
@@ -270,7 +269,7 @@ bool lyric_wnd_set_color(HWND hWindowLyric, bool isLight, DWORD* pClr, int nCoun
     return pWndInfo->dx.re_create_brush(pWndInfo, isLight);
 }
 
-bool lyric_wnd_set_font(HWND hWindowLyric, LPCWSTR pszName, int nSize, bool isBold, bool isItalic)
+bool LYRICCALL lyric_wnd_set_font(HWND hWindowLyric, LPCWSTR pszName, int nSize, bool isBold, bool isItalic)
 {
     using namespace lyric_wnd;
         PLYRIC_WND_INFO pWndInfo = lyric_wnd_get_data(hWindowLyric);
@@ -291,7 +290,7 @@ bool lyric_wnd_set_font(HWND hWindowLyric, LPCWSTR pszName, int nSize, bool isBo
     return pWndInfo->dx.re_create_font(pWndInfo);
 }
 
-bool lyric_wnd_set_clr_back(HWND hWindowLyric, DWORD clr)
+bool LYRICCALL lyric_wnd_set_clr_back(HWND hWindowLyric, DWORD clr)
 {
     using namespace lyric_wnd;
         PLYRIC_WND_INFO pWndInfo = lyric_wnd_get_data(hWindowLyric);
@@ -302,7 +301,7 @@ bool lyric_wnd_set_clr_back(HWND hWindowLyric, DWORD clr)
     return true;
 }
 
-bool lyric_wnd_set_clr_border(HWND hWindowLyric, DWORD clr)
+bool LYRICCALL lyric_wnd_set_clr_border(HWND hWindowLyric, DWORD clr)
 {
     using namespace lyric_wnd;
         PLYRIC_WND_INFO pWndInfo = lyric_wnd_get_data(hWindowLyric);
@@ -313,7 +312,7 @@ bool lyric_wnd_set_clr_border(HWND hWindowLyric, DWORD clr)
     return true;
 }
 
-bool lyric_wnd_get_config(HWND hWindowLyric, LYRIC_WND_ARG* arg)
+bool LYRICCALL lyric_wnd_get_config(HWND hWindowLyric, LYRIC_WND_ARG* arg)
 {
     if (!arg || !hWindowLyric)
         return false;
@@ -338,16 +337,16 @@ bool lyric_wnd_get_config(HWND hWindowLyric, LYRIC_WND_ARG* arg)
     return true;
 }
 
-bool lyric_wnd_call_event(HWND hWindowLyric, LYRIC_WND_BUTTON_ID id)
+bool LYRICCALL lyric_wnd_call_event(HWND hWindowLyric, LYRIC_WND_BUTTON_ID id)
 {
     using namespace lyric_wnd;
         PLYRIC_WND_INFO pWndInfo = lyric_wnd_get_data(hWindowLyric);
     if (!pWndInfo)
         return false;
-    return lyric_wnd::lyric_wnd_call_event(*pWndInfo, id);
+    return lyric_wnd::lyric_wnd_call_evt(*pWndInfo, id);
 }
 
-bool lyric_wnd_set_button_state(HWND hWindowLyric, LYRIC_WND_BUTTON_ID id, LYRIC_WND_BUTTON_STATE state)
+bool LYRICCALL lyric_wnd_set_button_state(HWND hWindowLyric, LYRIC_WND_BUTTON_ID id, LYRIC_WND_BUTTON_STATE state)
 {
     using namespace lyric_wnd;
         PLYRIC_WND_INFO pWndInfo = lyric_wnd_get_data(hWindowLyric);
@@ -356,7 +355,7 @@ bool lyric_wnd_set_button_state(HWND hWindowLyric, LYRIC_WND_BUTTON_ID id, LYRIC
     return lyric_wnd::lyric_wnd_set_btn_state(*pWndInfo, id, state);
 }
 
-LYRIC_WND_BUTTON_STATE lyric_wnd_get_button_state(HWND hWindowLyric, LYRIC_WND_BUTTON_ID id)
+LYRIC_WND_BUTTON_STATE LYRICCALL lyric_wnd_get_button_state(HWND hWindowLyric, LYRIC_WND_BUTTON_ID id)
 {
     using namespace lyric_wnd;
         PLYRIC_WND_INFO pWndInfo = lyric_wnd_get_data(hWindowLyric);

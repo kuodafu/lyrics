@@ -144,6 +144,44 @@ LPWSTR LYRICCALL lyric_decode2(const void* pData, int nSize)
 LYRIC_NAMESPACE_BEGIN
 
 
+static bool DecompressZlib(const void* compressedData, size_t compressedSize, std::string& output)
+{
+    size_t bufferSize = compressedSize * 4;
+    output.resize(bufferSize);
+
+    z_stream strm{};
+    strm.next_in = const_cast<Bytef*>(static_cast<const Bytef*>(compressedData));
+    strm.avail_in = static_cast<uInt>(compressedSize);
+    strm.total_out = 0;
+
+    if (inflateInit(&strm) != Z_OK)
+        return false;
+
+    int ret;
+    do
+    {
+        if (strm.total_out >= output.size())
+        {
+            output.resize(output.size() * 2); // 动态扩容
+        }
+
+        strm.next_out = reinterpret_cast<Bytef*>(&output[0]) + strm.total_out;
+        strm.avail_out = static_cast<uInt>(output.size() - strm.total_out);
+
+        ret = inflate(&strm, Z_NO_FLUSH);
+        if (ret == Z_STREAM_ERROR || ret == Z_DATA_ERROR || ret == Z_MEM_ERROR)
+        {
+            inflateEnd(&strm);
+            return false;
+        }
+
+    } while (ret != Z_STREAM_END);
+
+    output.resize(strm.total_out); // 去除多余容量
+    inflateEnd(&strm);
+    return true;
+}
+
 
 /// <summary>
 /// 解码krc数据, 返回是否解密成功, krc文件就是一段歌词文本压缩后, 然后异或一段字节
@@ -160,13 +198,11 @@ bool lyric_decode(const void* pData, int nSize, std::wstring& krc)
     for (int i = 0; i < nSize - 4; i++)
         lyric[i] ^= zh[i % 16];
 
-    uLongf destLen = (nSize - 4) * 10;
-    std::string u8(destLen, 0);
 
-    int err = uncompress((Bytef*)&u8[0], &destLen, (const Bytef*)lyric.data(), (uLongf)lyric.size());
-    if (err != Z_OK)
+    std::string u8;
+    if(!DecompressZlib(lyric.c_str(), lyric.size(), u8))
         return false;
-    u8.resize(destLen);
+
     krc = charset_stl::U2W(u8);
     return true;
 }

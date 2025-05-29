@@ -1,5 +1,4 @@
 #include "lyric_wnd_function.h"
-#include <control/CControlDraw.h>
 
 using namespace NAMESPACE_D2D;
 
@@ -20,6 +19,7 @@ bool _canvas_drawimagegridPadding(CD2DRender& d2dRender, CD2DImage& img,
                                   float srcLeft, float srcTop, float srcRight, float srcBottom,
                                   float gridPaddingLeft, float gridPaddingTop, float gridPaddingRight, float gridPaddingBottom,
                                   BYTE alpha);
+int UpdateLayered(HWND hWnd, int width, int height, HDC srcDC, PPOINT ppt = 0, int alpha = 255);
 
 
 HRESULT lyric_wnd_OnPaint(LYRIC_WND_INFO& wnd_info, bool isresize, LYRIC_CALC_STRUCT& arg)
@@ -609,5 +609,29 @@ NAMESPACE_D2D::CD2DImage* __shadow_image(NAMESPACE_D2D::CD2DRender& d2dRender)
     return new CD2DImage(d2dRender, img, imgSize);
 }
 
+// 更新分层窗口, 返回错误码, 0=成功
+// hWnd = 要重画的窗口
+// width = 窗口宽度
+// height = 窗口高度
+// srcDC = 从哪个dc拷贝到窗口上
+// ppt = 窗口新的位置
+// alpha = 窗口透明度
+int UpdateLayered(HWND hWnd, int width, int height, HDC srcDC, PPOINT ppt, int alpha)
+{
+    int ret = 0;
+    HDC hdc = ::GetDC(hWnd);
+    SIZE size = { width, height };
+    POINT pt = { 0 };
+    BLENDFUNCTION blend = { 0 };
+    blend.BlendOp = AC_SRC_OVER;
+    blend.BlendFlags = 0;
+    blend.AlphaFormat = AC_SRC_ALPHA;
+    blend.SourceConstantAlpha = (BYTE)alpha;
+    BOOL b = UpdateLayeredWindow(hWnd, hdc, ppt, &size, srcDC, &pt, 0, &blend, ULW_ALPHA);
+    if (!b)
+        ret = GetLastError();
+    ReleaseDC(hWnd, hdc);
+    return ret;
+}
 
 NAMESPACE_LYRIC_WND_END

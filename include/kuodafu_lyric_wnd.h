@@ -102,6 +102,18 @@ typedef struct LYRIC_WND_ARG
 typedef int (CALLBACK* PFN_LYRIC_WND_COMMAND)(HWND hWindowLyric, int id, LPARAM lParam);
 
 /// <summary>
+/// 初始化桌面歌词, 会初始化D2D, 开启DPI缩放, 注册窗口类等
+/// </summary>
+/// <returns>返回是否初始化成功</returns>
+bool LYRICCALL lyric_wnd_init();
+
+/// <summary>
+/// 取消初始化, 卸载D2D, 释放各种资源
+/// </summary>
+/// <returns>返回是否初始化成功</returns>
+bool LYRICCALL lyric_wnd_uninit();
+
+/// <summary>
 /// 获取创建窗口的默认参数
 /// </summary>
 /// <param name="arg">接收默认参数的结构</param>

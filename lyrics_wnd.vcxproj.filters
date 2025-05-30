@@ -29,19 +29,10 @@
     <ClInclude Include="src\lyric_wnd\CD2DFont.h">
       <Filter>d2d</Filter>
     </ClInclude>
-    <ClInclude Include="src\lyric_wnd\CD2DBrush.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="src\lyric_wnd\CD2DRender.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="src\lyric_wnd\lyric_wnd_function.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="src\lyric_wnd\resource.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="src\lyric_wnd\CD2DImage.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="src\lyric_wnd\lyric_wnd_header.h">
@@ -59,6 +50,15 @@
     <ClInclude Include="include\kuodafu_lyric_wnd.h">
       <Filter>接口声明</Filter>
     </ClInclude>
+    <ClInclude Include="src\lyric_wnd\CD2DBrush.h">
+      <Filter>d2d</Filter>
+    </ClInclude>
+    <ClInclude Include="src\lyric_wnd\CD2DImage.h">
+      <Filter>d2d</Filter>
+    </ClInclude>
+    <ClInclude Include="src\lyric_wnd\CD2DRender.h">
+      <Filter>d2d</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\lyric_wnd\lyric_wnd.cpp">
@@ -70,12 +70,6 @@
     <ClCompile Include="src\lyric_wnd\CD2DFont.cpp">
       <Filter>d2d</Filter>
     </ClCompile>
-    <ClCompile Include="src\lyric_wnd\CD2DBrush.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="src\lyric_wnd\CD2DRender.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="src\lyric_wnd\lyric_wnd_function.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -86,9 +80,6 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="src\lyric_wnd\lyric_wnd_load_image.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="src\lyric_wnd\CD2DImage.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="src\lyric_wnd\lyric_wnd_draw_button.cpp">
@@ -124,5 +115,19 @@
     <ClCompile Include="src\lyric_wnd\lyric_wnd_main.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="src\lyric_wnd\CD2DRender.cpp">
+      <Filter>d2d</Filter>
+    </ClCompile>
+    <ClCompile Include="src\lyric_wnd\CD2DImage.cpp">
+      <Filter>d2d</Filter>
+    </ClCompile>
+    <ClCompile Include="src\lyric_wnd\CD2DBrush.cpp">
+      <Filter>d2d</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="src\lyric_wnd\lyric_desktop_export.def">
+      <Filter>源文件</Filter>
+    </None>
   </ItemGroup>
 </Project>

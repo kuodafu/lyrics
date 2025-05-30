@@ -27,15 +27,72 @@ LRESULT lyric_wnd_OnLbuttonDown(LYRIC_WND_INFO& wnd_info, UINT message, WPARAM w
 LRESULT lyric_wnd_OnCaptureChanged(LYRIC_WND_INFO& wnd_info, UINT message, WPARAM wParam, LPARAM lParam);
 
 
-
-HWND lyric_create_layered_window(const LYRIC_WND_ARG* arg)
+static bool init_dpi()
 {
-    if (!m_hCursorArrow)
+    typedef HRESULT(WINAPI* pfn_SetProcessDpiAwareness)(int value);
+    typedef HRESULT(WINAPI* pfn_SetProcessDpiAwarenessContext)(DPI_AWARENESS_CONTEXT value);
+    typedef DPI_AWARENESS_CONTEXT(WINAPI* pfn_SetThreadDpiAwarenessContext)(DPI_AWARENESS_CONTEXT dpiContext);
+
+
+    HMODULE Shcore = LoadLibraryW(L"Shcore.dll");
+    HMODULE hUser32 = LoadLibraryW(L"user32.dll");
+    if (!Shcore || !hUser32)
+        return false;
+
+    // win10才支持的设置dpi方式
+    auto pfnSetProcessDpiAwareness = (pfn_SetProcessDpiAwareness)GetProcAddress(Shcore, "SetProcessDpiAwareness");
+    auto pfnSetProcessDpiAwarenessContext = (pfn_SetProcessDpiAwarenessContext)GetProcAddress(Shcore, "SetProcessDpiAwarenessContext");
+    auto pfnSetThreadDpiAwarenessContext = (pfn_SetThreadDpiAwarenessContext)GetProcAddress(hUser32, "SetThreadDpiAwarenessContext");
+    if (pfnSetProcessDpiAwareness)
     {
-        //m_hCursorArrow = LoadCursorW(0, IDC_ARROW);
-        m_hCursorArrow = LoadCursorW(0, IDC_SIZEALL);
-        m_hCursorHand = LoadCursorW(0, IDC_HAND);
+        enum PROCESS_DPI_AWARENESS
+        {
+            PROCESS_DPI_UNAWARE = 0,    // DPI 不知道。 此应用不会缩放 DPI 更改，并且始终假定其比例系数为 100% (96 DPI) 。 系统将在任何其他 DPI 设置上自动缩放它
+            PROCESS_SYSTEg_dpi_AWARE = 1,    // 统 DPI 感知。 此应用不会缩放 DPI 更改。 它将查询 DPI 一次，并在应用的生存期内使用该值。 如果 DPI 发生更改，应用将不会调整为新的 DPI 值。 当 DPI 与系统值发生更改时，系统会自动纵向扩展或缩减它。
+            PROCESS_PER_MONITOR_DPI_AWARE = 2     // 按监视器 DPI 感知。 此应用在创建 DPI 时检查 DPI，并在 DPI 发生更改时调整比例系数。 系统不会自动缩放这些应用程序
+        };
+
+        // 感知多个屏幕的dpi
+        HRESULT hr = 0;
+
+        if (pfnSetProcessDpiAwarenessContext)
+        {
+            hr = pfnSetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+        }
+        else
+        {
+            hr = pfnSetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
+            if (pfnSetThreadDpiAwarenessContext)
+                pfnSetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+        }
+
+
+        if (FAILED(hr))
+        {
+#ifdef _DEBUG
+            __debugbreak();
+#endif
+            return false;
+        }
     }
+    else
+    {
+        // win10以下的设置dpi方式, 不能感知多个屏幕
+        BOOL bRet = SetProcessDPIAware();
+    }
+
+    return true;
+}
+
+constexpr LPCWSTR pszClassName = L"www.kuodafu.com lyric_desktop_window";
+bool _ld_init()
+{
+#ifdef _DEBUG
+    const bool isDebug = true;
+#else
+    const bool isDebug = false;
+#endif
+    static bool init_d2d = d2d::d2d_init(isDebug);
 
     WNDCLASSEX wc;
     wc.cbSize           = sizeof(WNDCLASSEX);
@@ -48,24 +105,35 @@ HWND lyric_create_layered_window(const LYRIC_WND_ARG* arg)
     wc.hCursor          = m_hCursorArrow;
     wc.hbrBackground    = (HBRUSH)(COLOR_WINDOW + 1);
     wc.lpszMenuName     = NULL;
-    wc.lpszClassName    = L"www.kuodafu.com lyric_window";
+    wc.lpszClassName    = pszClassName;
     wc.hIconSm          = wc.hIcon;
 
-
-
-#ifdef _DEBUG
-    const bool isDebug = true;
-#else
-    const bool isDebug = false;
-#endif
     static ATOM atom = RegisterClassExW(&wc);
-    static bool init_d2d = d2d::d2d_init(isDebug);
+    init_dpi();
+    return init_d2d;
+}
+
+bool _ld_uninit()
+{
+    UnregisterClassW(pszClassName, GetModuleHandleW(0));
+    return d2d_uninit();
+}
+
+HWND lyric_create_layered_window(const LYRIC_WND_ARG* arg)
+{
+    if (!m_hCursorArrow)
+    {
+        //m_hCursorArrow = LoadCursorW(0, IDC_ARROW);
+        m_hCursorArrow = LoadCursorW(0, IDC_SIZEALL);
+        m_hCursorHand = LoadCursorW(0, IDC_HAND);
+    }
+
 
     HWND hWnd = CreateWindowExW(WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE,
-                                wc.lpszClassName, L"",
+                                pszClassName, L"",
                                 WS_POPUP | WS_VISIBLE,// | WS_BORDER,
                                 0, 0, 1, 1,
-                                NULL, NULL, wc.hInstance, NULL);
+                                NULL, NULL, GetModuleHandleW(0), NULL);
 
 
     if (!hWnd)

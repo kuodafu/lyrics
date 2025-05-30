@@ -32,3 +32,4 @@ _ReSharper*/
 #Nuget packages folder
 packages/
 output/
+/src/lyric_exe/ixwebsocket

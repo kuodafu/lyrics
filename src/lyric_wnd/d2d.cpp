@@ -5,14 +5,6 @@ NAMESPACE_D2D_BEGIN
 
 static D2D_GDI_DATA_STRUCT d2dInfo;
 
-D2D_GDI_DATA_STRUCT::~D2D_GDI_DATA_STRUCT()
-{
-    SafeRelease(d2dInfo.pD2DDevice);
-    SafeRelease(d2dInfo.pDWriteFactory);
-    SafeRelease(d2dInfo.pFactory);
-    SafeRelease(d2dInfo.pWICFactory);
-}
-
 bool d2d_init(bool isDebug)
 {
     HRESULT hr = 0;
@@ -72,6 +64,16 @@ bool d2d_init(bool isDebug)
                                 reinterpret_cast<IUnknown**>(&d2dInfo.pDWriteFactory));
     if (FAILED(hr)) false;
 
+    return true;
+}
+
+bool d2d_uninit()
+{
+    SafeRelease(d2dInfo.pD2DDevice);
+    SafeRelease(d2dInfo.pDWriteFactory);
+    SafeRelease(d2dInfo.pFactory);
+    SafeRelease(d2dInfo.pWICFactory);
+    CoUninitialize();
     return true;
 }
 

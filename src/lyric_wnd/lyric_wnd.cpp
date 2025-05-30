@@ -10,11 +10,52 @@
 #include <CommCtrl.h>
 #include "CCustomTextRenderer.h"
 
+#ifdef _LIB
+#   ifdef _WIN64
+#      ifdef _DEBUG
+#          pragma comment(lib, "output/x64/lyric_libD.lib")
+#      else
+#          pragma comment(lib, "output/x64/lyric_lib.lib")
+#      endif
+#   else
+#      ifdef _DEBUG
+#          pragma comment(lib, "output/x86/lyric_libD.lib")
+#      else
+#          pragma comment(lib, "output/x86/lyric_lib.lib")
+#      endif
+#   endif
+#else
+#   ifdef _WIN64
+#      ifdef _DEBUG
+#          pragma comment(lib, "output/x64/lyricD.lib")
+#      else
+#          pragma comment(lib, "output/x64/lyric.lib")
+#      endif
+#   else
+#      ifdef _DEBUG
+#          pragma comment(lib, "output/x86/lyricD.lib")
+#      else
+#          pragma comment(lib, "output/x86/lyric.lib")
+#      endif
+#   endif
+#endif
+
 
 using namespace NAMESPACE_D2D;
 
 #define TIMERID_UPDATE_LYRIC 1000   // Ê±ÖÓID, ¸üÐÂ¸è´Ê
 
+bool LYRICCALL lyric_wnd_init()
+{
+    using namespace NAMESPACE_LYRIC_WND;
+    return _ld_init();
+}
+
+bool LYRICCALL lyric_wnd_uninit()
+{
+    using namespace NAMESPACE_LYRIC_WND;
+    return _ld_uninit();
+}
 
 void LYRICCALL lyric_wnd_get_default_arg(LYRIC_WND_ARG* arg)
 {
@@ -64,6 +105,7 @@ void LYRICCALL lyric_wnd_get_default_arg(LYRIC_WND_ARG* arg)
     arg->rcWindow.bottom = arg->rcWindow.top + height;
 
 }
+
 
 HWND LYRICCALL lyric_wnd_create(const LYRIC_WND_ARG* arg, PFN_LYRIC_WND_COMMAND pfnCommand, LPARAM lParam)
 {

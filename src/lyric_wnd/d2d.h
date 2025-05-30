@@ -99,7 +99,6 @@ struct D2D_GDI_DATA_STRUCT
     ID2D1Device* pD2DDevice;                    // d2d设备
     float DpiX;
     float DpiY;
-    ~D2D_GDI_DATA_STRUCT();
 };
 
 // D2D使用的颜色类, 内部记录的是DWORD 类型的ARGB颜色
@@ -586,6 +585,7 @@ typedef LINEPOINTBASE<float> LINEPOINT_F, * PLINEPOINT_F, * LPLINEPOINT_F; typed
 typedef DWORD ARGB;
 
 bool d2d_init(bool isDebug);
+bool d2d_uninit();
 D2D_GDI_DATA_STRUCT& d2d_get_info();
 
 

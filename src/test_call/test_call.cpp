@@ -12,6 +12,7 @@
 #include <string>
 #include <random>
 #include <thread>
+#include <mutex>
 
 #include <read_file.h>
 #include <kuodafu_lyric.h>
@@ -20,17 +21,52 @@
 #include <kuodafu_lyric_wnd.h>
 #include <WaitObject.h>
 #include "../src/charset_stl.h"
-#include <winsock2.h>
 #include <cJSON/cJSON.h>
-
-#include <ixwebsocket/IXWebSocket.h>
-
 #include "bass.h"
 
 #pragma comment(lib, "Ws2_32.lib")
 #pragma comment(lib, "Crypt32.lib")
 #pragma comment(lib, "Bcrypt.lib")
-#pragma comment(lib, "bass.lib")
+
+#ifdef _WIN64
+#   pragma comment(lib, "lib/x64/bass.lib")
+#else
+#   pragma comment(lib, "lib/x86/bass.lib")
+#endif
+
+// 是否使用静态库
+#define USING_LIB 0
+
+#if USING_LIB
+#   ifdef _WIN64
+#      ifdef _DEBUG
+#          pragma comment(lib, "output/x64/lyric_desktop_libD.lib")
+#      else
+#          pragma comment(lib, "output/x64/lyric_desktop_lib.lib")
+#      endif
+#   else
+#      ifdef _DEBUG
+#          pragma comment(lib, "output/x86/lyric_desktop_libD.lib")
+#      else
+#          pragma comment(lib, "output/x86/lyric_desktop_lib.lib")
+#      endif
+#   endif
+#else
+#   ifdef _WIN64
+#      ifdef _DEBUG
+#          pragma comment(lib, "output/x64/lyric_desktopD.lib")
+#      else
+#          pragma comment(lib, "output/x64/lyric_desktop.lib")
+#      endif
+#   else
+#      ifdef _DEBUG
+#          pragma comment(lib, "output/x86/lyric_desktopD.lib")
+#      else
+#          pragma comment(lib, "output/x86/lyric_desktop.lib")
+#      endif
+#   endif
+#endif
+
 
 // 全局变量:
 static HINSTANCE hInst;                                // 当前实例
@@ -38,19 +74,14 @@ static HSTREAM m_hStream;      // 音乐播放句柄
 static HWND m_hLyricWindow;    // 歌词窗口句柄
 static HWND m_hWnd;            // 主窗口句柄
 static CListView m_list;
-static bool g_ws_connected = false;
-constexpr LPCSTR WS_URL = "ws://127.0.0.1:6520";
-static ix::WebSocket g_ws;
-//static std::mutex m_mtx_message;
 
 // 此代码模块中包含的函数的前向声明:
 BOOL                InitInstance(HINSTANCE, int);
-bool init_dpi();
+
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 bool OnCommand(HWND hWnd, WPARAM wParam, LPARAM lParam);
 int CALLBACK OnLyricCommand(HWND hWindowLyric, int id, LPARAM lParam);
-void connect_ws(LPCSTR url);
-void ws_OnMessage(cJSON* data, LPCSTR type);
+
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                       _In_opt_ HINSTANCE hPrevInstance,
@@ -60,36 +91,24 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
-    WSADATA wsaData;
-    int wsaResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
-    if (wsaResult != 0)
-    {
-        wchar_t buf[100];
-        swprintf_s(buf, L"WSAStartup 调用失败, 无法初始化ws, 错误码: %d", wsaResult);
-        MessageBoxW(0, buf, L"WebSokect初始化失败", MB_ICONERROR);
-        return 0;
-    }
+    lyric_wnd_init();
 
-    init_dpi();
     // 执行应用程序初始化:
-    if (!InitInstance(hInstance, nCmdShow))
+    if (InitInstance(hInstance, nCmdShow))
     {
-        return FALSE;
+        MSG msg;
+
+        // 主消息循环:
+        while (GetMessage(&msg, nullptr, 0, 0))
+        {
+            TranslateMessage(&msg);
+            DispatchMessage(&msg);
+        }
     }
 
-    MSG msg;
-
-    // 主消息循环:
-    while (GetMessage(&msg, nullptr, 0, 0))
-    {
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
-    }
-
-    //g_ws.stop();
     BASS_Free();
-    WSACleanup();
-    return (int)msg.wParam;
+    lyric_wnd_uninit();
+    return 0;
 }
 
 
@@ -258,12 +277,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     {
         m_hWnd = hWnd;
         BASS_Init(-1, 44100, 0, hWnd, NULL);
-        SetTimer(hWnd, 300, 10000, [](HWND hWnd, UINT message, UINT_PTR id, DWORD t)
-        {
-            if (g_ws_connected)
-                return;
-            connect_ws(WS_URL);
-        });
+
         int left = 100;
         int top = 20;
         auto pfn_create = [&](int id, LPCWSTR name)
@@ -300,24 +314,29 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         };
 
 
-        //m_hStream = BASS_StreamCreateFile(FALSE, files.back(), 0, 0, BASS_SAMPLE_FLOAT);
-        //if (m_hStream)
-        //{
-        //    BASS_ChannelPlay(m_hStream, FALSE);
-        //    BASS_ChannelSetPosition(m_hStream, BASS_ChannelSeconds2Bytes(m_hStream, 10.), BASS_POS_BYTE);
-        //}
+        m_hStream = BASS_StreamCreateFile(FALSE, files.back(), 0, 0, BASS_SAMPLE_FLOAT);
+        if (m_hStream)
+        {
+            BASS_ChannelPlay(m_hStream, FALSE);
+            BASS_ChannelSetPosition(m_hStream, BASS_ChannelSeconds2Bytes(m_hStream, 10.), BASS_POS_BYTE);
+        }
         SetTimer(hWnd, 100, 1000, 0);
-        //SetTimer(hWnd, 200, 10, 0);
-
-        //std::thread _th([hWnd]()
-        //{
-        //    while (IsWindow(hWnd))
-        //    {
-        //        SendMessageW(hWnd, WM_TIMER, 200, 0);
-        //        Sleep(10);
-        //    }
-        //});
-        //_th.detach();
+        if (1)
+        {
+            SetTimer(hWnd, 200, 10, 0);
+        }
+        else
+        {
+            std::thread _th([hWnd]()
+            {
+                while (IsWindow(hWnd))
+                {
+                    SendMessageW(hWnd, WM_TIMER, 200, 0);
+                    Sleep(1);
+                }
+            });
+            _th.detach();
+        }
         // 枚举  目录下所有 krc文件
         //EnumerateKRCFiles(LR"(J:\cahce\kugou\Lyric)");
         std::vector<LPCWSTR> krcs =
@@ -338,9 +357,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         //arg.pszFontName = L"黑体";
         m_hLyricWindow = lyric_wnd_create(&arg, OnLyricCommand, 0);
         lyric_wnd_load_krc(m_hLyricWindow, data.c_str(), (int)data.size(), false);
-        //lyric_wnd_call_event(m_hLyricWindow, LYRIC_WND_BUTTON_ID_PLAY);
-
-        connect_ws(WS_URL);
+        lyric_wnd_call_event(m_hLyricWindow, LYRIC_WND_BUTTON_ID_PLAY);
 
         break;
     }
@@ -433,69 +450,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     return 0;
 }
 
-
-bool init_dpi()
-{
-
-    typedef HRESULT(WINAPI* pfn_SetProcessDpiAwareness)(int value);
-    typedef HRESULT(WINAPI* pfn_SetProcessDpiAwarenessContext)(DPI_AWARENESS_CONTEXT value);
-    typedef DPI_AWARENESS_CONTEXT(WINAPI* pfn_SetThreadDpiAwarenessContext)(DPI_AWARENESS_CONTEXT dpiContext);
-
-
-    HMODULE Shcore = LoadLibraryW(L"Shcore.dll");
-    HMODULE hUser32 = LoadLibraryW(L"user32.dll");
-    if (!Shcore || !hUser32)
-        return false;
-
-    // win10才支持的设置dpi方式
-    auto pfnSetProcessDpiAwareness = (pfn_SetProcessDpiAwareness)GetProcAddress(Shcore, "SetProcessDpiAwareness");
-    auto pfnSetProcessDpiAwarenessContext = (pfn_SetProcessDpiAwarenessContext)GetProcAddress(hUser32, "SetProcessDpiAwarenessContext");
-    auto pfnSetThreadDpiAwarenessContext = (pfn_SetThreadDpiAwarenessContext)GetProcAddress(hUser32, "SetThreadDpiAwarenessContext");
-    if (pfnSetProcessDpiAwareness)
-    {
-        enum PROCESS_DPI_AWARENESS {
-            PROCESS_DPI_UNAWARE = 0,    // DPI 不知道。 此应用不会缩放 DPI 更改，并且始终假定其比例系数为 100% (96 DPI) 。 系统将在任何其他 DPI 设置上自动缩放它
-            PROCESS_SYSTEg_dpi_AWARE = 1,    // 统 DPI 感知。 此应用不会缩放 DPI 更改。 它将查询 DPI 一次，并在应用的生存期内使用该值。 如果 DPI 发生更改，应用将不会调整为新的 DPI 值。 当 DPI 与系统值发生更改时，系统会自动纵向扩展或缩减它。
-            PROCESS_PER_MONITOR_DPI_AWARE = 2     // 按监视器 DPI 感知。 此应用在创建 DPI 时检查 DPI，并在 DPI 发生更改时调整比例系数。 系统不会自动缩放这些应用程序
-        };
-
-        // 感知多个屏幕的dpi
-        HRESULT hr = 0;
-
-        if (pfnSetProcessDpiAwarenessContext)
-        {
-            hr = pfnSetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
-        }
-        else
-        {
-            hr = pfnSetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
-            if (pfnSetThreadDpiAwarenessContext)
-                pfnSetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
-        }
-
-
-        if (FAILED(hr))
-        {
-            //wstr::dbg(L"开启DPI感知失败, 错误码 = 0x%08X\n", GetLastError());
-#ifdef _DEBUG
-            __debugbreak();
-#endif
-            return false;
-        }
-    }
-    else
-    {
-        // win10以下的设置dpi方式, 不能感知多个屏幕
-        BOOL bRet = SetProcessDPIAware();
-        //if (!bRet)
-        //{
-        //    wstr::dbg(L"开启DPI感知失败, 错误码 = 0x%08X\n", GetLastError());
-        //    return 0;
-        //}
-    }
-
-    return true;
-}
 
 static bool IsCheck(HWND hWnd)
 {
@@ -590,53 +544,22 @@ int CALLBACK OnLyricCommand(HWND hWindowLyric, int id, LPARAM lParam)
         break;
     case LYRIC_WND_BUTTON_ID_NEXT:
     case LYRIC_WND_BUTTON_ID_PREV:
-    case LYRIC_WND_BUTTON_ID_PLAY:
-    case LYRIC_WND_BUTTON_ID_PAUSE:
     {
-        if (!g_ws_connected)
-            break;
-        LPCSTR command = "";
-        switch (id)
-        {
-        case LYRIC_WND_BUTTON_ID_NEXT:
-            command = "next";
-            break;
-        case LYRIC_WND_BUTTON_ID_PREV:
-            command = "prev";
-            break;
-        case LYRIC_WND_BUTTON_ID_PLAY:
-        case LYRIC_WND_BUTTON_ID_PAUSE:
-            command = "toggle";
-            break;
-        default:
-            break;
-        }
-
-        cJSON* json = cJSON_CreateObject();
-        cJSON_AddStringToObject(json, "type", "control");
-        cJSON* data = cJSON_AddObjectToObject(json, "data");
-        cJSON_AddStringToObject(data, "command", command);
-        char* str = cJSON_PrintUnformatted(json);
-
-        //g_ws.sendText(str);
-        cJSON_Delete(json);
-        cJSON_free(str);
-
-        //double d_pos = BASS_ChannelBytes2Seconds(m_hStream, BASS_ChannelGetPosition(m_hStream, BASS_POS_BYTE));
-        //double new_pos = id == LYRIC_WND_BUTTON_ID_NEXT ? 10. : -10.;
-        //BASS_ChannelSetPosition(m_hStream, BASS_ChannelSeconds2Bytes(m_hStream, d_pos + new_pos), BASS_POS_BYTE);
+        double d_pos = BASS_ChannelBytes2Seconds(m_hStream, BASS_ChannelGetPosition(m_hStream, BASS_POS_BYTE));
+        double new_pos = id == LYRIC_WND_BUTTON_ID_NEXT ? 10. : -10.;
+        BASS_ChannelSetPosition(m_hStream, BASS_ChannelSeconds2Bytes(m_hStream, d_pos + new_pos), BASS_POS_BYTE);
         break;
     }
-    //case LYRIC_WND_BUTTON_ID_PLAY:
-    //{
-    //    //BASS_ChannelPlay(m_hStream, FALSE);
-    //    break;
-    //}
-    //case LYRIC_WND_BUTTON_ID_PAUSE:
-    //{
-    //    BASS_ChannelPause(m_hStream);
-    //    break;
-    //}
+    case LYRIC_WND_BUTTON_ID_PLAY:
+    {
+        BASS_ChannelPlay(m_hStream, FALSE);
+        break;
+    }
+    case LYRIC_WND_BUTTON_ID_PAUSE:
+    {
+        BASS_ChannelPause(m_hStream);
+        break;
+    }
     default:
         break;
     }
@@ -644,86 +567,4 @@ int CALLBACK OnLyricCommand(HWND hWindowLyric, int id, LPARAM lParam)
 }
 
 
-void connect_ws(LPCSTR url)
-{
-    ////_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-    ////return;
-    //// 设置连接地址
-    //g_ws.setUrl(url);
-    ////g_ws.disableAutomaticReconnection();
 
-    //// 设置回调
-    //g_ws.setOnMessageCallback([](const ix::WebSocketMessagePtr& msg)
-    //{
-    //    if (msg->type == ix::WebSocketMessageType::Open)
-    //    {
-    //        g_ws_connected = true;
-    //    }
-    //    else if (msg->type == ix::WebSocketMessageType::Message)
-    //    {
-    //        cJSON* json = cJSON_Parse(msg->str.c_str());
-    //        if (json)
-    //        {
-    //            LPCSTR type = cJSON_GetStringValue(cJSON_GetObjectItem(json, "type"));
-    //            cJSON* data = cJSON_GetObjectItem(json, "data");
-    //            if (type && *type && data)
-    //                ws_OnMessage(data, type);
-    //            cJSON_Delete(json);
-    //        }
-    //    }
-    //    else if (msg->type == ix::WebSocketMessageType::Close)
-    //    {
-    //        std::wstring w = charset_stl::U2W(msg->closeInfo.reason);
-    //        wchar_t buffer[1024];
-    //        swprintf_s(buffer, L"[close] Connection closed. Code: %d, Reason: %s\n", msg->closeInfo.code, w.c_str());
-    //        OutputDebugStringW(buffer);
-    //        g_ws_connected = false;
-    //    }
-    //    else if (msg->type == ix::WebSocketMessageType::Error)
-    //    {
-    //        std::wstring w = charset_stl::U2W(msg->errorInfo.reason);
-    //        OutputDebugStringW(L"[error] ");
-    //        OutputDebugStringW(w.c_str());
-    //        OutputDebugStringW(L"\n");
-    //        //__debugbreak();
-    //    }
-
-    //});
-
-    //// 启动连接
-    //g_ws.start();
-}
-
-
-void ws_OnMessage(cJSON* data, LPCSTR type)
-{
-//    // 歌词这个不是线程安全, 得加锁处理
-//    std::lock_guard<std::mutex> lock(m_mtx_message);
-//
-//#define _cmp(_s) (_stricmp(type, _s) == 0)
-//    if (_cmp("lyrics"))
-//    {
-//        double currentTime = cJSON_GetNumberValue(cJSON_GetObjectItem(data, "currentTime"));
-//        LPCSTR lyricsData = cJSON_GetStringValue(cJSON_GetObjectItem(data, "lyricsData"));
-//        auto w = charset_stl::U2W(lyricsData);
-//        lyric_wnd_load_krc(m_hLyricWindow, w.c_str(), (int)w.size(), true);
-//        lyric_wnd_update(m_hLyricWindow, (int)(currentTime * 1000.));
-//        return;
-//    }
-//
-//    if (_cmp("playerState"))
-//    {
-//        bool isPlaying = cJSON_IsTrue(cJSON_GetObjectItem(data, "isPlaying"));
-//        if (isPlaying)
-//            lyric_wnd_call_event(m_hLyricWindow, LYRIC_WND_BUTTON_ID_PLAY);
-//        else
-//            lyric_wnd_call_event(m_hLyricWindow, LYRIC_WND_BUTTON_ID_PAUSE);
-//
-//        double currentTime = cJSON_GetNumberValue(cJSON_GetObjectItem(data, "currentTime"));
-//        lyric_wnd_update(m_hLyricWindow, (int)(currentTime * 1000.));
-//        return;
-//    }
-//
-
-
-}

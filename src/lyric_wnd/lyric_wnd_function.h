@@ -33,6 +33,9 @@ void lyric_wnd_draw_cache_text_v(LYRIC_WND_INFO& wnd_info, LYRIC_WND_DRAWTEXT_IN
 void lyric_wnd_draw_cache_text_h(LYRIC_WND_INFO& wnd_info, LYRIC_WND_DRAWTEXT_INFO& draw_info, ID2D1Bitmap* pBitmap);
 
 
+// 初始化桌面窗口
+bool _ld_init();
+bool _ld_uninit();
 
 HWND lyric_create_layered_window(const LYRIC_WND_ARG* arg);
 void lyric_wnd_default_object(LYRIC_WND_INFO& wnd_info);

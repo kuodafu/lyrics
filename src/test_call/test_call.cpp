@@ -91,6 +91,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
+
     lyric_wnd_init();
 
     // 执行应用程序初始化:
@@ -565,6 +566,5 @@ int CALLBACK OnLyricCommand(HWND hWindowLyric, int id, LPARAM lParam)
     }
     return 0;
 }
-
 
 

@@ -33,3 +33,4 @@ _ReSharper*/
 packages/
 output/
 /src/lyric_exe/ixwebsocket
+/res/QRC

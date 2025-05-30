@@ -147,7 +147,6 @@ LYRIC_NAMESPACE_BEGIN
 static bool DecompressZlib(const void* compressedData, size_t compressedSize, std::string& output)
 {
     size_t bufferSize = compressedSize * 4;
-    output.resize(bufferSize);
 
     z_stream strm{};
     strm.next_in = const_cast<Bytef*>(static_cast<const Bytef*>(compressedData));
@@ -156,6 +155,8 @@ static bool DecompressZlib(const void* compressedData, size_t compressedSize, st
 
     if (inflateInit(&strm) != Z_OK)
         return false;
+
+    output.resize(bufferSize);
 
     int ret;
     do
@@ -171,6 +172,7 @@ static bool DecompressZlib(const void* compressedData, size_t compressedSize, st
         ret = inflate(&strm, Z_NO_FLUSH);
         if (ret == Z_STREAM_ERROR || ret == Z_DATA_ERROR || ret == Z_MEM_ERROR)
         {
+            output.clear();
             inflateEnd(&strm);
             return false;
         }

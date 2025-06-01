@@ -82,6 +82,8 @@ LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 bool OnCommand(HWND hWnd, WPARAM wParam, LPARAM lParam);
 int CALLBACK OnLyricCommand(HWND hWindowLyric, int id, LPARAM lParam);
 
+#include <assist/assist.h>
+
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                       _In_opt_ HINSTANCE hPrevInstance,
@@ -90,6 +92,35 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 {
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
+
+    void* out = nullptr;
+    size_t out_size;
+    charset_stl::__charsel_impl::__CHARSET_CONVERT cptr;
+
+    auto pfn_strlen_a = [](const std::string& x)
+    {
+        return x.size();
+    };
+
+    //auto pOutput = cptr.copy_gbk("sda", 3, out_size);
+    //pOutput = cptr.gbk_to("sda", 3, charset_stl::AnsiToUtf8, out_size);
+    //pOutput = cptr.utf8_to("sda", 3, charset_stl::AnsiToUtf8, out_size);
+    //auto xx1 = cptr.utf16le_to(L"sda", 6, charset_stl::UnicodeToAnsi, out_size);
+
+
+    std::string xx232;
+    //charset_stl::ptr2gbk(L"123456", 12, CHARSET_TYPE_UTF16_LE, xx232);
+
+    //charset_stl::__charsel_impl::__charset_convert_str_ptr("123我是", 7, CHARSET_TYPE_GBK, CHARSET_TYPE_UTF16_BE, &out, out_size);
+    //charset_stl::__charsel_impl::__charset_convert_str(u8"123我是", -1, CHARSET_TYPE_UTF8, out, out_size, CHARSET_TYPE_GBK);
+    //charset_stl::__charsel_impl::__charset_convert_str(L"123我是", -1, CHARSET_TYPE_UTF16_LE, out, out_size, CHARSET_TYPE_UTF16_LE);
+    LPCWSTR xxasd = (LPCWSTR)out;
+    auto xx = GetClipboard();
+
+
+    auto xxx = charset_stl::UnicodeToUtf8(xx.c_str());
+    auto xxx2 = charset_stl::Utf8ToUnicode(xxx);
+
 
 
     lyric_wnd_init();
@@ -243,7 +274,7 @@ void EnumerateKRCFiles(const std::wstring& directory) {
 
         std::string data;
         read_file(filePath.c_str(), data);
-        auto p = lyric_parse((LPBYTE)data.c_str(), (int)data.size(), false);
+        auto p = lyric_parse((LPBYTE)data.c_str(), (int)data.size(), LYRIC_PARSE_TYPE_KRCDATA);
         LYRIC_CALC_STRUCT arg{};
 
         int a = lyric_get_language(p);

@@ -31,6 +31,12 @@ struct INSIDE_LYRIC_WORD
         left = 0;
     }
 };
+
+template<typename T, typename R>inline bool __query(T l, R r)
+{
+    return ((R)l & r) == r;
+}
+
 using INSIDE_LYRIC_WORDS = std::vector<INSIDE_LYRIC_WORD>;
 
 #ifndef MAXINT

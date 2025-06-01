@@ -13,10 +13,19 @@
 
 LYRIC_NAMESPACE_BEGIN
 
-bool lyric_decode(const void* pData, int nSize, std::wstring& krc);
-void lyric_parse_text(PINSIDE_LYRIC_INFO pLyric, LPWSTR pStart, LPWSTR pEnd);
-void lyric_parse_tget_translate(PINSIDE_LYRIC_INFO pLyric, LPCWSTR language);
+bool _lrc_decode(const void* pData, int nSize, std::wstring& krc);
+void _lrc_parse_text(PINSIDE_LYRIC_INFO pLyric, LPWSTR pStart, LPWSTR pEnd);
+void _lrc_parse_tget_translate(PINSIDE_LYRIC_INFO pLyric, LPCWSTR language);
 
+// 把pData转成UTF-16编码的字符串, 返回是否转换成功, 如果传递的编码类型是未知的, 则返回false
+bool _lrc_to_utf16_le(const void* pData, size_t nSize, LYRIC_PARSE_TYPE nType, std::wstring& ret);
+
+// 通过标志位获取pData指向的文本数据, 会判断编码转成UTF16字符串, 返回pData是否指向文本
+// 如果返回false, 那就标准pData不是指向文本数据, 而是指向实际数据, 需要根据标志位来解密
+bool _lrc_parse_get_lyric_text(const void* pData, size_t nSize, LYRIC_PARSE_TYPE nType, std::wstring& ret);
+
+// 通过标志位获取歌词数据
+bool _lrc_parse_get_lyric_data(const void* pData, size_t nSize, LYRIC_PARSE_TYPE nType, std::wstring& ret);
 
 LYRIC_NAMESPACE_END
 
@@ -25,19 +34,19 @@ LYRIC_NAMESPACE_END
 //////////////////////////////////////////////////////////////////////////
 // 下面这里是公开出去的接口
 
-HLYRIC LYRICCALL lyric_parse(const void* pData, int nSize, bool isDecrypted)
+HLYRIC LYRICCALL lyric_parse(const void* pData, int nSize, LYRIC_PARSE_TYPE nType)
 {
     if (!pData || nSize <= 0)
         return nullptr;
     using namespace LYRIC_NAMESPACE;
     auto pLyric = new INSIDE_LYRIC_INFO;
-    if (isDecrypted)
+    if (false)
     {
         pLyric->krc.assign((LPCWSTR)pData, nSize);
     }
     else
     {
-        if (!lyric_decode(pData, nSize, pLyric->krc))
+        if (!_lrc_decode(pData, nSize, pLyric->krc))
         {
             delete pLyric;
             return nullptr;
@@ -92,7 +101,7 @@ HLYRIC LYRICCALL lyric_parse(const void* pData, int nSize, bool isDecrypted)
             else if (isdigit(*pStart))
             {
                 // 遇到数字, 说明是歌词行, 另外解析歌词行
-                lyric_parse_text(pLyric, pStart - 1, pEnd);
+                _lrc_parse_text(pLyric, pStart - 1, pEnd);
                 break;  // 直接跳出循环了, 解析歌词文本的时候会一直解析到结尾
             }
 #undef _cmp
@@ -100,7 +109,7 @@ HLYRIC LYRICCALL lyric_parse(const void* pData, int nSize, bool isDecrypted)
     }
 
     if (language)
-        lyric_parse_tget_translate(pLyric, language);
+        _lrc_parse_tget_translate(pLyric, language);
 
     if (pLyric->lines.size() > 300)
         __debugbreak();
@@ -192,7 +201,7 @@ static bool DecompressZlib(const void* compressedData, size_t compressedSize, st
 /// <param name="nSize">krc数据尺寸</param>
 /// <param name="krc">参考返回解密后的krc数据</param>
 /// <returns>返回是否成功</returns>
-bool lyric_decode(const void* pData, int nSize, std::wstring& krc)
+bool _lrc_decode(const void* pData, int nSize, std::wstring& krc)
 {
     krc.clear();
     const BYTE zh[] = { 64, 71, 97, 119, 94, 50, 116, 71, 81, 54, 49, 45, 206, 210, 110, 105 };
@@ -245,7 +254,7 @@ static void _dbg_append_interval_time(PINSIDE_LYRIC_INFO pLyric, size_t back_ind
 /// <param name="pData"></param>
 /// <param name="nSize"></param>
 /// <returns></returns>
-void lyric_parse_text(PINSIDE_LYRIC_INFO pLyric, LPWSTR pStart, LPWSTR pEnd)
+void _lrc_parse_text(PINSIDE_LYRIC_INFO pLyric, LPWSTR pStart, LPWSTR pEnd)
 {
     // 把pStart指向下一行数据, 遇到换行的时候会把换行改成\0
     auto pfn_warp = [&pStart, &pEnd](size_t offset)
@@ -370,7 +379,7 @@ void lyric_parse_text(PINSIDE_LYRIC_INFO pLyric, LPWSTR pStart, LPWSTR pEnd)
 /// <param name="pLyric"></param>
 /// <param name="pStart"></param>
 /// <param name="pEnd"></param>
-void lyric_parse_tget_translate(PINSIDE_LYRIC_INFO pLyric, LPCWSTR language)
+void _lrc_parse_tget_translate(PINSIDE_LYRIC_INFO pLyric, LPCWSTR language)
 {
     //return;
     auto languageA = charset_stl::W2A(language);
@@ -432,6 +441,130 @@ void lyric_parse_tget_translate(PINSIDE_LYRIC_INFO pLyric, LPCWSTR language)
     }
 
     cJSON_Delete(json);
+}
+
+bool _lrc_to_utf16_le(const void* pData, size_t nSize, LYRIC_PARSE_TYPE nType, std::wstring& ret)
+{
+    const int charset_type = (nType & 0xf000);
+    auto pStart = reinterpret_cast<const BYTE*>(pData);
+    LPCWSTR pText = nullptr;
+
+    // 把pText当成UTF16加入到ret里, 会根据nSize和str_len来判断实际的文本长度
+    // 防止传递的nSize不包含结束标志, 或者pData不是指向\0结尾的字符串
+    auto pfn_ret_utf16 = [&ret, pText, nSize](size_t str_len) -> bool
+    {
+        if (nSize > MAXINT || nSize % 2 != 0)
+            return false;   // 尺寸超标, 或者不是偶数, 都返回false, UTF16肯定是偶数
+
+        size_t len = nSize / 2;
+        if (len != str_len)
+        {
+            // 传递进来的字节数和计算的字符数不一致, 说明可能是结束标志的问题, 这里特别处理一下
+            // 取最小长度这个, 如果文本没有结束标志那wcslen() 可能会取到别的地方, 导致长度变长
+            // 还有另一种情况, 就是传递进来从nSize比实际文本长, 这个是按实际文本长度来算的
+            len = min(len, str_len);
+        }
+
+        ret.assign(pText, len);
+        return true;
+    };
+
+    // 先判断BOM头, 如果没有就按编码格式来转换
+    if (nSize >= 2)
+    {
+        if (pStart[0] == 0xff && pStart[1] == 0xfe)
+        {        // UTF16LE
+            pText = reinterpret_cast<const wchar_t*>(pStart + 2);   // 跳过BOM头 
+            nSize -= 2; // 字节数减2
+            return pfn_ret_utf16(wcslen(pText));
+        }
+
+        if (pStart[0] == 0xfe && pStart[1] == 0xff)
+        {
+            // UTF16BE, 字节调换一下, 然后再转成UTF16LE
+            pStart += 2;    // 跳过BOM头 
+            nSize -= 2; // 字节数减2
+            if (nSize > MAXINT || nSize % 2 != 0)
+                return false;   // 字节数错误
+
+            size_t str_len = 0;
+            size_t len = nSize / 2;
+            ret.resize(len);    // 预先分配空间
+
+            // 循环调换两个字节的位置
+            for (size_t i = 0; i < nSize; i += 2)
+            {
+                wchar_t ch = MAKEWORD(pStart[i + 1], pStart[i]);
+                if (ch == 0)
+                    break;  // 遇到结束标志, 退出循环
+                ret[i / 2] = ch;
+                str_len++;
+            }
+            if (str_len != len)
+                ret.resize(str_len);
+            return true;
+        }
+    }    // 先判断BOM头, 如果没有就按编码格式来转换
+    if (nSize >= 2 && pStart[0] == 0xff && pStart[1] == 0xfe)
+    {
+        // UTF16LE
+        pText = reinterpret_cast<const wchar_t*>(pStart + 2);   // 跳过BOM头 
+        nSize -= 2; // 字节数减2
+        return pfn_ret_utf16(wcslen(pText));
+    }
+
+    // 判断是不是UTFBOM头
+    if (nSize >= 3 && pStart[0] == 0xEF && pStart[1] == 0xBB && pStart[2] == 0xBF)
+    {
+        LPCSTR pStr = reinterpret_cast<const char*>(pStart + 3);   // 跳过BOM头 
+        nSize -= 3; // 字节数减3
+        size_t str_len = strlen(pStr);
+        size_t len = min(nSize, str_len);   // 处理结束标志有没有传递的问题
+
+        ret = charset_stl::U2W(pStr, len);
+        return true;    // 转完直接返回
+    }
+
+    switch (charset_type)
+    {
+    case LYRIC_PARSE_TYPE_UTF16  :  // pData是UTF16编码的数据, 这个是默认值
+    //case LYRIC_PARSE_TYPE_UTF16LE:  // pData是UTF16LE编码的数据, 默认的UTF16就是这个格式
+    {
+        ret.assign((LPCWSTR)pData, nSize);
+        return true;
+    }
+    case LYRIC_PARSE_TYPE_UTF16BE:  // pData是UTF16BE编码的数据
+    case LYRIC_PARSE_TYPE_UTF8   :  // pData是UTF8编码的数据
+    case LYRIC_PARSE_TYPE_GBK    :  // pData是GBK编码的数据
+    default:
+        break;
+    }
+    return false;
+}
+
+bool _lrc_parse_get_lyric_text(const void* pData, size_t nSize, LYRIC_PARSE_TYPE nType, std::wstring& ret)
+{
+    ret.clear();
+    const int   lrc_type        = (nType & 0xff);  // 低8位是歌词类型, 表示KRC还是QRC还是LRC
+    const bool  is_decrypt      = __query(nType, LYRIC_PARSE_TYPE_DECRYPT);
+    switch (lrc_type)
+    {
+    case LYRIC_PARSE_TYPE_KRCDATA:  // pData是KRC文件数据, 这个是默认值
+    {
+        if (!is_decrypt)
+            return false;   // 是数据, 且未解密, 不是文本, 直接返回false
+
+        // 是数据, 且已经解密, 那就是文本数据, 根据编码转换成UTF16-LE编码
+        std::wstring krc;
+    }
+    case LYRIC_PARSE_TYPE_KRCFILE:  // pData是KRC文件路径
+    case LYRIC_PARSE_TYPE_QRCDATA:  // pData是QRC文件数据
+    case LYRIC_PARSE_TYPE_QRCFILE:  // pData是QRC文件路径
+    default:
+        break;
+    }
+
+    return false;
 }
 
 

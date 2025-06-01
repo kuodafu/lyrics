@@ -244,7 +244,7 @@ bool LYRICCALL lyric_wnd_load_krc(HWND hWindowLyric, LPCVOID pKrcData, int nKrcD
 
     lyric_destroy(pWndInfo->hLyric);
     LYRIC_WND_INFO& wnd_info = *pWndInfo;
-    wnd_info.hLyric = lyric_parse(pKrcData, nKrcDataLen, isDecrypted);
+    //TODO wnd_info.hLyric = lyric_parse(pKrcData, nKrcDataLen, isDecrypted);
     pWndInfo->nTimeOffset = lyric_behind_ahead(wnd_info.hLyric, 0);
     pWndInfo->line1.clear();
     pWndInfo->line2.clear();

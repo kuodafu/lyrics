@@ -109,16 +109,43 @@ _def_struct(LYRIC_INFO_STRUCT);
 
 #undef _def_struct
 
+
+
+// 计算文本尺寸的回调, 用来计算歌词文字的宽度, 用来确定歌词高亮位置
 typedef float (LYRICCALL* LYRIC_PARSE_CALCTEXT)(void* pUserData, LPCWSTR pText, int nTextLen, float* pRetHeight);
+
+// 解析歌词的类型, 多个值使用位或运算, 只有在 lyric_parse() 函数里有使用
+// 最低8位表示歌词数据, 是指向文件数据还是文件路径, 这几个位不能混合使用, 最多支持256个值
+// 下来4个位表示 pData 是否已经解密, 只有 pData 传递的是歌词数据时才使用
+// 在下来4个位表示 pData 的编码格式, pData 是歌词数据且已经解密时 或者 pData 指向文件路径时才使用
+// 高16位保留, 目前没有使用
+typedef enum _LYRIC_PARSE_TYPE
+{
+    LYRIC_PARSE_TYPE_KRCDATA    = 0x0000,   // pData是KRC文件数据, 这个是默认值
+    LYRIC_PARSE_TYPE_KRCFILE    = 0x0001,   // pData是KRC文件路径
+    LYRIC_PARSE_TYPE_QRCDATA    = 0x0002,   // pData是QRC文件数据
+    LYRIC_PARSE_TYPE_QRCFILE    = 0x0003,   // pData是QRC文件路径
+
+    LYRIC_PARSE_TYPE_ENCRYPT    = 0x0000,   // pData是未解密的数据, 这个是默认值, pData 指向歌词数据时使用
+    LYRIC_PARSE_TYPE_DECRYPT    = 0x0100,   // pData是已经解密的数据, pData 指向歌词数据时使用
+
+    LYRIC_PARSE_TYPE_UTF16      = 0x0000,   // pData是UTF16编码的数据, 这个是默认值
+    LYRIC_PARSE_TYPE_UTF16LE    = 0x0000,   // pData是UTF16LE编码的数据, 默认的UTF16就是这个格式
+    LYRIC_PARSE_TYPE_UTF16BE    = 0x1000,   // pData是UTF16BE编码的数据
+    LYRIC_PARSE_TYPE_UTF8       = 0x2000,   // pData是UTF8编码的数据
+    LYRIC_PARSE_TYPE_GBK        = 0x4000,   // pData是GBK编码的数据
+
+
+}LYRIC_PARSE_TYPE;
 
 /// <summary>
 /// 解析歌词, 返回krc解密后的数据, 返回的指针需要调用 lyric_destroy 销毁句柄
 /// </summary>
-/// <param name="pData">输入, 需要解密的歌词数据</param>
-/// <param name="nSize">输入, 歌词数据的长度</param>
-/// <param name="isDecrypted">krc数据是否已经解密了, isDecrypted 为true时, pData指向UTF16编码的KRC解密后的数据, nSize表示pData的字符数</param>
+/// <param name="pData">输入, 执行要解析的歌词数据, 是指向文件还是数据根据nType决定, 如果传递的文本有BOM, 则忽略编码标志位, 使用BOM的编码方式</param>
+/// <param name="nSize">输入, pData 的长度, 不管传递什么数据, 单位都是字节</param>
+/// <param name="nType">解析类型, 见 LYRIC_PARSE_TYPE 定义</param>
 /// <returns>返回解密后的数据, 不使用时需要调用 lyric_destroy 销毁句柄</returns>
-HLYRIC LYRICCALL lyric_parse(const void* pData, int nSize, bool isDecrypted);
+HLYRIC LYRICCALL lyric_parse(const void* pData, int nSize, LYRIC_PARSE_TYPE nType);
 
 /// <summary>
 /// 销毁 lyric_parse() 返回的歌词句柄

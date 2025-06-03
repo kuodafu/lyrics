@@ -299,6 +299,8 @@ void lyric_wnd_calc_btn_pos(LYRIC_WND_INFO& wnd_info)
         }
     }
 
+
+
 }
 
 

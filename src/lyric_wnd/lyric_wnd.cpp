@@ -199,34 +199,35 @@ static float _lyric_wnd_load_krc_calc_text(lyric_wnd::PLYRIC_WND_INFO pWndInfo, 
     float width = 0.f, height = 0.f;
 
     CCustomTextRenderer renderer([&](void* clientDrawingContext,
-                                        FLOAT baselineOriginX,
-                                        FLOAT baselineOriginY,
-                                        DWRITE_MEASURING_MODE measuringMode,
-                                        DWRITE_GLYPH_RUN const* glyphRun,
-                                        DWRITE_GLYPH_RUN_DESCRIPTION const* glyphRunDescription,
-                                        IUnknown* clientDrawingEffect)
-    {
-        // 获取字体度量
-        for (UINT32 i = 0; i < glyphRun->glyphCount; ++i)
-        {
-            DWRITE_FONT_METRICS metrics{};
-            glyphRun->fontFace->GetMetrics(&metrics);
+                                     FLOAT baselineOriginX,
+                                     FLOAT baselineOriginY,
+                                     DWRITE_MEASURING_MODE measuringMode,
+                                     DWRITE_GLYPH_RUN const* glyphRun,
+                                     DWRITE_GLYPH_RUN_DESCRIPTION const* glyphRunDescription,
+                                     IUnknown* clientDrawingEffect)
+                                 {
+                                     // 获取字体度量
+                                     for (UINT32 i = 0; i < glyphRun->glyphCount; ++i)
+                                     {
+                                         DWRITE_FONT_METRICS metrics{};
+                                         glyphRun->fontFace->GetMetrics(&metrics);
 
-            float designUnitsPerEm = (float)metrics.designUnitsPerEm;
-            float _height = glyphRun->fontEmSize * metrics.ascent / designUnitsPerEm;
-            float _width = (glyphRun->glyphAdvances ? glyphRun->glyphAdvances[i] : 0.0f);
+                                         float designUnitsPerEm = (float)metrics.designUnitsPerEm;
+                                         float _height = glyphRun->fontEmSize * metrics.ascent / designUnitsPerEm;
+                                         float _width = (glyphRun->glyphAdvances ? glyphRun->glyphAdvances[i] : 0.0f);
 
-            if (width < _width)
-                width = _width; // 宽度只记录最大的宽度, 竖屏歌词宽度是固定的
+                                         if (width < _width)
+                                             width = _width; // 宽度只记录最大的宽度, 竖屏歌词宽度是固定的
 
-            wchar_t ch = glyphRunDescription && glyphRunDescription->string ? glyphRunDescription->string[i] : L'\0';
-            bool is_alpha = isLatinCharacter(ch);
-            if (is_alpha)
-                height += _width;   // 需要旋转的字符就加上宽度, 
-            else
-                height += _height;  // 非旋转的字符就加上高度
-        }
-    });
+                                         wchar_t ch = glyphRunDescription && glyphRunDescription->string ? glyphRunDescription->string[i] : L'\0';
+                                         bool is_alpha = isLatinCharacter(ch);
+                                         if (is_alpha)
+                                             height += _width;   // 需要旋转的字符就加上宽度
+                                         else
+                                             height += _height;  // 非旋转的字符就加上高度
+                                     }
+                                 }
+    );
     pTextLayout->Draw(0, &renderer, 0, 0);
 
     *pHeight = height;

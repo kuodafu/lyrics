@@ -115,16 +115,18 @@ _def_struct(LYRIC_INFO_STRUCT);
 typedef float (LYRICCALL* LYRIC_PARSE_CALCTEXT)(void* pUserData, LPCWSTR pText, int nTextLen, float* pRetHeight);
 
 // 解析歌词的类型, 多个值使用位或运算, 只有在 lyric_parse() 函数里有使用
-// 最低8位表示歌词数据, 是指向文件数据还是文件路径, 这几个位不能混合使用, 最多支持256个值
+// 最低4位表示歌词类型, 这几个位不能混合使用, 最多支持16个值
+// 下来4个位表示 pData传递的是路径还是数据
 // 下来4个位表示 pData 是否已经解密, 只有 pData 传递的是歌词数据时才使用
 // 在下来4个位表示 pData 的编码格式, pData 是歌词数据且已经解密时 或者 pData 指向文件路径时才使用
 // 高16位保留, 目前没有使用
 typedef enum _LYRIC_PARSE_TYPE
 {
-    LYRIC_PARSE_TYPE_KRCDATA    = 0x0000,   // pData是KRC文件数据, 这个是默认值
-    LYRIC_PARSE_TYPE_KRCFILE    = 0x0001,   // pData是KRC文件路径
-    LYRIC_PARSE_TYPE_QRCDATA    = 0x0002,   // pData是QRC文件数据
-    LYRIC_PARSE_TYPE_QRCFILE    = 0x0003,   // pData是QRC文件路径
+    LYRIC_PARSE_TYPE_KRC        = 0x0000,   // pData是 KRC 酷狗歌词 数据, 这个是默认值
+    LYRIC_PARSE_TYPE_QRC        = 0x0001,   // pData是 QRC QQ音乐歌词 数据
+    LYRIC_PARSE_TYPE_LRC        = 0x0002,   // pData是 LRC 普通歌词, 没有逐字功能 数据
+
+    LYRIC_PARSE_TYPE_PATH       = 0x0010,   // pData是文件路径
 
     LYRIC_PARSE_TYPE_ENCRYPT    = 0x0000,   // pData是未解密的数据, 这个是默认值, pData 指向歌词数据时使用
     LYRIC_PARSE_TYPE_DECRYPT    = 0x0100,   // pData是已经解密的数据, pData 指向歌词数据时使用

@@ -1,6 +1,7 @@
 LIBRARY
 EXPORTS
     lyric_parse
+    lyric_decrypt
     lyric_destroy
     lyric_free
     lyric_calc_text_width

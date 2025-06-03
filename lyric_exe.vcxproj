@@ -181,7 +181,7 @@
     <ClCompile Include="src\lyric_exe\lyric_exe_ws_server.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="lyric_wnd_lib.vcxproj">
+    <ProjectReference Include="lyric_desktop_lib.vcxproj">
       <Project>{d9631625-fe41-4d04-a04f-46ac6591fa80}</Project>
     </ProjectReference>
   </ItemGroup>

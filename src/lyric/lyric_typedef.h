@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <kuodafu_lyric.h>
+#include "../charset_stl.h"
 
 #define LYRIC_NAMESPACE lyric
 #define LYRIC_NAMESPACE_BEGIN namespace LYRIC_NAMESPACE {
@@ -79,7 +80,7 @@ using INSIDE_LYRIC_LANGUAGE = std::vector<INSIDE_LYRIC_TRANSLATE>;
 
 typedef struct INSIDE_LYRIC_INFO
 {
-    std::wstring            krc;        // 解密后的krc数据, 解析后会把很多杂字符改成0
+    LPWSTR                  krc;        // 解密后的krc数据, 解析后会把很多杂字符改成0
     INSIDE_LYRIC_LINDS      lines;      // 每一行的结构
     INSIDE_LYRIC_LANGUAGE   language;   // 翻译/音译的结构
     LPCWSTR id;
@@ -94,17 +95,62 @@ typedef struct INSIDE_LYRIC_INFO
     LPCWSTR offset;
     LYRIC_PARSE_CALCTEXT pfnCalcText;
     void*   pUserData;
+    int     lyric_type;     // 当前解析的歌词类型, LYRIC_PARSE_TYPE 里低4位的值
     int     index;          // 歌词高亮索引, 当前是在第几行, 搜索时限搜索这个, 不是在这个索引才去搜索数组
     int     nTimeOffset;    // 时间偏移, 计算歌词位置的时候加上这个偏移
     INSIDE_LYRIC_INFO()
     {
         id = ar = ti = by = hash = al = sign = qq = total = offset = nullptr;
+        krc = nullptr;
         index = -1;
+        lyric_type = 0;
         pfnCalcText = nullptr;
         pUserData = nullptr;
         nTimeOffset = 0;
     }
+    ~INSIDE_LYRIC_INFO()
+    {
+        if (krc)
+            charset_stl::charset_free(krc);
+    }
 }*PINSIDE_LYRIC_INFO;
+
+// 读入文件数据, 返回读取的尺寸
+int read_file(LPCWSTR file, std::string& ret);
+
+// zlib解压, 返回是否解压成功
+bool zlib_decompress(const void* compressedData, size_t compressedSize, std::string& output);
+
+
+// 通过标志位获取pData指向的文本数据, 会判断编码转成UTF16字符串, 返回pData是否指向文本
+// 如果返回false, 那就标准pData不是指向文本数据, 而是指向实际数据, 需要根据标志位来解密
+bool _lrc_parse_get_lyric_text(const void* pData, size_t nSize, LYRIC_PARSE_TYPE nType, wchar_t** ret);
+
+// 根据时间查找当前时间在第几行歌词里
+// 如果时间超过某一行的结束, 但是小于下一行的开始, 那返回的是某一行
+// 比如 时间大于 第5行的结束时间, 小于第6行的开始时间, 那返回的是第5行
+int _lrc_find_line(PINSIDE_LYRIC_INFO pLyric, int time);
+
+// 根据时间查找是在第几个字里面
+// 如果时间大于 第5个字的结束时间, 小于第6个字的开始时间, 那返回的是第5个字
+int _lrc_find_word(INSIDE_LYRIC_LINE& line, int time);
+
+// 把加密的酷狗歌词数据解密成明文
+bool _lrc_decrypt_krc(const void* pData, size_t nSize, wchar_t** ppLyricText);
+// 把加密的QQ音乐歌词数据解密成明文
+bool _lrc_decrypt_qrc(const void* pData, size_t nSize, wchar_t** ppLyricText);
+// 解密lrc, 一般lrc没加密, 这里直接拷贝一份返回
+bool _lrc_decrypt_lrc(const void* pData, size_t nSize, wchar_t** ppLyricText);
+
+// 解析酷狗歌词, 返回是否解析成功, 解析的结果都保存到pLyric里
+bool _lrc_parse_krc(PINSIDE_LYRIC_INFO pLyric);
+// 解析QQ音乐歌词, 返回是否解析成功, 解析的结果都保存到pLyric里
+bool _lrc_parse_qrc(PINSIDE_LYRIC_INFO pLyric);
+// 解析lrc歌词, 返回是否解析成功, 解析的结果都保存到pLyric里
+bool _lrc_parse_lrc(PINSIDE_LYRIC_INFO pLyric);
+
+// 根据type确定歌词是否有翻译/音译, 1=翻译, 2=音译
+int _lrc_get_language(PINSIDE_LYRIC_INFO pLyric, int type);
 
 LYRIC_NAMESPACE_END
 

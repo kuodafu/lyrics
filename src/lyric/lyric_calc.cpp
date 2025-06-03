@@ -9,130 +9,6 @@
 #include "lyric_typedef.h"
 #include <algorithm>
 
-LYRIC_NAMESPACE_BEGIN
-int lyric_find_line(PINSIDE_LYRIC_INFO pLyric, int time);
-
-// 根据时间查找是在第几个字里面
-int lyric_find_word(INSIDE_LYRIC_LINE& line, int time);
-
-
-
-
-LYRIC_NAMESPACE_END
-
-// 设置计算歌词回调函数, 记录回调前先清除所有记录的字宽度
-bool LYRICCALL lyric_calc_text_width(HLYRIC hLyric, LYRIC_PARSE_CALCTEXT pfnCalcText, void* pUserData)
-{
-    using namespace LYRIC_NAMESPACE;
-    auto pLyric = (PINSIDE_LYRIC_INFO)hLyric;
-
-    if (!pLyric)
-        return false;
-
-    pLyric->pfnCalcText = pfnCalcText;
-    pLyric->pUserData = pUserData;
-    return lyric_re_calc_text_width(hLyric);
-}
-
-bool LYRICCALL lyric_re_calc_text_width(HLYRIC hLyric)
-{
-    using namespace LYRIC_NAMESPACE;
-    auto pLyric = (PINSIDE_LYRIC_INFO)hLyric;
-
-    if (!pLyric)
-        return false;
-
-    // 清除所有记录的字宽度, 每一行都清零, 计算歌词位置的时候值为0会重新计算
-    for (auto& line : pLyric->lines)
-        line.width = 0;
-
-    return true;
-}
-
-bool LYRICCALL lyric_calc(HLYRIC hLyric, int time, LYRIC_CALC_STRUCT* pRet)
-{
-    using namespace LYRIC_NAMESPACE;
-    auto pLyric = (PINSIDE_LYRIC_INFO)hLyric;
-
-    if (!pRet || !pLyric)
-        return false;
-
-    time += pLyric->nTimeOffset;
-    int size = (int)pLyric->lines.size();
-    int index = lyric_find_line(pLyric, time);
-    if (index > size || index < 0)
-    {
-        // 时间在第一行开始之前, 这里应该把高亮位置指向0, 当前位置指向第一行
-        pLyric->index = 0;
-    }
-    else if (index == size)
-    {
-        // 时间在最后一行结束之后, 这里应该把高亮位置指向最后一行, 当前位置指向最后一行
-        pLyric->index = size - 1;
-    }
-    else
-    {
-        // 指定时间指向了某一行歌词, 找到是第几个字
-        pLyric->index = index;
-    }
-
-    auto& line = pLyric->lines[pLyric->index];
-
-    // 找到是第几个字
-    int index_word = lyric_find_word(line, time - line.start);
-
-    pRet->indexLine     = pLyric->index;
-    pRet->indexWord     = index_word;
-    pRet->nLineCount    = size;
-
-    lyric_get_line(hLyric, pRet->indexLine, &pRet->line);
-    lyric_get_word(hLyric, pRet->indexLine, pRet->indexWord, &pRet->word);
-
-    if (!line.words.empty())
-    {
-        auto& word = line.words[index_word];
-        if (word.width > 0)
-        {
-            // 下来这里是字的高亮宽度, 先计算时间百分比, 然后乘以字的宽度
-            int nStartTime = 0;
-            float nEndTime = (float)(word.duration ? word.duration : 1);
-            float nNowTime = (float)(time - line.start - word.start);
-
-            float bili = word.width;
-            float percentage = (nNowTime * bili + nEndTime / 2) / nEndTime;
-            float result = (word.width * percentage + bili / 2) / bili;
-            if (result > bili)
-                result = bili;
-
-            pRet->nWidthWord = result;
-
-            bili = word.height;
-            percentage = (nNowTime * bili + nEndTime / 2) / nEndTime;
-            result = (word.height * percentage + bili / 2) / bili;
-            if (result > bili)
-                result = bili;
-            pRet->nHeightWord = result;
-
-
-        }
-    }
-    return true;
-}
-
-int LYRICCALL lyric_behind_ahead(HLYRIC hLyric, int nTime)
-{
-    using namespace LYRIC_NAMESPACE;
-    auto pLyric = (PINSIDE_LYRIC_INFO)hLyric;
-
-    if (!pLyric)
-        return 0;
-
-    pLyric->nTimeOffset += nTime;
-    return pLyric->nTimeOffset;
-}
-
-
-
 
 LYRIC_NAMESPACE_BEGIN
 
@@ -200,7 +76,7 @@ static int _cmp_function(_Ty& arr, int size, int m, int time)
 /// <param name="pLyric"></param>
 /// <param name="time"></param>
 /// <returns>返回值有3种, -1表示时间小于第一行, 返回size表示时间大于最后一行, >-1 < size 表示找到的位置</returns>
-int lyric_find_line(PINSIDE_LYRIC_INFO pLyric, int time)
+int _lrc_find_line(PINSIDE_LYRIC_INFO pLyric, int time)
 {
     // 先判断是不是比开始小, 然后再判断是不是比结束大, 是的话就返回
     int size = (int)pLyric->lines.size();
@@ -263,7 +139,7 @@ int lyric_find_line(PINSIDE_LYRIC_INFO pLyric, int time)
     return index;
 }
 
-int lyric_find_word(INSIDE_LYRIC_LINE& line, int time)
+int _lrc_find_word(INSIDE_LYRIC_LINE& line, int time)
 {
     // 先判断是不是比开始小, 然后再判断是不是比结束大, 是的话就返回
     int size = (int)line.words.size();

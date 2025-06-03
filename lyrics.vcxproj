@@ -196,15 +196,20 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="include\kuodafu_lyric.h" />
+    <ClInclude Include="src\lyric\crypt_de.h" />
     <ClInclude Include="src\lyric\framework.h" />
     <ClInclude Include="src\lyric\lyric_typedef.h" />
     <ClInclude Include="src\lyric\pch.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\lyric\crypt_de.cpp" />
     <ClCompile Include="src\lyric\dllmain.cpp" />
-    <ClCompile Include="src\lyric\lyric_assist.cpp" />
     <ClCompile Include="src\lyric\lyric_calc.cpp" />
-    <ClCompile Include="src\lyric\lyric_parse.cpp" />
+    <ClCompile Include="src\lyric\lyric_interface.cpp" />
+    <ClCompile Include="src\lyric\lyric_assist.cpp" />
+    <ClCompile Include="src\lyric\lyric_parse_krc.cpp" />
+    <ClCompile Include="src\lyric\lyric_parse_lrc.cpp" />
+    <ClCompile Include="src\lyric\lyric_parse_qrc.cpp" />
     <ClCompile Include="src\lyric\pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

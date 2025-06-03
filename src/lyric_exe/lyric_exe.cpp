@@ -2,7 +2,7 @@
 #include <winsock2.h>
 #include <mutex>
 #include "../charset_stl.h"
-#include <kuodafu_lyric_wnd.h>
+#include <kuodafu_lyric_desktop.h>
 
 #pragma comment(lib, "Crypt32.lib")
 #pragma comment(lib, "Bcrypt.lib")
@@ -56,13 +56,13 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         MessageBoxW(0, buf, L"WebSokect初始化失败", MB_ICONERROR);
         return 0;
     }
-    lyric_wnd_init();
+    lyric_desktop_init();
 
-    LYRIC_WND_ARG arg{};
-    lyric_wnd_get_default_arg(&arg);
+    LYRIC_DESKTOP_ARG arg{};
+    lyric_desktop_get_default_arg(&arg);
     arg.rcWindow = { 300, 800, 1000, 1000 };
     //arg.pszFontName = L"黑体";
-    m_hLyricWindow = lyric_wnd_create(&arg, OnLyricCommand, 0);
+    m_hLyricWindow = lyric_desktop_create(&arg, OnLyricCommand, 0);
 
     if (lrc_exe_create_msg_window() && lrc_exe_init_cmdline())
     {
@@ -75,7 +75,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     }
 
     WSACleanup();
-    lyric_wnd_uninit();
+    lyric_desktop_uninit();
     return 0;
 }
 
@@ -139,8 +139,8 @@ void ws_OnMessage(cJSON* data, LPCSTR type)
         double currentTime = cJSON_GetNumberValue(cJSON_GetObjectItem(data, "currentTime"));
         LPCSTR lyricsData = cJSON_GetStringValue(cJSON_GetObjectItem(data, "lyricsData"));
         auto w = charset_stl::U2W(lyricsData);
-        lyric_wnd_load_krc(m_hLyricWindow, w.c_str(), (int)w.size(), true);
-        lyric_wnd_update(m_hLyricWindow, (int)(currentTime * 1000.));
+        lyric_desktop_load_lyric(m_hLyricWindow, w.c_str(), (int)w.size(), LYRIC_PARSE_TYPE_DECRYPT);
+        lyric_desktop_update(m_hLyricWindow, (int)(currentTime * 1000.));
 
         //SYSTEMTIME st;
         //GetLocalTime(&st);
@@ -157,9 +157,9 @@ void ws_OnMessage(cJSON* data, LPCSTR type)
     {
         bool isPlaying = cJSON_IsTrue(cJSON_GetObjectItem(data, "isPlaying"));
         if (isPlaying)
-            lyric_wnd_call_event(m_hLyricWindow, LYRIC_WND_BUTTON_ID_PLAY);
+            lyric_desktop_call_event(m_hLyricWindow, LYRIC_WND_BUTTON_ID_PLAY);
         else
-            lyric_wnd_call_event(m_hLyricWindow, LYRIC_WND_BUTTON_ID_PAUSE);
+            lyric_desktop_call_event(m_hLyricWindow, LYRIC_WND_BUTTON_ID_PAUSE);
 
         return;
     }

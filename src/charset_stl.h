@@ -229,7 +229,7 @@ namespace __charsel_impl
     {
         auto pStart = reinterpret_cast<const BYTE*>(pInput);
         size_t nSize = nInput;
-        if (nSize >= 2)
+        if (nSize >= 2 && nSize < MAXINT)
         {
             if (pStart[0] == 0xff && pStart[1] == 0xfe)
             {

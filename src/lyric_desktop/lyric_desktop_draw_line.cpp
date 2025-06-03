@@ -2,26 +2,26 @@
 
 using namespace NAMESPACE_D2D;
 
-NAMESPACE_LYRIC_WND_BEGIN
+NAMESPACE_LYRIC_DESKTOP_BEGIN
 
 // 绘画双行歌词
-void lyric_wnd_draw_double_row(LYRIC_WND_INFO& wnd_info, LYRIC_CALC_STRUCT& arg, const RECT& rcWindow);
+void lyric_wnd_draw_double_row(LYRIC_DESKTOP_INFO& wnd_info, LYRIC_CALC_STRUCT& arg, const RECT& rcWindow);
 
 // 绘画单行歌词
-void lyric_wnd_draw_single_row(LYRIC_WND_INFO& wnd_info, LYRIC_CALC_STRUCT& arg, const RECT& rcWindow);
+void lyric_wnd_draw_single_row(LYRIC_DESKTOP_INFO& wnd_info, LYRIC_CALC_STRUCT& arg, const RECT& rcWindow);
 
 // 绘画翻译/音译歌词, 这里肯定是双行
-void lyric_wnd_draw_translate(LYRIC_WND_INFO& wnd_info, LYRIC_CALC_STRUCT& arg, const RECT& rcWindow);
+void lyric_wnd_draw_translate(LYRIC_DESKTOP_INFO& wnd_info, LYRIC_CALC_STRUCT& arg, const RECT& rcWindow);
 
-void lyric_wnd_draw_line(LYRIC_WND_INFO& wnd_info, LYRIC_WND_DRAWTEXT_INFO& line_info, int nDrawLineIndex);
+void lyric_wnd_draw_line(LYRIC_DESKTOP_INFO& wnd_info, LYRIC_DESKTOP_DRAWTEXT_INFO& line_info, int nDrawLineIndex);
 
 // 把缓存的文本绘画出来
-void lyric_wnd_draw_cache_text(LYRIC_WND_INFO& wnd_info, LYRIC_WND_DRAWTEXT_INFO& draw_info, int nDrawLineIndex);
+void lyric_wnd_draw_cache_text(LYRIC_DESKTOP_INFO& wnd_info, LYRIC_DESKTOP_DRAWTEXT_INFO& draw_info, int nDrawLineIndex);
 
 
 
 // 绘画歌词文本的函数, 在这个函数把文本绘画出来
-void lyric_wnd_draw_lyric(LYRIC_WND_INFO& wnd_info, LYRIC_CALC_STRUCT& arg)
+void lyric_wnd_draw_lyric(LYRIC_DESKTOP_INFO& wnd_info, LYRIC_CALC_STRUCT& arg)
 {
     const RECT& rcWindow = wnd_info.rcWindow;
 
@@ -43,7 +43,7 @@ void lyric_wnd_draw_lyric(LYRIC_WND_INFO& wnd_info, LYRIC_CALC_STRUCT& arg)
 }
 
 // 绘画双行歌词
-void lyric_wnd_draw_double_row(LYRIC_WND_INFO& wnd_info, LYRIC_CALC_STRUCT& arg, const RECT& rcWindow)
+void lyric_wnd_draw_double_row(LYRIC_DESKTOP_INFO& wnd_info, LYRIC_CALC_STRUCT& arg, const RECT& rcWindow)
 {
     float nLightWidth = arg.word.nLeft + arg.nWidthWord;
     float nLightHeight = arg.word.nTop + arg.nHeightWord;
@@ -52,7 +52,7 @@ void lyric_wnd_draw_double_row(LYRIC_WND_INFO& wnd_info, LYRIC_CALC_STRUCT& arg,
     bool isSwitchLine_H = nLightWidth > arg.line.nWidth * 0.3;
     bool isSwitchLine_V = nLightHeight > arg.line.nHeight * 0.3;
 
-    LYRIC_WND_DRAWTEXT_INFO* pLine1 = nullptr, * pLine2 = nullptr;
+    LYRIC_DESKTOP_DRAWTEXT_INFO* pLine1 = nullptr, * pLine2 = nullptr;
     if (arg.indexLine % 2 == 0)
     {
         pLine1 = &wnd_info.line1;
@@ -113,11 +113,11 @@ void lyric_wnd_draw_double_row(LYRIC_WND_INFO& wnd_info, LYRIC_CALC_STRUCT& arg,
 
 }
 
-void lyric_wnd_draw_single_row(LYRIC_WND_INFO& wnd_info, LYRIC_CALC_STRUCT& arg, const RECT& rcWindow)
+void lyric_wnd_draw_single_row(LYRIC_DESKTOP_INFO& wnd_info, LYRIC_CALC_STRUCT& arg, const RECT& rcWindow)
 {
 }
 
-void lyric_wnd_draw_translate(LYRIC_WND_INFO& wnd_info, LYRIC_CALC_STRUCT& arg, const RECT& rcWindow)
+void lyric_wnd_draw_translate(LYRIC_DESKTOP_INFO& wnd_info, LYRIC_CALC_STRUCT& arg, const RECT& rcWindow)
 {
     float nLightWidth = arg.word.nLeft + arg.nWidthWord;
     float nLightHeight = arg.word.nTop + arg.nHeightWord;
@@ -125,7 +125,7 @@ void lyric_wnd_draw_translate(LYRIC_WND_INFO& wnd_info, LYRIC_CALC_STRUCT& arg, 
     // 原文本就按高亮位置绘画, 翻译/音译需要计算比例然后设置高亮位置
 
 
-    LYRIC_WND_DRAWTEXT_INFO* pLine1 = &wnd_info.line1, * pLine2 = &wnd_info.line2;
+    LYRIC_DESKTOP_DRAWTEXT_INFO* pLine1 = &wnd_info.line1, * pLine2 = &wnd_info.line2;
 
     pLine1->line = arg.line;    // 两行都指向同一个文本行, 会判断状态选择普通/翻译/音译歌词
     pLine2->line = arg.line;
@@ -136,7 +136,7 @@ void lyric_wnd_draw_translate(LYRIC_WND_INFO& wnd_info, LYRIC_CALC_STRUCT& arg, 
 
 }
 
-void lyric_wnd_draw_line(LYRIC_WND_INFO& wnd_info, LYRIC_WND_DRAWTEXT_INFO& line_info, int nDrawLineIndex)
+void lyric_wnd_draw_line(LYRIC_DESKTOP_INFO& wnd_info, LYRIC_DESKTOP_DRAWTEXT_INFO& line_info, int nDrawLineIndex)
 {
     //TODO 这里可以做个判定选择哪种方式绘画歌词文本
     decltype(lyric_wnd_draw_text_geometry)* pfn_create_cache_bitmap = nullptr;
@@ -170,7 +170,7 @@ void lyric_wnd_draw_line(LYRIC_WND_INFO& wnd_info, LYRIC_WND_DRAWTEXT_INFO& line
 }
 
 
-void lyric_wnd_draw_cache_text(LYRIC_WND_INFO& wnd_info, LYRIC_WND_DRAWTEXT_INFO& draw_info, int nDrawLineIndex)
+void lyric_wnd_draw_cache_text(LYRIC_DESKTOP_INFO& wnd_info, LYRIC_DESKTOP_DRAWTEXT_INFO& draw_info, int nDrawLineIndex)
 {
     // 从缓存里把数据拿出来画到目标上
     const bool is_vertical = wnd_info.has_mode(LYRIC_MODE::VERTICAL);
@@ -220,8 +220,8 @@ void lyric_wnd_draw_cache_text(LYRIC_WND_INFO& wnd_info, LYRIC_WND_DRAWTEXT_INFO
 }
 
 
-void lyric_wnd_draw_calc_text_rect(LYRIC_WND_INFO& wnd_info,
-                                  LYRIC_WND_DRAWTEXT_INFO& draw_info,
+void lyric_wnd_draw_calc_text_rect(LYRIC_DESKTOP_INFO& wnd_info,
+                                  LYRIC_DESKTOP_DRAWTEXT_INFO& draw_info,
                                   int nDrawLineIndex)
 {
     const RECT& rcWindow = wnd_info.rcWindow;
@@ -294,4 +294,4 @@ void lyric_wnd_draw_calc_text_rect(LYRIC_WND_INFO& wnd_info,
     }
 }
 
-NAMESPACE_LYRIC_WND_END
+NAMESPACE_LYRIC_DESKTOP_END

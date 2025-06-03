@@ -1,0 +1,16 @@
+LIBRARY
+EXPORTS
+    lyric_desktop_init
+    lyric_desktop_uninit
+    lyric_desktop_get_default_arg
+    lyric_desktop_create
+    lyric_desktop_load_lyric
+    lyric_desktop_update
+    lyric_desktop_set_color
+    lyric_desktop_set_font
+    lyric_desktop_set_clr_back
+    lyric_desktop_set_clr_border
+    lyric_desktop_get_config
+    lyric_desktop_call_event
+    lyric_desktop_set_button_state
+    lyric_desktop_get_button_state

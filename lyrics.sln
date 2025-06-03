@@ -5,13 +5,13 @@ VisualStudioVersion = 17.13.35931.197
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lyric", "lyrics.vcxproj", "{066DB818-4C7F-4CBC-A6EF-3CFB6848576B}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lyric_desktop", "lyrics_wnd.vcxproj", "{D4C30D90-6531-4E0F-8156-4C7EE6F9AFFF}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lyric_desktop", "lyrics_desktop.vcxproj", "{D4C30D90-6531-4E0F-8156-4C7EE6F9AFFF}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "test_call", "test_call.vcxproj", "{443CBD8D-14AC-4A7F-8CF6-83C49F610E1F}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lyric_exe", "lyric_exe.vcxproj", "{E4FA432B-3A2C-48E6-B2BB-5C5BDE8830D4}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lyric_desktop_lib", "lyric_wnd_lib.vcxproj", "{D9631625-FE41-4D04-A04F-46AC6591FA80}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lyric_desktop_lib", "lyric_desktop_lib.vcxproj", "{D9631625-FE41-4D04-A04F-46AC6591FA80}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lyric_lib", "lyric_lib.vcxproj", "{E08FEDCF-5F71-46AF-AB17-89B384D11E27}"
 EndProject

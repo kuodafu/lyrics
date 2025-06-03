@@ -12,6 +12,9 @@
     <Filter Include="接口声明">
       <UniqueIdentifier>{8487e8a2-3c33-46a1-a271-563d84204034}</UniqueIdentifier>
     </Filter>
+    <Filter Include="辅助功能">
+      <UniqueIdentifier>{f4b4f662-0871-4581-a369-41d208fdfedd}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\lyric\framework.h">
@@ -26,6 +29,9 @@
     <ClInclude Include="include\kuodafu_lyric.h">
       <Filter>接口声明</Filter>
     </ClInclude>
+    <ClInclude Include="src\lyric\crypt_de.h">
+      <Filter>辅助功能</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\lyric\dllmain.cpp">
@@ -34,14 +40,26 @@
     <ClCompile Include="src\lyric\pch.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="src\lyric\lyric_parse.cpp">
+    <ClCompile Include="src\lyric\lyric_assist.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="src\lyric\lyric_calc.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="src\lyric\lyric_assist.cpp">
+    <ClCompile Include="src\lyric\lyric_parse_krc.cpp">
       <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\lyric\lyric_parse_lrc.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\lyric\lyric_parse_qrc.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\lyric\lyric_interface.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\lyric\crypt_de.cpp">
+      <Filter>辅助功能</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

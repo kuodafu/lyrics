@@ -5,7 +5,7 @@
 using namespace NAMESPACE_D2D;
 
 
-NAMESPACE_LYRIC_WND_BEGIN
+NAMESPACE_LYRIC_DESKTOP_BEGIN
 
 
 template<typename _Ty>
@@ -16,9 +16,9 @@ inline void SafeDelete(_Ty*& p)
     p = nullptr;
 }
 
-bool LYRIC_WND_DX::re_create(LYRIC_WND_INFO* pWndInfo)
+bool LYRIC_DESKTOP_DX::re_create(LYRIC_DESKTOP_INFO* pWndInfo)
 {
-    LYRIC_WND_INFO& wnd_info = *pWndInfo;
+    LYRIC_DESKTOP_INFO& wnd_info = *pWndInfo;
     auto& clrNormal = wnd_info.clrNormal;
     auto& clrLight = wnd_info.clrLight;
     RECT rc;
@@ -54,11 +54,11 @@ bool LYRIC_WND_DX::re_create(LYRIC_WND_INFO* pWndInfo)
     return true;
 }
 
-bool LYRIC_WND_DX::re_create_brush(LYRIC_WND_INFO* pWndInfo, bool isLight)
+bool LYRIC_DESKTOP_DX::re_create_brush(LYRIC_DESKTOP_INFO* pWndInfo, bool isLight)
 {
     DWORD* pClr;
     int size;
-    LYRIC_WND_INFO& wnd_info = *pWndInfo;
+    LYRIC_DESKTOP_INFO& wnd_info = *pWndInfo;
     NAMESPACE_D2D::CD2DBrush_LinearGradient** ppBrush;
     if (isLight)
     {
@@ -81,14 +81,14 @@ bool LYRIC_WND_DX::re_create_brush(LYRIC_WND_INFO* pWndInfo, bool isLight)
     return *ppBrush != nullptr;
 }
 
-bool LYRIC_WND_DX::re_create_border(LYRIC_WND_INFO* pWndInfo)
+bool LYRIC_DESKTOP_DX::re_create_border(LYRIC_DESKTOP_INFO* pWndInfo)
 {
     SafeDelete(hbrBorder);
     hbrBorder = new CD2DBrush(*hCanvas, pWndInfo->clrBorder);
     return hbrBorder != nullptr;
 }
 
-bool LYRIC_WND_DX::re_create_font(LYRIC_WND_INFO* pWndInfo)
+bool LYRIC_DESKTOP_DX::re_create_font(LYRIC_DESKTOP_INFO* pWndInfo)
 {
     SafeDelete(hFont);
 
@@ -143,14 +143,14 @@ bool LYRIC_WND_DX::re_create_font(LYRIC_WND_INFO* pWndInfo)
     return hFont != nullptr;
 }
 
-bool LYRIC_WND_DX::re_create_image(LYRIC_WND_INFO* pWndInfo)
+bool LYRIC_DESKTOP_DX::re_create_image(LYRIC_DESKTOP_INFO* pWndInfo)
 {
     SafeDelete(image);
     lyric_wnd_load_image(*pWndInfo);
     return false;
 }
 
-bool LYRIC_WND_DX::destroy(bool isDestroyFont)
+bool LYRIC_DESKTOP_DX::destroy(bool isDestroyFont)
 {
     // 除了字体, 剩下的都是设备相关的
     if (isDestroyFont)
@@ -171,11 +171,11 @@ bool LYRIC_WND_DX::destroy(bool isDestroyFont)
 }
 
 
-void LYRIC_WND_INFO::set_def_arg(const LYRIC_WND_ARG* arg)
+void LYRIC_DESKTOP_INFO::set_def_arg(const LYRIC_DESKTOP_ARG* arg)
 {
     // 有值就根据传递进来的值设置, 没有值就设置默认值
-    LYRIC_WND_ARG def = { 0 };
-    lyric_wnd_get_default_arg(&def);
+    LYRIC_DESKTOP_ARG def = { 0 };
+    lyric_desktop_get_default_arg(&def);
     if (!arg)
         arg = &def;
 
@@ -199,7 +199,7 @@ void LYRIC_WND_INFO::set_def_arg(const LYRIC_WND_ARG* arg)
 
 }
 
-void LYRIC_WND_INFO::dpi_change(HWND hWnd)
+void LYRIC_DESKTOP_INFO::dpi_change(HWND hWnd)
 {
     scale = hWnd;
     const int _10 = scale(10);
@@ -213,7 +213,7 @@ void LYRIC_WND_INFO::dpi_change(HWND hWnd)
     change_wnd = true;
 }
 
-void LYRIC_WND_INFO::get_monitor()
+void LYRIC_DESKTOP_INFO::get_monitor()
 {
     int len = GetMonitorRects(rcMonitors);
     if (len == 0)
@@ -235,7 +235,7 @@ void LYRIC_WND_INFO::get_monitor()
 
 }
 
-float LYRIC_WND_INFO::get_lyric_line_height() const
+float LYRIC_DESKTOP_INFO::get_lyric_line_height() const
 {
     if (has_mode(LYRIC_MODE::VERTICAL))
     {
@@ -245,7 +245,7 @@ float LYRIC_WND_INFO::get_lyric_line_height() const
     return word_height + padding_text * 2;
 }
 
-float LYRIC_WND_INFO::get_lyric_line_width(float vl) const
+float LYRIC_DESKTOP_INFO::get_lyric_line_width(float vl) const
 {
     if (has_mode(LYRIC_MODE::VERTICAL))
         return (vl ? vl : nLineDefHeight) + padding_text * 2;
@@ -254,7 +254,7 @@ float LYRIC_WND_INFO::get_lyric_line_width(float vl) const
 }
 
 
-LYRIC_WND_CACHE_OBJ::LYRIC_WND_CACHE_OBJ()
+LYRIC_DESKTOP_CACHE_OBJ::LYRIC_DESKTOP_CACHE_OBJ()
 {
     preIndex = -1;
     preText = nullptr;
@@ -264,15 +264,15 @@ LYRIC_WND_CACHE_OBJ::LYRIC_WND_CACHE_OBJ()
     rcBounds = { 0 };
 }
 
-LYRIC_WND_CACHE_OBJ::~LYRIC_WND_CACHE_OBJ()
+LYRIC_DESKTOP_CACHE_OBJ::~LYRIC_DESKTOP_CACHE_OBJ()
 {
     SafeRelease(pBitmapNormal);
     SafeRelease(pBitmapLight);
 }
 
-LYRIC_WND_INFO::LYRIC_WND_INFO()
+LYRIC_DESKTOP_INFO::LYRIC_DESKTOP_INFO()
 {
-    const int clear_size = offsetof(LYRIC_WND_INFO, line1);
+    const int clear_size = offsetof(LYRIC_DESKTOP_INFO, line1);
     memset(this, 0, clear_size);
     prevIndexLine = -1;
     mode = LYRIC_MODE::DOUBLE_ROW;
@@ -290,15 +290,15 @@ LYRIC_WND_INFO::LYRIC_WND_INFO()
 }
 
 // 设置歌词窗口数据到窗口
-void lyric_wnd_set_data(HWND hWnd, PLYRIC_WND_INFO pWndInfo)
+void lyric_wnd_set_data(HWND hWnd, PLYRIC_DESKTOP_INFO pWndInfo)
 {
     SetWindowLongPtrW(hWnd, 0, (LONG_PTR)pWndInfo);
 }
 
 // 从窗口获取歌词窗口数据
-PLYRIC_WND_INFO lyric_wnd_get_data(HWND hWnd)
+PLYRIC_DESKTOP_INFO lyric_wnd_get_data(HWND hWnd)
 {
-    return (PLYRIC_WND_INFO)GetWindowLongPtrW(hWnd, 0);
+    return (PLYRIC_DESKTOP_INFO)GetWindowLongPtrW(hWnd, 0);
 }
 
 bool isLatinCharacter(wchar_t ch) 
@@ -334,15 +334,15 @@ bool isLatinCharacter(wchar_t ch)
         (ch >= 0x0180 && ch <= 0x024F);
 }
 
-int lyric_wnd_set_state_translate(LYRIC_WND_INFO& wnd_info, int language)
+int lyric_wnd_set_state_translate(LYRIC_DESKTOP_INFO& wnd_info, int language)
 {
-    LYRIC_WND_BUTTON_STATE b1 = __query(language, 1) ? LYRIC_WND_BUTTON_STATE_NORMAL : LYRIC_WND_BUTTON_STATE_DISABLE;
-    LYRIC_WND_BUTTON_STATE b2 = __query(language, 2) ? LYRIC_WND_BUTTON_STATE_NORMAL : LYRIC_WND_BUTTON_STATE_DISABLE;
-    lyric_wnd_set_btn_state(wnd_info, LYRIC_WND_BUTTON_ID_TRANSLATE1, b1);
-    lyric_wnd_set_btn_state(wnd_info, LYRIC_WND_BUTTON_ID_TRANSLATE2, b2);
-    lyric_wnd_set_btn_state(wnd_info, LYRIC_WND_BUTTON_ID_TRANSLATE1_SEL, b1);
-    lyric_wnd_set_btn_state(wnd_info, LYRIC_WND_BUTTON_ID_TRANSLATE2_SEL, b2);
+    LYRIC_DESKTOP_BUTTON_STATE b1 = __query(language, 1) ? LYRIC_DESKTOP_BUTTON_STATE_NORMAL : LYRIC_DESKTOP_BUTTON_STATE_DISABLE;
+    LYRIC_DESKTOP_BUTTON_STATE b2 = __query(language, 2) ? LYRIC_DESKTOP_BUTTON_STATE_NORMAL : LYRIC_DESKTOP_BUTTON_STATE_DISABLE;
+    lyric_wnd_set_btn_state(wnd_info, LYRIC_DESKTOP_BUTTON_ID_TRANSLATE1, b1);
+    lyric_wnd_set_btn_state(wnd_info, LYRIC_DESKTOP_BUTTON_ID_TRANSLATE2, b2);
+    lyric_wnd_set_btn_state(wnd_info, LYRIC_DESKTOP_BUTTON_ID_TRANSLATE1_SEL, b1);
+    lyric_wnd_set_btn_state(wnd_info, LYRIC_DESKTOP_BUTTON_ID_TRANSLATE2_SEL, b2);
     return 0;
 }
 
-NAMESPACE_LYRIC_WND_END
+NAMESPACE_LYRIC_DESKTOP_END

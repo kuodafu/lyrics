@@ -4,9 +4,9 @@ using namespace NAMESPACE_D2D;
 
 
 
-NAMESPACE_LYRIC_WND_BEGIN
+NAMESPACE_LYRIC_DESKTOP_BEGIN
 
-void lyric_wnd_draw_button(LYRIC_WND_INFO& wnd_info)
+void lyric_wnd_draw_button(LYRIC_DESKTOP_INFO& wnd_info)
 {
     if (!wnd_info.isFillBack)
         return;
@@ -23,7 +23,7 @@ void lyric_wnd_draw_button(LYRIC_WND_INFO& wnd_info)
     ID2D1Bitmap1* image = wnd_info.dx.image->GetBitmap(*wnd_info.dx.hCanvas, &hr);
 
     const RECT& rcBtn = wnd_info.button.rc;
-    for (LYRIC_WND_BUTTON_INFO& item : wnd_info.button.rcBtn)
+    for (LYRIC_DESKTOP_BUTTON_INFO& item : wnd_info.button.rcBtn)
     {
         if (item.id == 0)
         {
@@ -57,7 +57,7 @@ static void _lyric_wnd_calc_wnd_pos_get_monitor_info(RECT& rc, POINT& pt)
     rc = mi.rcMonitor;
 }
 
-void lyric_wnd_calc_wnd_pos(LYRIC_WND_INFO& wnd_info, bool isMoveWindow)
+void lyric_wnd_calc_wnd_pos(LYRIC_DESKTOP_INFO& wnd_info, bool isMoveWindow)
 {
     const bool is_vertical = wnd_info.has_mode(LYRIC_MODE::VERTICAL);
     const auto padding_wnd = (int)wnd_info.padding_wnd;
@@ -149,7 +149,7 @@ void lyric_wnd_calc_wnd_pos(LYRIC_WND_INFO& wnd_info, bool isMoveWindow)
     }
 }
 
-void lyric_wnd_calc_btn_pos(LYRIC_WND_INFO& wnd_info)
+void lyric_wnd_calc_btn_pos(LYRIC_DESKTOP_INFO& wnd_info)
 {
     const RECT& rcWindow = wnd_info.rcWindow;
     const int cxClient = rcWindow.right - rcWindow.left;
@@ -171,7 +171,7 @@ void lyric_wnd_calc_btn_pos(LYRIC_WND_INFO& wnd_info)
     int left = 0;
     int top = 0;
     int index = -1;
-    for (LYRIC_WND_BUTTON_INFO& item : wnd_info.button.rcBtn)
+    for (LYRIC_DESKTOP_BUTTON_INFO& item : wnd_info.button.rcBtn)
     {
         index++;
         item.prcSrc = nullptr;
@@ -202,7 +202,7 @@ void lyric_wnd_calc_btn_pos(LYRIC_WND_INFO& wnd_info)
         }
         else
         {
-            auto& item_src = wnd_info.button.rcSrc[item.id - LYRIC_WND_BUTTON_ID_FIRST];
+            auto& item_src = wnd_info.button.rcSrc[item.id - LYRIC_DESKTOP_BUTTON_ID_FIRST];
             if (wnd_info.button.indexDown == index)
             {
                 // 当前按钮是按下状态
@@ -213,7 +213,7 @@ void lyric_wnd_calc_btn_pos(LYRIC_WND_INFO& wnd_info)
                 // 当前按钮是热点状态
                 item.prcSrc = &item_src.rcLight;
             }
-            else if (__query(item.state, LYRIC_WND_BUTTON_STATE_DISABLE))
+            else if (__query(item.state, LYRIC_DESKTOP_BUTTON_STATE_DISABLE))
             {
                 // 当前按钮是禁止状态
                 item.prcSrc = &item_src.rcDisable;
@@ -275,7 +275,7 @@ void lyric_wnd_calc_btn_pos(LYRIC_WND_INFO& wnd_info)
         wnd_info.button.rc.bottom = wnd_info.button.rc.top + wnd_info.button.maxHeight;
     }
 
-    for (LYRIC_WND_BUTTON_INFO& item : wnd_info.button.rcBtn)
+    for (LYRIC_DESKTOP_BUTTON_INFO& item : wnd_info.button.rcBtn)
     {
         if (item.id == 0)
         {
@@ -304,5 +304,5 @@ void lyric_wnd_calc_btn_pos(LYRIC_WND_INFO& wnd_info)
 }
 
 
-NAMESPACE_LYRIC_WND_END
+NAMESPACE_LYRIC_DESKTOP_END
 

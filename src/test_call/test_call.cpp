@@ -18,7 +18,7 @@
 #include <kuodafu_lyric.h>
 #include <control/WndBase.h>
 #include <control/CListView.h>
-#include <kuodafu_lyric_wnd.h>
+#include <kuodafu_lyric_desktop.h>
 #include <WaitObject.h>
 #include "../src/charset_stl.h"
 #include <cJSON/cJSON.h>
@@ -90,7 +90,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
-    lyric_wnd_init();
+    lyric_desktop_init();
 
     // 执行应用程序初始化:
     if (InitInstance(hInstance, nCmdShow))
@@ -106,7 +106,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     }
 
     BASS_Free();
-    lyric_wnd_uninit();
+    lyric_desktop_uninit();
     return 0;
 }
 
@@ -241,7 +241,7 @@ void EnumerateKRCFiles(const std::wstring& directory) {
 
         std::string data;
         read_file(filePath.c_str(), data);
-        auto p = lyric_parse((LPBYTE)data.c_str(), (int)data.size(), LYRIC_PARSE_TYPE_KRCDATA);
+        auto p = lyric_parse((LPBYTE)data.c_str(), (int)data.size(), LYRIC_PARSE_TYPE_KRC);
         LYRIC_CALC_STRUCT arg{};
 
         int a = lyric_get_language(p);
@@ -309,7 +309,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             LR"(I:\音乐\周杰伦\10-2006-依然范特西\周杰伦 - 本草纲目.mp3)",
             LR"(I:\音乐\音乐\王菲 - 但愿人长久.mp3)",
             LR"(I:\音乐\音乐\Beyoncé - Halo.mp3)",
-            LR"(I:\音乐\音乐\和田光司 - Butter-Fly - tri.mp3)"
+            LR"(I:\音乐\音乐\和田光司 - Butter-Fly - tri.mp3)",
+            LR"(I:\音乐\周杰伦\05-2003-叶惠美\周杰伦 - 晴天.mp3)",
         };
 
 
@@ -348,15 +349,28 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             LR"(J:\cahce\kugou\Lyric\王菲 - 但愿人长久-001e34650e0104930a54d570cb43f994-38649663-00000000.krc)",
             LR"(J:\cahce\kugou\Lyric\和田光司 - Butter-Fly - tri-073ce978dbff1f0ecf82304a0097369b-202443788-00000000.krc)",
         };
+        std::vector<LPCWSTR> qrc =
+        {
+            LR"(T:\tool\QQMusic\download\cache\QQMusicLyricNew\ - 煌めく瞬間に捕われて (Cinema Version) (Bonus Track) - 149 - _qmRoma.qrc)",
+
+        };
+        std::vector<LPCWSTR> lrc =
+        {
+            LR"(I:\cpp_public\lyrics\res\晴天-MusicEnc.lrc)",
+
+        };
         std::string data;
         read_file(krcs.back(), data);
-        LYRIC_WND_ARG arg{};
-        lyric_wnd_get_default_arg(&arg);
+        LYRIC_DESKTOP_ARG arg{};
+        lyric_desktop_get_default_arg(&arg);
         arg.rcWindow = { 300, 800, 1000, 1000 };
         //arg.pszFontName = L"黑体";
-        m_hLyricWindow = lyric_wnd_create(&arg, OnLyricCommand, 0);
-        lyric_wnd_load_krc(m_hLyricWindow, data.c_str(), (int)data.size(), false);
-        lyric_wnd_call_event(m_hLyricWindow, LYRIC_WND_BUTTON_ID_PLAY);
+        m_hLyricWindow = lyric_desktop_create(&arg, OnLyricCommand, 0);
+        lyric_desktop_load_lyric(m_hLyricWindow, data.c_str(), (int)data.size(), LYRIC_PARSE_TYPE_KRC);
+        auto xxcs2 = LYRIC_PARSE_TYPE_LRC | LYRIC_PARSE_TYPE_UTF16 | LYRIC_PARSE_TYPE_PATH;
+        lyric_desktop_load_lyric(m_hLyricWindow, lrc.back(), -1, (LYRIC_PARSE_TYPE)xxcs2);
+        lyric_desktop_call_event(m_hLyricWindow, LYRIC_DESKTOP_BUTTON_ID_PLAY);
+
 
         break;
     }
@@ -373,7 +387,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         {
             double d_pos = BASS_ChannelBytes2Seconds(m_hStream, BASS_ChannelGetPosition(m_hStream, BASS_POS_BYTE)) * 1000.;
             int pos = (int)d_pos;
-            lyric_wnd_update(m_hLyricWindow, pos);
+            lyric_desktop_update(m_hLyricWindow, pos);
             break;
         }
         break;
@@ -437,8 +451,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             if (!krc_name.empty())
                 read_file(krc_name.c_str(), data);
 
-            lyric_wnd_load_krc(m_hLyricWindow, data.c_str(), (int)data.size(), false);
-            lyric_wnd_call_event(m_hLyricWindow, LYRIC_WND_BUTTON_ID_PLAY);
+            lyric_desktop_load_lyric(m_hLyricWindow, data.c_str(), (int)data.size(), LYRIC_PARSE_TYPE_KRC);
+            lyric_desktop_call_event(m_hLyricWindow, LYRIC_DESKTOP_BUTTON_ID_PLAY);
             break;
         }
         break;
@@ -510,10 +524,10 @@ bool OnCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
     switch (id)
     {
     case ID_LOCK:
-        lyric_wnd_call_event(m_hLyricWindow, isCheck ? LYRIC_WND_BUTTON_ID_LOCK : LYRIC_WND_BUTTON_ID_UNLOCK);
+        lyric_desktop_call_event(m_hLyricWindow, isCheck ? LYRIC_DESKTOP_BUTTON_ID_LOCK : LYRIC_DESKTOP_BUTTON_ID_UNLOCK);
         break;
     case ID_SHOW:
-        lyric_wnd_call_event(m_hLyricWindow, isCheck ? LYRIC_WND_BUTTON_ID_SHOW : LYRIC_WND_BUTTON_ID_CLOSE);
+        lyric_desktop_call_event(m_hLyricWindow, isCheck ? LYRIC_DESKTOP_BUTTON_ID_SHOW : LYRIC_DESKTOP_BUTTON_ID_CLOSE);
         break;
     case IDOK:
     {
@@ -529,32 +543,32 @@ int CALLBACK OnLyricCommand(HWND hWindowLyric, int id, LPARAM lParam)
 {
     switch (id)
     {
-    case LYRIC_WND_BUTTON_ID_LOCK:
+    case LYRIC_DESKTOP_BUTTON_ID_LOCK:
         SetCheck(GetDlgItem(m_hWnd, ID_LOCK), true);
         break;
-    case LYRIC_WND_BUTTON_ID_UNLOCK:
+    case LYRIC_DESKTOP_BUTTON_ID_UNLOCK:
         SetCheck(GetDlgItem(m_hWnd, ID_LOCK), false);
         break;
-    case LYRIC_WND_BUTTON_ID_SHOW:
+    case LYRIC_DESKTOP_BUTTON_ID_SHOW:
         SetCheck(GetDlgItem(m_hWnd, ID_SHOW), true);
         break;
-    case LYRIC_WND_BUTTON_ID_CLOSE:
+    case LYRIC_DESKTOP_BUTTON_ID_CLOSE:
         SetCheck(GetDlgItem(m_hWnd, ID_SHOW), false);
         break;
-    case LYRIC_WND_BUTTON_ID_NEXT:
-    case LYRIC_WND_BUTTON_ID_PREV:
+    case LYRIC_DESKTOP_BUTTON_ID_NEXT:
+    case LYRIC_DESKTOP_BUTTON_ID_PREV:
     {
         double d_pos = BASS_ChannelBytes2Seconds(m_hStream, BASS_ChannelGetPosition(m_hStream, BASS_POS_BYTE));
-        double new_pos = id == LYRIC_WND_BUTTON_ID_NEXT ? 10. : -10.;
+        double new_pos = id == LYRIC_DESKTOP_BUTTON_ID_NEXT ? 10. : -10.;
         BASS_ChannelSetPosition(m_hStream, BASS_ChannelSeconds2Bytes(m_hStream, d_pos + new_pos), BASS_POS_BYTE);
         break;
     }
-    case LYRIC_WND_BUTTON_ID_PLAY:
+    case LYRIC_DESKTOP_BUTTON_ID_PLAY:
     {
         BASS_ChannelPlay(m_hStream, FALSE);
         break;
     }
-    case LYRIC_WND_BUTTON_ID_PAUSE:
+    case LYRIC_DESKTOP_BUTTON_ID_PAUSE:
     {
         BASS_ChannelPause(m_hStream);
         break;

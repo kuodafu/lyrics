@@ -1,5 +1,5 @@
 #pragma once
-#include <kuodafu_lyric_wnd.h>
+#include <kuodafu_lyric_desktop.h>
 #include "CD2DRender.h"
 #include "CD2DFont.h"
 #include "CD2DBrush.h"
@@ -10,16 +10,16 @@
 #include <mutex>
 #include <kuodafu_lyric.h>
 
-#define NAMESPACE_LYRIC_WND lyric_wnd
-#define NAMESPACE_LYRIC_WND_BEGIN namespace NAMESPACE_LYRIC_WND{
-#define NAMESPACE_LYRIC_WND_END }
+#define NAMESPACE_LYRIC_DESKTOP lyric_desktop
+#define NAMESPACE_LYRIC_DESKTOP_BEGIN namespace NAMESPACE_LYRIC_DESKTOP{
+#define NAMESPACE_LYRIC_DESKTOP_END }
 
-NAMESPACE_LYRIC_WND_BEGIN
+NAMESPACE_LYRIC_DESKTOP_BEGIN
 
 
-struct LYRIC_WND_INFO;
+struct LYRIC_DESKTOP_INFO;
 // 歌词窗口dx相关的对象
-struct LYRIC_WND_DX
+struct LYRIC_DESKTOP_DX
 {
     NAMESPACE_D2D::CD2DRender* hCanvas;         // D2D绘画句柄
     NAMESPACE_D2D::CD2DFont* hFont;             // 绘画歌词的字体, 这个是设备无关字体, 设备失效不需要重新创建
@@ -39,7 +39,7 @@ struct LYRIC_WND_DX
     ID2D1Bitmap* pBitmapBack;   // 缓存位图, 窗口背景, 尺寸改变的时候需要重新创建
 
 
-    LYRIC_WND_DX()
+    LYRIC_DESKTOP_DX()
     {
         hFont = nullptr;
         hCanvas = nullptr;
@@ -56,32 +56,32 @@ struct LYRIC_WND_DX
         clrWndBorder = 0;
     }
 
-    ~LYRIC_WND_DX()
+    ~LYRIC_DESKTOP_DX()
     {
         destroy(true);
     }
 
     // 重新创建所有对象
-    bool re_create(LYRIC_WND_INFO* pWndInfo);
+    bool re_create(LYRIC_DESKTOP_INFO* pWndInfo);
 
     // 重新创建画刷对象, 普通画刷/高亮画刷, 外部重新设置颜色的时候调用
-    bool re_create_brush(LYRIC_WND_INFO* pWndInfo, bool isLight);
+    bool re_create_brush(LYRIC_DESKTOP_INFO* pWndInfo, bool isLight);
 
     // 重新创建边框画刷
-    bool re_create_border(LYRIC_WND_INFO* pWndInfo);
+    bool re_create_border(LYRIC_DESKTOP_INFO* pWndInfo);
 
     // 重新创建字体对象, 外部重新设置字体的时候调用
-    bool re_create_font(LYRIC_WND_INFO* pWndInfo);
+    bool re_create_font(LYRIC_DESKTOP_INFO* pWndInfo);
 
     // 重新创建图片资源对象
-    bool re_create_image(LYRIC_WND_INFO* pWndInfo);
+    bool re_create_image(LYRIC_DESKTOP_INFO* pWndInfo);
 
     // 销毁所有设备相关的对象, 字体是设备无关对象, 可以选择是否销毁
     bool destroy(bool isDestroyFont);
 };
 
 // 歌词窗口图片的矩形
-struct LYRIC_WND_IMAGE
+struct LYRIC_DESKTOP_IMAGE
 {
     RECT rcNormal;
     RECT rcLight;
@@ -90,7 +90,7 @@ struct LYRIC_WND_IMAGE
 };
 
 // 按钮信息, 包括按钮的位置, id等信息
-struct LYRIC_WND_BUTTON_INFO
+struct LYRIC_DESKTOP_BUTTON_INFO
 {
     int     id;         // 按钮的ID, 通过这个id找到从哪个位置把图片拿出来绘画
     int     index;      // 按钮索引, 从1开始, 表示显示的第几个按钮, 和xml里的顺序对应
@@ -98,10 +98,10 @@ struct LYRIC_WND_BUTTON_INFO
     RECT    rc;         // 按钮实际的位置, 单位是像素, 判断鼠标移动到这个位置就在按钮上
     RECT* prcSrc;     // 按钮的源矩形, 从大图片上的哪个位置拿出来绘画
 };
-struct LYRIC_WND_BUTTON
+struct LYRIC_DESKTOP_BUTTON
 {
-    std::vector<LYRIC_WND_BUTTON_INFO>  rcBtn;  // 按钮实际绘画的位置, id 等信息
-    std::vector<LYRIC_WND_IMAGE>        rcSrc;  // 源矩形, 从大图片上的哪个位置拿出来绘画
+    std::vector<LYRIC_DESKTOP_BUTTON_INFO>  rcBtn;  // 按钮实际绘画的位置, id 等信息
+    std::vector<LYRIC_DESKTOP_IMAGE>        rcSrc;  // 源矩形, 从大图片上的哪个位置拿出来绘画
 
     int     index{ -1 };    // 按钮索引, 当前鼠标移动到了哪个索引上, 这个索引就是 rcBtn 的下标
     int     indexDown{ -1 };// 按下索引
@@ -114,7 +114,7 @@ struct LYRIC_WND_BUTTON
 // 缓存对象, 一行两个缓存位图, 一个是普通歌词, 一个是高亮歌词, 缓存起来, 后面直接设定裁剪区就可以了
 // 音译或者翻译模式下是两行都有高亮部分
 // 把一整行普通歌词 + 一整行高亮歌词绘画到缓存位图上, 只有歌词改变才会重新绘画第二次
-struct LYRIC_WND_CACHE_OBJ
+struct LYRIC_DESKTOP_CACHE_OBJ
 {
     int     preIndex;   // 上次绘画的行号索引
     LPCWSTR preText;    // 上次绘画的文本地址, 行号和文本都一样那就是不需要重新创建对象
@@ -124,8 +124,8 @@ struct LYRIC_WND_CACHE_OBJ
     ID2D1Bitmap* pBitmapNormal; // 缓存位图, 普通歌词文本, 一次画好, 后面直接设定裁剪区就可以了
     ID2D1Bitmap* pBitmapLight;  // 缓存位图, 高亮歌词文本
 
-    LYRIC_WND_CACHE_OBJ();
-    ~LYRIC_WND_CACHE_OBJ();
+    LYRIC_DESKTOP_CACHE_OBJ();
+    ~LYRIC_DESKTOP_CACHE_OBJ();
 };
 
 class CCriticalSection
@@ -168,10 +168,10 @@ private:
 };
 
 // 记录绘画文本需要的数据, 路径, 阴影方式都是使用这个结构, 一行对应一个结构
-struct LYRIC_WND_DRAWTEXT_INFO
+struct LYRIC_DESKTOP_DRAWTEXT_INFO
 {
-    LYRIC_LINE_STRUCT   line;       // 歌词行信息
-    LYRIC_WND_CACHE_OBJ cache;      // 缓存对象指针
+    LYRIC_LINE_STRUCT       line;   // 歌词行信息
+    LYRIC_DESKTOP_CACHE_OBJ cache;  // 缓存对象指针
 
     int         index;              // 歌词行号, 当前绘画的行号
 
@@ -184,7 +184,7 @@ struct LYRIC_WND_DRAWTEXT_INFO
     float nLightWidth;              // 歌词高亮位置, 大于0的话就是要绘画高亮区域
     float nLightHeight;             // 歌词高亮位置, 大于0的话就是要绘画高亮区域
 
-    LYRIC_WND_DRAWTEXT_INFO()
+    LYRIC_DESKTOP_DRAWTEXT_INFO()
     {
         align = 0;
         clear();
@@ -220,21 +220,21 @@ enum class LYRIC_MODE : unsigned int
 };
 
 // 窗口位置信息, 横屏和竖屏使用的位置不一样
-struct LYRIC_WND_POS : RECT
+struct LYRIC_DESKTOP_POS : RECT
 {
     int width;
     int height;
 };
 
 // 歌词窗口 USERDATA 里存放的是这个结构
-typedef struct LYRIC_WND_INFO
+typedef struct LYRIC_DESKTOP_INFO
 {
     HWND        hWnd;           // 歌词窗口句柄
     HWND        hTips;          // 提示窗口句柄
     HLYRIC      hLyric;         // 歌词句柄
     int         prevIndexLine;  // 上一次绘画的歌词行号
     float       prevWidth;      // 上一次绘画的歌词宽度
-    float       prevHeight;      // 上一次绘画的歌词宽度
+    float       prevHeight;     // 上一次绘画的歌词宽度
     float       word_width;     // 一个汉字的宽度, 竖屏使用
     float       word_height;    // 一个汉字的高度
     float       nLineDefWidth;  // 没有歌词时歌词的默认宽度
@@ -256,10 +256,10 @@ typedef struct LYRIC_WND_INFO
     float       shadowRadius;   // 阴影半径
     LYRIC_MODE  mode;           // 歌词显示模式
 
-    LYRIC_WND_POS pos_h;        // 横屏模式下的窗口位置
-    LYRIC_WND_POS pos_v;        // 竖屏模式下的窗口位置
+    LYRIC_DESKTOP_POS pos_h;    // 横屏模式下的窗口位置
+    LYRIC_DESKTOP_POS pos_v;    // 竖屏模式下的窗口位置
 
-    LPCRITICAL_SECTION pCritSec;    // 歌词加载的临界区, 防止有线程释放了歌词, 然后窗口线程去查询
+    LPCRITICAL_SECTION pCritSec;// 歌词加载的临界区, 防止有线程释放了歌词, 然后窗口线程去查询
     
     bool has_mode(LYRIC_MODE flag) const
     {
@@ -297,22 +297,22 @@ typedef struct LYRIC_WND_INFO
         USHORT  change;
     };
 
-    LYRIC_WND_DRAWTEXT_INFO line1;      // 第一行歌词信息, 包括缓存对象, 歌词行信息, 歌词文本绘画位置, 歌词高亮位置等
-    LYRIC_WND_DRAWTEXT_INFO line2;      // 第二行歌词信息
+    LYRIC_DESKTOP_DRAWTEXT_INFO line1;      // 第一行歌词信息, 包括缓存对象, 歌词行信息, 歌词文本绘画位置, 歌词高亮位置等
+    LYRIC_DESKTOP_DRAWTEXT_INFO line2;      // 第二行歌词信息
 
-    LYRIC_WND_BUTTON        button;
-    PFN_LYRIC_WND_COMMAND   pfnCommand; // 歌词窗口上的按钮被点击回调函数
-    LPARAM                  lParam;     // 歌词窗口上的按钮被点击回调函数的参数
-    LOGFONTW                lf{};       // 字体信息
-    LYRIC_WND_DX            dx;         // dx相关的对象
-    std::vector<DWORD>      clrNormal;  // 普通歌词画刷颜色组
-    std::vector<DWORD>      clrLight;   // 高亮歌词画刷颜色组
-    DWORD                   clrBorder;  // 歌词文本边框颜色
-    CScale                  scale;      // 缩放比例
-    std::vector<RECT>       rcMonitors; // 所有显示器的矩形, 记录每个屏幕的位置, 限制窗口移动范围
-    LYRIC_WND_INFO();
+    LYRIC_DESKTOP_BUTTON        button;
+    PFN_LYRIC_DESKTOP_COMMAND   pfnCommand; // 歌词窗口上的按钮被点击回调函数
+    LPARAM                      lParam;     // 歌词窗口上的按钮被点击回调函数的参数
+    LOGFONTW                    lf{};       // 字体信息
+    LYRIC_DESKTOP_DX            dx;         // dx相关的对象
+    std::vector<DWORD>          clrNormal;  // 普通歌词画刷颜色组
+    std::vector<DWORD>          clrLight;   // 高亮歌词画刷颜色组
+    DWORD                       clrBorder;  // 歌词文本边框颜色
+    CScale                      scale;      // 缩放比例
+    std::vector<RECT>           rcMonitors; // 所有显示器的矩形, 记录每个屏幕的位置, 限制窗口移动范围
+    LYRIC_DESKTOP_INFO();
 
-    ~LYRIC_WND_INFO()
+    ~LYRIC_DESKTOP_INFO()
     {
         lyric_destroy(hLyric);
         DestroyWindow(hTips);
@@ -320,7 +320,7 @@ typedef struct LYRIC_WND_INFO
         delete pCritSec;
     }
 
-    void set_def_arg(const LYRIC_WND_ARG* arg);
+    void set_def_arg(const LYRIC_DESKTOP_ARG* arg);
 
     // DPI改变时调用, 会重新计算字体, 位置偏移等信息
     void dpi_change(HWND hWnd);
@@ -333,8 +333,8 @@ typedef struct LYRIC_WND_INFO
     float get_lyric_line_width(float vl) const;
 
 
-}*PLYRIC_WND_INFO;
+}*PLYRIC_DESKTOP_INFO;
 
 
-NAMESPACE_LYRIC_WND_END
+NAMESPACE_LYRIC_DESKTOP_END
 

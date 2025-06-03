@@ -1,18 +1,18 @@
 #include "lyric_wnd_function.h"
 #include "resource.h"
-#include "tinyxml2.h"
+#include <tinyxml2.h>
 
 using namespace NAMESPACE_D2D;
 
-NAMESPACE_LYRIC_WND_BEGIN
+NAMESPACE_LYRIC_DESKTOP_BEGIN
 
-bool _lyric_parse_xml(LYRIC_WND_INFO& wnd_info);
+bool _lyric_parse_xml(LYRIC_DESKTOP_INFO& wnd_info);
 LPBYTE _lrc_desktop_get_image(int& size);
 
 
-bool lyric_wnd_load_image_parse(LYRIC_WND_INFO& wnd_info, tinyxml2::XMLNode* node);
+bool lyric_wnd_load_image_parse(LYRIC_DESKTOP_INFO& wnd_info, tinyxml2::XMLNode* node);
 
-bool lyric_wnd_load_image_recalc(LYRIC_WND_INFO& wnd_info)
+bool lyric_wnd_load_image_recalc(LYRIC_DESKTOP_INFO& wnd_info)
 {
     if (!wnd_info.dx.image)
         lyric_wnd_load_image(wnd_info);
@@ -32,25 +32,25 @@ bool lyric_wnd_load_image_recalc(LYRIC_WND_INFO& wnd_info)
         // 竖屏模式, 有几个按钮需要改
         wnd_info.button.rcBtn =
         {
-            _MAKE(LYRIC_WND_BUTTON_ID_HORIZONTAL),// 竖屏按钮
-            _MAKE(LYRIC_WND_BUTTON_ID_PREV      ),// 上一首
-            _MAKE(LYRIC_WND_BUTTON_ID_PLAY      ),// 播放
-            _MAKE(LYRIC_WND_BUTTON_ID_NEXT      ),// 上一首
+            _MAKE(LYRIC_DESKTOP_BUTTON_ID_HORIZONTAL),// 竖屏按钮
+            _MAKE(LYRIC_DESKTOP_BUTTON_ID_PREV      ),// 上一首
+            _MAKE(LYRIC_DESKTOP_BUTTON_ID_PLAY      ),// 播放
+            _MAKE(LYRIC_DESKTOP_BUTTON_ID_NEXT      ),// 上一首
             _MAKE(0 ),   // 加个分割条
-            _MAKE(LYRIC_WND_BUTTON_ID_FONT_UP   ),// 字体增加
-            _MAKE(LYRIC_WND_BUTTON_ID_FONT_DOWN ),// 字体减小
-            _MAKE(LYRIC_WND_BUTTON_ID_LRCCOLOR  ),// 设置字体颜色, 田字的按钮图标
-            _MAKE(LYRIC_WND_BUTTON_ID_SETTING   ),// 设置按钮
-            _MAKE(LYRIC_WND_BUTTON_ID_BEHIND    ),// 歌词延后
-            _MAKE(LYRIC_WND_BUTTON_ID_AHEAD     ),// 歌词提前
+            _MAKE(LYRIC_DESKTOP_BUTTON_ID_FONT_UP   ),// 字体增加
+            _MAKE(LYRIC_DESKTOP_BUTTON_ID_FONT_DOWN ),// 字体减小
+            _MAKE(LYRIC_DESKTOP_BUTTON_ID_LRCCOLOR  ),// 设置字体颜色, 田字的按钮图标
+            _MAKE(LYRIC_DESKTOP_BUTTON_ID_SETTING   ),// 设置按钮
+            _MAKE(LYRIC_DESKTOP_BUTTON_ID_BEHIND    ),// 歌词延后
+            _MAKE(LYRIC_DESKTOP_BUTTON_ID_AHEAD     ),// 歌词提前
             _MAKE(0 ),   // 加个分割条
-            _MAKE(LYRIC_WND_BUTTON_ID_LRCWRONG_V),// 歌词不对
+            _MAKE(LYRIC_DESKTOP_BUTTON_ID_LRCWRONG_V),// 歌词不对
             _MAKE(0 ),   // 加个分割条
-            _MAKE(LYRIC_WND_BUTTON_ID_TRANSLATE1),// 翻译按钮
-            _MAKE(LYRIC_WND_BUTTON_ID_TRANSLATE2),// 音译按钮
+            _MAKE(LYRIC_DESKTOP_BUTTON_ID_TRANSLATE1),// 翻译按钮
+            _MAKE(LYRIC_DESKTOP_BUTTON_ID_TRANSLATE2),// 音译按钮
             _MAKE(0 ),   // 加个分割条
-            _MAKE(LYRIC_WND_BUTTON_ID_LOCK      ),// 锁定按钮
-            _MAKE(LYRIC_WND_BUTTON_ID_CLOSE     ),// 关闭按钮
+            _MAKE(LYRIC_DESKTOP_BUTTON_ID_LOCK      ),// 锁定按钮
+            _MAKE(LYRIC_DESKTOP_BUTTON_ID_CLOSE     ),// 关闭按钮
 
         };
     }
@@ -58,25 +58,25 @@ bool lyric_wnd_load_image_recalc(LYRIC_WND_INFO& wnd_info)
     {
         wnd_info.button.rcBtn =
         {
-            _MAKE(LYRIC_WND_BUTTON_ID_VERTICAL  ),// 竖屏按钮
-            _MAKE(LYRIC_WND_BUTTON_ID_PREV      ),// 上一首
-            _MAKE(LYRIC_WND_BUTTON_ID_PLAY      ),// 播放
-            _MAKE(LYRIC_WND_BUTTON_ID_NEXT      ),// 上一首
+            _MAKE(LYRIC_DESKTOP_BUTTON_ID_VERTICAL  ),// 竖屏按钮
+            _MAKE(LYRIC_DESKTOP_BUTTON_ID_PREV      ),// 上一首
+            _MAKE(LYRIC_DESKTOP_BUTTON_ID_PLAY      ),// 播放
+            _MAKE(LYRIC_DESKTOP_BUTTON_ID_NEXT      ),// 上一首
             _MAKE(0 ),   // 加个分割条
-            _MAKE(LYRIC_WND_BUTTON_ID_FONT_UP   ),// 字体增加
-            _MAKE(LYRIC_WND_BUTTON_ID_FONT_DOWN ),// 字体减小
-            _MAKE(LYRIC_WND_BUTTON_ID_LRCCOLOR  ),// 设置字体颜色, 田字的按钮图标
-            _MAKE(LYRIC_WND_BUTTON_ID_SETTING   ),// 设置按钮
-            _MAKE(LYRIC_WND_BUTTON_ID_BEHIND    ),// 歌词延后
-            _MAKE(LYRIC_WND_BUTTON_ID_AHEAD     ),// 歌词提前
+            _MAKE(LYRIC_DESKTOP_BUTTON_ID_FONT_UP   ),// 字体增加
+            _MAKE(LYRIC_DESKTOP_BUTTON_ID_FONT_DOWN ),// 字体减小
+            _MAKE(LYRIC_DESKTOP_BUTTON_ID_LRCCOLOR  ),// 设置字体颜色, 田字的按钮图标
+            _MAKE(LYRIC_DESKTOP_BUTTON_ID_SETTING   ),// 设置按钮
+            _MAKE(LYRIC_DESKTOP_BUTTON_ID_BEHIND    ),// 歌词延后
+            _MAKE(LYRIC_DESKTOP_BUTTON_ID_AHEAD     ),// 歌词提前
             _MAKE(0 ),   // 加个分割条
-            _MAKE(LYRIC_WND_BUTTON_ID_LRCWRONG  ),// 歌词不对
+            _MAKE(LYRIC_DESKTOP_BUTTON_ID_LRCWRONG  ),// 歌词不对
             _MAKE(0 ),   // 加个分割条
-            _MAKE(LYRIC_WND_BUTTON_ID_TRANSLATE1),// 翻译按钮
-            _MAKE(LYRIC_WND_BUTTON_ID_TRANSLATE2),// 音译按钮
+            _MAKE(LYRIC_DESKTOP_BUTTON_ID_TRANSLATE1),// 翻译按钮
+            _MAKE(LYRIC_DESKTOP_BUTTON_ID_TRANSLATE2),// 音译按钮
             _MAKE(0 ),   // 加个分割条
-            _MAKE(LYRIC_WND_BUTTON_ID_LOCK      ),// 锁定按钮
-            _MAKE(LYRIC_WND_BUTTON_ID_CLOSE     ),// 关闭按钮
+            _MAKE(LYRIC_DESKTOP_BUTTON_ID_LOCK      ),// 锁定按钮
+            _MAKE(LYRIC_DESKTOP_BUTTON_ID_CLOSE     ),// 关闭按钮
 
         };
     }
@@ -102,7 +102,7 @@ bool lyric_wnd_load_image_recalc(LYRIC_WND_INFO& wnd_info)
 }
 
 // 有可能被多次调用, 所以需要每次都清空一下, 设备失效的时候会重新调用
-bool lyric_wnd_load_image(LYRIC_WND_INFO& wnd_info)
+bool lyric_wnd_load_image(LYRIC_DESKTOP_INFO& wnd_info)
 {
     int png_size = 0;
     LPBYTE png = _lrc_desktop_get_image(png_size);
@@ -114,7 +114,7 @@ bool lyric_wnd_load_image(LYRIC_WND_INFO& wnd_info)
 }
 
 
-bool _lyric_parse_xml(LYRIC_WND_INFO& wnd_info)
+bool _lyric_parse_xml(LYRIC_DESKTOP_INFO& wnd_info)
 {
     const LPCSTR xml = R"(<?xml version="1.0" encoding="UTF-8"?>
 <ImageConfig author="福仔" QQ="121007124" url="https://www.kuodafu.com">
@@ -169,7 +169,7 @@ bool _lyric_parse_xml(LYRIC_WND_INFO& wnd_info)
 }
 
 // 解析xml里的位置信息, 记录起来
-bool lyric_wnd_load_image_parse(LYRIC_WND_INFO& wnd_info, tinyxml2::XMLNode* node)
+bool lyric_wnd_load_image_parse(LYRIC_DESKTOP_INFO& wnd_info, tinyxml2::XMLNode* node)
 {
     tinyxml2::XMLElement* ele = node->ToElement();
 
@@ -2849,6 +2849,6 @@ LPBYTE _lrc_desktop_get_image(int& size)
 
 
 
-NAMESPACE_LYRIC_WND_END
+NAMESPACE_LYRIC_DESKTOP_END
 
 

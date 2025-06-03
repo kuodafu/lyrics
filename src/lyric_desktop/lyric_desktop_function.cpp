@@ -9,7 +9,7 @@
 
 using namespace NAMESPACE_D2D;
 
-NAMESPACE_LYRIC_WND_BEGIN
+NAMESPACE_LYRIC_DESKTOP_BEGIN
 
 
 static HCURSOR m_hCursorArrow;
@@ -20,11 +20,11 @@ static HCURSOR m_hCursorHand;
 
 
 LRESULT CALLBACK lyric_wnd_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
-LRESULT lyric_wnd_OnTimer(LYRIC_WND_INFO& wnd_info, UINT message, WPARAM wParam, LPARAM lParam);
-LRESULT lyric_wnd_OnHitTest(LYRIC_WND_INFO& wnd_info, UINT message, WPARAM wParam, LPARAM lParam);
-LRESULT lyric_wnd_OnMouseMove(LYRIC_WND_INFO& wnd_info, UINT message, WPARAM wParam, LPARAM lParam);
-LRESULT lyric_wnd_OnLbuttonDown(LYRIC_WND_INFO& wnd_info, UINT message, WPARAM wParam, LPARAM lParam);
-LRESULT lyric_wnd_OnCaptureChanged(LYRIC_WND_INFO& wnd_info, UINT message, WPARAM wParam, LPARAM lParam);
+LRESULT lyric_wnd_OnTimer(LYRIC_DESKTOP_INFO& wnd_info, UINT message, WPARAM wParam, LPARAM lParam);
+LRESULT lyric_wnd_OnHitTest(LYRIC_DESKTOP_INFO& wnd_info, UINT message, WPARAM wParam, LPARAM lParam);
+LRESULT lyric_wnd_OnMouseMove(LYRIC_DESKTOP_INFO& wnd_info, UINT message, WPARAM wParam, LPARAM lParam);
+LRESULT lyric_wnd_OnLbuttonDown(LYRIC_DESKTOP_INFO& wnd_info, UINT message, WPARAM wParam, LPARAM lParam);
+LRESULT lyric_wnd_OnCaptureChanged(LYRIC_DESKTOP_INFO& wnd_info, UINT message, WPARAM wParam, LPARAM lParam);
 
 
 static bool init_dpi()
@@ -119,7 +119,7 @@ bool _ld_uninit()
     return d2d_uninit();
 }
 
-HWND lyric_create_layered_window(const LYRIC_WND_ARG* arg)
+HWND lyric_create_layered_window(const LYRIC_DESKTOP_ARG* arg)
 {
     if (!m_hCursorArrow)
     {
@@ -141,7 +141,7 @@ HWND lyric_create_layered_window(const LYRIC_WND_ARG* arg)
 
     SetTimer(hWnd, 2000, 10, [](HWND hWnd, UINT message, UINT_PTR id, DWORD t)
     {
-        PLYRIC_WND_INFO pWndInfo = lyric_wnd_get_data(hWnd);
+        PLYRIC_DESKTOP_INFO pWndInfo = lyric_wnd_get_data(hWnd);
         lyric_wnd_invalidate(*pWndInfo);
     });
 
@@ -152,13 +152,13 @@ HWND lyric_create_layered_window(const LYRIC_WND_ARG* arg)
 }
 
 // 绘画的时候没有创建对象, 那就需要创建默认对象
-void lyric_wnd_default_object(LYRIC_WND_INFO& wnd_info)
+void lyric_wnd_default_object(LYRIC_DESKTOP_INFO& wnd_info)
 {
     wnd_info.dx.re_create(&wnd_info);
 }
 
 
-bool lyric_wnd_invalidate(LYRIC_WND_INFO& wnd_info)
+bool lyric_wnd_invalidate(LYRIC_DESKTOP_INFO& wnd_info)
 {
     // 上锁, 尝试进入, 能进入就说明没有在修改歌词信息, 往下执行
     CCriticalSection cs(wnd_info.pCritSec, std::adopt_lock_t());
@@ -224,7 +224,7 @@ bool lyric_wnd_invalidate(LYRIC_WND_INFO& wnd_info)
 
 LRESULT CALLBACK lyric_wnd_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    PLYRIC_WND_INFO pWndInfo = lyric_wnd_get_data(hWnd);
+    PLYRIC_DESKTOP_INFO pWndInfo = lyric_wnd_get_data(hWnd);
     if (!pWndInfo)
         return DefWindowProcW(hWnd, message, wParam, lParam);
 
@@ -265,7 +265,7 @@ LRESULT CALLBACK lyric_wnd_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
     case WM_MOVE:
     case WM_SIZE:
     {
-        LYRIC_WND_POS* pos = pWndInfo->has_mode(LYRIC_MODE::VERTICAL)
+        LYRIC_DESKTOP_POS* pos = pWndInfo->has_mode(LYRIC_MODE::VERTICAL)
             ? &pWndInfo->pos_v
             : &pWndInfo->pos_h;
 
@@ -323,7 +323,7 @@ LRESULT CALLBACK lyric_wnd_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         if ((pPos->flags & SWP_NOMOVE) == SWP_NOMOVE)
             break;  // 有不移动的标志, 不处理
 
-        LYRIC_WND_POS* pos = pWndInfo->has_mode(LYRIC_MODE::VERTICAL)
+        LYRIC_DESKTOP_POS* pos = pWndInfo->has_mode(LYRIC_MODE::VERTICAL)
             ? &pWndInfo->pos_v
             : &pWndInfo->pos_h;
         const RECT& rcMonitorAll = pWndInfo->rcMonitor;
@@ -389,7 +389,7 @@ LRESULT CALLBACK lyric_wnd_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
     return 0;
 }
 
-LRESULT lyric_wnd_OnTimer(LYRIC_WND_INFO& wnd_info, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT lyric_wnd_OnTimer(LYRIC_DESKTOP_INFO& wnd_info, UINT message, WPARAM wParam, LPARAM lParam)
 {
     HWND hWnd = wnd_info.hWnd;
     switch (wParam)
@@ -418,7 +418,7 @@ LRESULT lyric_wnd_OnTimer(LYRIC_WND_INFO& wnd_info, UINT message, WPARAM wParam,
     return 0;
 }
 
-LRESULT lyric_wnd_OnHitTest(LYRIC_WND_INFO& wnd_info, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT lyric_wnd_OnHitTest(LYRIC_DESKTOP_INFO& wnd_info, UINT message, WPARAM wParam, LPARAM lParam)
 {
     // 定义边缘检测的宽度
     const int borderWidth = wnd_info.scale(12) + (int)wnd_info.shadowRadius;
@@ -473,7 +473,7 @@ LRESULT lyric_wnd_OnHitTest(LYRIC_WND_INFO& wnd_info, UINT message, WPARAM wPara
     return HTCLIENT;
 }
 
-static int lyric_wnd_pt2index(LYRIC_WND_INFO& wnd_info, const POINT& pt)
+static int lyric_wnd_pt2index(LYRIC_DESKTOP_INFO& wnd_info, const POINT& pt)
 {
     int index = -1;
     for (auto& item : wnd_info.button.rcBtn)
@@ -485,7 +485,7 @@ static int lyric_wnd_pt2index(LYRIC_WND_INFO& wnd_info, const POINT& pt)
     return -1;
 }
 // 鼠标移动, 先判断是不是在按钮上
-LRESULT lyric_wnd_OnMouseMove(LYRIC_WND_INFO& wnd_info, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT lyric_wnd_OnMouseMove(LYRIC_DESKTOP_INFO& wnd_info, UINT message, WPARAM wParam, LPARAM lParam)
 {
     POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
     int index = lyric_wnd_pt2index(wnd_info, pt);
@@ -498,7 +498,7 @@ LRESULT lyric_wnd_OnMouseMove(LYRIC_WND_INFO& wnd_info, UINT message, WPARAM wPa
             return 0;   // 在上一次进入的按钮中, 不处理
 
         // 需要判断按钮是否是禁止状态, 是的话不处理
-        if (__query(wnd_info.button.rcBtn[index].state, LYRIC_WND_BUTTON_STATE_DISABLE))
+        if (__query(wnd_info.button.rcBtn[index].state, LYRIC_DESKTOP_BUTTON_STATE_DISABLE))
         {
 
             return 0;   // 当前按钮是禁止状态, 不处理
@@ -526,7 +526,7 @@ LRESULT lyric_wnd_OnMouseMove(LYRIC_WND_INFO& wnd_info, UINT message, WPARAM wPa
     return 0;
 }
 
-LRESULT lyric_wnd_OnLbuttonDown(LYRIC_WND_INFO& wnd_info, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT lyric_wnd_OnLbuttonDown(LYRIC_DESKTOP_INFO& wnd_info, UINT message, WPARAM wParam, LPARAM lParam)
 {
     if (wnd_info.button.index != -1)
     {
@@ -538,7 +538,7 @@ LRESULT lyric_wnd_OnLbuttonDown(LYRIC_WND_INFO& wnd_info, UINT message, WPARAM w
     }
     return DefWindowProcW(wnd_info.hWnd, WM_NCLBUTTONDOWN, HTCAPTION, lParam);
 }
-LRESULT lyric_wnd_OnCaptureChanged(LYRIC_WND_INFO& wnd_info, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT lyric_wnd_OnCaptureChanged(LYRIC_DESKTOP_INFO& wnd_info, UINT message, WPARAM wParam, LPARAM lParam)
 {
     if (wnd_info.button.indexDown != -1)
     {
@@ -597,7 +597,7 @@ bool lyric_wnd_create_text_layout(LPCWSTR str, int len, IDWriteTextFormat* dxFor
     return true;
 }
 
-NAMESPACE_LYRIC_WND_END
+NAMESPACE_LYRIC_DESKTOP_END
 
 
 

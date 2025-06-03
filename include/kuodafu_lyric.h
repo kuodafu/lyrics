@@ -150,6 +150,16 @@ typedef enum _LYRIC_PARSE_TYPE
 HLYRIC LYRICCALL lyric_parse(const void* pData, int nSize, LYRIC_PARSE_TYPE nType);
 
 /// <summary>
+/// 解密歌词, 返回解密后的明文数据, 返回的指针需要调用 lyric_free 释放
+/// </summary>
+/// <param name="pData">输入, 执行要解析的歌词数据, 是指向文件还是数据根据nType决定, 如果传递的文本有BOM, 则忽略编码标志位, 使用BOM的编码方式</param>
+/// <param name="nSize">输入, pData 的长度, 不管传递什么数据, 单位都是字节</param>
+/// <param name="nType">解析类型, 见 LYRIC_PARSE_TYPE 定义</param>
+/// <returns>返回解密后的明文数据, 不使用时需要调用 lyric_free 释放</returns>
+wchar_t* LYRICCALL lyric_decrypt(const void* pData, int nSize, LYRIC_PARSE_TYPE nType);
+
+
+/// <summary>
 /// 销毁 lyric_parse() 返回的歌词句柄
 /// </summary>
 /// <param name="hLyric">lyric_parse() 返回的歌词句柄</param>

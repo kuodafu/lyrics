@@ -4,12 +4,12 @@ using namespace NAMESPACE_D2D;
 
 
 
-NAMESPACE_LYRIC_WND_BEGIN
+NAMESPACE_LYRIC_DESKTOP_BEGIN
 
 struct GLOW_ARG
 {
-    LYRIC_WND_INFO* pWndInfo;
-    LYRIC_WND_DRAWTEXT_INFO* pDrawInfo;
+    LYRIC_DESKTOP_INFO* pWndInfo;
+    LYRIC_DESKTOP_DRAWTEXT_INFO* pDrawInfo;
 
     ID2D1DeviceContext* pRenderTarget;
     IDWriteTextLayout* pTextLayout;
@@ -23,7 +23,7 @@ ID2D1Bitmap* glow_create_text_bitmap(GLOW_ARG& glow_arg, ID2D1LinearGradientBrus
 void glow_draw_effetc(GLOW_ARG& glow_arg, ID2D1LinearGradientBrush* hbrFill, ID2D1Bitmap* pBitmap);
 
 
-void lyric_wnd_draw_text_glow(LYRIC_WND_INFO& wnd_info, LYRIC_WND_DRAWTEXT_INFO& draw_info, int nDrawLineIndex)
+void lyric_wnd_draw_text_glow(LYRIC_DESKTOP_INFO& wnd_info, LYRIC_DESKTOP_DRAWTEXT_INFO& draw_info, int nDrawLineIndex)
 {
     GLOW_ARG glow_arg = { 0 };
     glow_arg.pWndInfo = &wnd_info;
@@ -225,4 +225,4 @@ void lyric_wnd_draw_text_glow(LYRIC_WND_INFO& wnd_info, LYRIC_WND_DRAWTEXT_INFO&
 //
 //}
 
-NAMESPACE_LYRIC_WND_END
+NAMESPACE_LYRIC_DESKTOP_END

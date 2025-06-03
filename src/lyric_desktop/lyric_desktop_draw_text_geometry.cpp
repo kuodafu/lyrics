@@ -8,7 +8,7 @@ using namespace NAMESPACE_D2D;
 
 constexpr float strokeWidth = 2.0f; // 歌词文本描边宽度
 
-NAMESPACE_LYRIC_WND_BEGIN
+NAMESPACE_LYRIC_DESKTOP_BEGIN
 
 struct GlyphGeometryInfo
 {
@@ -24,11 +24,11 @@ struct GlyphGeometryInfo
 
 
 // 绘画到缓存位图里, 两个位图, 一个绘画高亮, 一个绘画普通
-void lyric_wnd_draw_text_geometry_draw_cache(LYRIC_WND_INFO& wnd_info, LYRIC_WND_DRAWTEXT_INFO& draw_info, int nDrawLineIndex);
+void lyric_wnd_draw_text_geometry_draw_cache(LYRIC_DESKTOP_INFO& wnd_info, LYRIC_DESKTOP_DRAWTEXT_INFO& draw_info, int nDrawLineIndex);
 void DrawGlyphGeometriesWithDebugText(
     ID2D1RenderTarget* pRenderTarget,
-    LYRIC_WND_INFO& wnd_info,
-    LYRIC_WND_DRAWTEXT_INFO& draw_info,
+    LYRIC_DESKTOP_INFO& wnd_info,
+    LYRIC_DESKTOP_DRAWTEXT_INFO& draw_info,
     std::vector<GlyphGeometryInfo>& m_glyphGeometries,
     ID2D1LinearGradientBrush* pFillBrush,
     ID2D1Brush* pStrokeBrush,
@@ -37,8 +37,8 @@ void DrawGlyphGeometriesWithDebugText(
     float offset_left
 );
 
-void lyric_wnd_draw_geometry_DrawGlyphRun(LYRIC_WND_INFO& wnd_info,
-                                          LYRIC_WND_DRAWTEXT_INFO& draw_info,
+void lyric_wnd_draw_geometry_DrawGlyphRun(LYRIC_DESKTOP_INFO& wnd_info,
+                                          LYRIC_DESKTOP_DRAWTEXT_INFO& draw_info,
                                           std::vector<GlyphGeometryInfo>& m_glyphGeometries,
                                           void* clientDrawingContext,
                                           FLOAT baselineOriginX,
@@ -51,7 +51,7 @@ void lyric_wnd_draw_geometry_DrawGlyphRun(LYRIC_WND_INFO& wnd_info,
 
 
 
-void lyric_wnd_draw_text_geometry(LYRIC_WND_INFO& wnd_info, LYRIC_WND_DRAWTEXT_INFO& draw_info, int nDrawLineIndex)
+void lyric_wnd_draw_text_geometry(LYRIC_DESKTOP_INFO& wnd_info, LYRIC_DESKTOP_DRAWTEXT_INFO& draw_info, int nDrawLineIndex)
 {
     CD2DRender& hCanvas = *wnd_info.dx.hCanvas;
     ID2D1DeviceContext* pRenderTarget = hCanvas;
@@ -64,7 +64,7 @@ void lyric_wnd_draw_text_geometry(LYRIC_WND_INFO& wnd_info, LYRIC_WND_DRAWTEXT_I
 
 
 
-void lyric_wnd_draw_text_geometry_draw_cache(LYRIC_WND_INFO& wnd_info, LYRIC_WND_DRAWTEXT_INFO& draw_info, int nDrawLineIndex)
+void lyric_wnd_draw_text_geometry_draw_cache(LYRIC_DESKTOP_INFO& wnd_info, LYRIC_DESKTOP_DRAWTEXT_INFO& draw_info, int nDrawLineIndex)
 {
     CD2DRender& hCanvas = *wnd_info.dx.hCanvas;
     CD2DFont& font = *wnd_info.dx.hFont;
@@ -244,8 +244,8 @@ void lyric_wnd_draw_text_geometry_draw_cache(LYRIC_WND_INFO& wnd_info, LYRIC_WND
 
 void DrawGlyphGeometriesWithDebugText(
     ID2D1RenderTarget* pRenderTarget,
-    LYRIC_WND_INFO& wnd_info,
-    LYRIC_WND_DRAWTEXT_INFO& draw_info,
+    LYRIC_DESKTOP_INFO& wnd_info,
+    LYRIC_DESKTOP_DRAWTEXT_INFO& draw_info,
     std::vector<GlyphGeometryInfo>& m_glyphGeometries,
     ID2D1LinearGradientBrush* pFillBrush,
     ID2D1Brush* pStrokeBrush,
@@ -367,8 +367,8 @@ void DrawGlyphGeometriesWithDebugText(
     }
 }
 
-void lyric_wnd_draw_geometry_DrawGlyphRun(LYRIC_WND_INFO& wnd_info,
-                                          LYRIC_WND_DRAWTEXT_INFO& draw_info,
+void lyric_wnd_draw_geometry_DrawGlyphRun(LYRIC_DESKTOP_INFO& wnd_info,
+                                          LYRIC_DESKTOP_DRAWTEXT_INFO& draw_info,
                                           std::vector<GlyphGeometryInfo>& m_glyphGeometries,
                                           void* clientDrawingContext,
                                           FLOAT baselineOriginX,
@@ -510,4 +510,4 @@ void lyric_wnd_draw_geometry_DrawGlyphRun(LYRIC_WND_INFO& wnd_info,
     return;
 }
 
-NAMESPACE_LYRIC_WND_END
+NAMESPACE_LYRIC_DESKTOP_END

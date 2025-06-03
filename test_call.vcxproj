@@ -166,10 +166,10 @@
     <ClCompile Include="src\test_call\test_call.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="lyrics_wnd.vcxproj">
+    <ProjectReference Include="lyrics_desktop.vcxproj">
       <Project>{d4c30d90-6531-4e0f-8156-4c7ee6f9afff}</Project>
     </ProjectReference>
-    <ProjectReference Include="lyric_wnd_lib.vcxproj">
+    <ProjectReference Include="lyric_desktop_lib.vcxproj">
       <Project>{d9631625-fe41-4d04-a04f-46ac6591fa80}</Project>
     </ProjectReference>
   </ItemGroup>

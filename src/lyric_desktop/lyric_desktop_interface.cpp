@@ -89,14 +89,11 @@ void LYRICCALL lyric_desktop_get_default_arg(LYRIC_DESKTOP_ARG* arg)
 /// <returns>返回窗口句柄</returns>
 HWND LYRICCALL lyric_desktop_create(const LYRIC_DESKTOP_ARG* arg, PFN_LYRIC_DESKTOP_COMMAND pfnCommand, LPARAM lParam)
 {
-    HWND hWnd = lyric_create_layered_window(arg);
-    if (!hWnd)
+    PLYRIC_DESKTOP_INFO pWndInfo = _ld_create_layered_window(arg);
+    if (!pWndInfo)
         return nullptr;
-
-    LYRIC_DESKTOP_INFO* pWndInfo = new LYRIC_DESKTOP_INFO;
     LYRIC_DESKTOP_INFO& wnd_info = *pWndInfo;
-    lyric_wnd_set_data(hWnd, pWndInfo);
-
+    HWND hWnd = wnd_info.hWnd;
 
     RECT rcDesk;
     GetWindowRect(GetDesktopWindow(), &rcDesk);
@@ -127,25 +124,16 @@ HWND LYRICCALL lyric_desktop_create(const LYRIC_DESKTOP_ARG* arg, PFN_LYRIC_DESK
 
     MoveWindow(hWnd, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, TRUE);
 
-    wnd_info.hTips = CreateWindowExW(WS_EX_TOPMOST | WS_EX_LAYERED | WS_EX_TRANSPARENT,
-                                     TOOLTIPS_CLASSW,
-                                     nullptr,
-                                     TTS_ALWAYSTIP,
-                                     0, 0, 0, 0, 0, 0, 0, 0);
 
-    SendMessageW(wnd_info.hTips, TTM_SETMAXTIPWIDTH, 0, 500);
-    SendMessageW(wnd_info.hTips, TTM_SETDELAYTIME, TTDT_AUTOPOP, 0x7fff);
-    TTTOOLINFOW ti = { 0 };
-    ti.cbSize = sizeof(ti);
-    ti.uFlags = TTF_SUBCLASS | TTF_IDISHWND;
-    ti.lpszText = (LPWSTR)L"";
-    ti.hwnd = wnd_info.hWnd;
-    ti.uId = (UINT_PTR)wnd_info.hWnd;
-    auto isInsertSuccess = SendMessageW(wnd_info.hTips, TTM_ADDTOOLW, 0, (LPARAM)&ti);
 
 
     wnd_info.set_def_arg(arg);
     lyric_wnd_default_object(wnd_info);
+
+    //TODO 这里创建高精度定时器, 根据刷新率来调整刷新间隔
+
+
+    _ld_start_high_precision_timer(pWndInfo);
 
     if (wnd_info.nMinHeight)
         MoveWindow(hWnd, rc.left, rc.top, rc.right - rc.left, wnd_info.nMinHeight, TRUE);
@@ -188,7 +176,7 @@ bool LYRICCALL lyric_desktop_load_lyric(HWND hWindowLyric, LPCVOID pKrcData, int
     auto& d2dInfo = d2d_get_info();
 
     // 必须得用小数记, 不然歌词字多了会相差出很多个像素
-    lyric_calc_text_width(wnd_info.hLyric, [](void* pUserData, LPCWSTR pText, int nTextLen, float* pRetHeight) -> float
+    lyric_calc_text(wnd_info.hLyric, [](void* pUserData, LPCWSTR pText, int nTextLen, float* pRetHeight) -> float
                           {
                               LYRIC_DESKTOP_INFO* pWndInfo = (LYRIC_DESKTOP_INFO*)pUserData;
                               CD2DRender& hCanvas = *pWndInfo->dx.hCanvas;

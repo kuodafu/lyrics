@@ -50,7 +50,8 @@ bool _lrc_parse_qrc(PINSIDE_LYRIC_INFO pLyric)
             LPCWSTR name = _qrc_get_name(pStart, pEnd);
             if (*name == L'?' || _wcsicmp(name, L"QrcInfos") == 0)
             {
-                pStart = wcschr(pStart + 1, L'<');
+                while (pStart < pEnd && *pStart != L'<')
+                    ++pStart;
                 continue;   // QrcInfos 或者xml头 不处理, 跳到下一个标签
             }
             if (_wcsicmp(name, L"QrcHeadInfo") == 0)
@@ -230,10 +231,14 @@ bool __qrc_parse_text(PINSIDE_LYRIC_INFO pLyric, LPWSTR pStart, LPCWSTR pEnd)
             return ret;
         };
 
+    pLyric->lines.reserve(30);
     while (pStart < pEnd)
     {
         if (*pStart == L'\"')
+        {
+            _lrc_dbg_append_interval_time(pLyric, pLyric->lines.size() - 1);
             return true;
+        }
         // 是这种格式, 全部按这个格式解析, 然后保存到数组
         // [123,456]字(1,2)字(1,2)\r\n
         if (*pStart == L'[')
@@ -246,6 +251,7 @@ bool __qrc_parse_text(PINSIDE_LYRIC_INFO pLyric, LPWSTR pStart, LPCWSTR pEnd)
         lines.start = pfn_get_num();
         lines.duration = pfn_get_num();
         lines.interval = MAXINT;    // 每次都假设这个是最后一行
+        lines.size = 0;
 
         // 这里开始就是 字(1,2)\r\n 这种格式了, 数量不一定, 需要循环解析
         while (pStart < pEnd && *pStart != L'\r' && *pStart != L'\n')
@@ -256,8 +262,13 @@ bool __qrc_parse_text(PINSIDE_LYRIC_INFO pLyric, LPWSTR pStart, LPCWSTR pEnd)
             words.start = pfn_get_num() - lines.start;
             words.duration = pfn_get_num();
 
-            lines.text.append(words.text, words.size);
+            lines.size += words.size;
         }
+
+        // 上面循环先计算总长度, 然后一次性分配好空间, 逐个拷贝
+        lines.text.reserve(lines.size);
+        for (auto& words : lines.words)
+            lines.text.append(words.text, words.size);
 
         while (*pStart == L'\r' || *pStart == L'\n')
             *pStart++ = 0;
@@ -270,12 +281,10 @@ bool __qrc_parse_text(PINSIDE_LYRIC_INFO pLyric, LPWSTR pStart, LPCWSTR pEnd)
             INSIDE_LYRIC_LINE& back = pLyric->lines[lines_size - 2];
             // 间隔 = 当前行的开始时间 减去 上一行的结束时间
             back.interval = lines.start - (back.start + back.duration);
-            //_dbg_append_interval_time(pLyric, lines_size - 2);
-
+            _lrc_dbg_append_interval_time(pLyric, lines_size - 2);
         }
 
     }
-
     return false;
 }
 

@@ -115,6 +115,29 @@ int _lrc_get_language(PINSIDE_LYRIC_INFO pLyric, int type)
     return 0;
 }
 
+void _lrc_dbg_append_interval_time(PINSIDE_LYRIC_INFO pLyric, size_t back_index)
+{
+    return;
+    wchar_t num[50] = { 0 };
+    size_t lines_size = pLyric->lines.size();
+    if (lines_size > 1)
+    {
+        INSIDE_LYRIC_LINE& back = pLyric->lines[back_index];
+
+        int len = swprintf_s(num, L"{%d}", back.interval);
+        INSIDE_LYRIC_WORD& words = back.words.emplace_back();
+        auto& words_prev = back.words[back.words.size() - 2];
+        words.start = words_prev.start + words_prev.duration;
+        words.duration = 10;
+        words.t3 = 0;
+
+        words.text = back.words.front().text - len - 1;
+        words.size = len;
+        wcscpy_s((LPWSTR)words.text, (size_t)len + 1, num);
+
+        back.text.append(num, len);
+    }
+}
 
 
 LYRIC_NAMESPACE_END

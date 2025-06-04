@@ -74,7 +74,8 @@ wchar_t* LYRICCALL lyric_decrypt(const void* pData, int nSize, LYRIC_PARSE_TYPE 
             return buffer_text; // 不是文件路径, 那就是明文数据, 直接返回
         }
     }
-
+    if (nSize < 4 || nSize > MAXINT)
+        return nullptr;
     int lyric_type = (nType & 0x0f);
     bool bRet = false;
     switch (lyric_type)
@@ -125,7 +126,7 @@ void LYRICCALL lyric_free(void* pStr)
 /// <param name="pfnCalcText">可以为空指针, 这个是个回调函数, 用来计算文字的占用宽度, 根据文字宽度确定高亮位置</param>
 /// <param name="pUserData">传递到 pfnCalcText 里的用户数据</param>
 /// <returns>返回是否处理成功</returns>
-bool LYRICCALL lyric_calc_text_width(HLYRIC hLyric, LYRIC_PARSE_CALCTEXT pfnCalcText, void* pUserData)
+bool LYRICCALL lyric_calc_text(HLYRIC hLyric, LYRIC_PARSE_CALCTEXT pfnCalcText, void* pUserData)
 {
     auto pLyric = (PINSIDE_LYRIC_INFO)hLyric;
 
@@ -134,7 +135,7 @@ bool LYRICCALL lyric_calc_text_width(HLYRIC hLyric, LYRIC_PARSE_CALCTEXT pfnCalc
 
     pLyric->pfnCalcText = pfnCalcText;
     pLyric->pUserData = pUserData;
-    return lyric_re_calc_text_width(hLyric);
+    return lyric_re_calc_text(hLyric);
 }
 
 /// <summary>
@@ -142,7 +143,7 @@ bool LYRICCALL lyric_calc_text_width(HLYRIC hLyric, LYRIC_PARSE_CALCTEXT pfnCalc
 /// </summary>
 /// <param name="hLyric">歌词句柄</param>
 /// <returns>返回是否处理成功</returns>
-bool LYRICCALL lyric_re_calc_text_width(HLYRIC hLyric)
+bool LYRICCALL lyric_re_calc_text(HLYRIC hLyric)
 {
     auto pLyric = (PINSIDE_LYRIC_INFO)hLyric;
 
@@ -356,30 +357,13 @@ bool LYRICCALL lyric_get_line(HLYRIC hLyric, int indexLine, PLYRIC_LINE_STRUCT p
         pRet->pTranslate2 = L"";
 
         std::vector<std::wstring>* pTranslate1 = nullptr, * pTranslate2 = nullptr;
-        size_t language_size = pLyric->language.size();
-        if (language_size > 2)
-            __debugbreak(); // 一般就一个翻译, 一个音译, 暂时没见过超过两个的, 超过的话断下查看一些
-
         pRet->nType = lyric_get_language(hLyric);
-        if (language_size > 0)
-        {
-            for (size_t i = 0; i < language_size; i++)
-            {
-                auto& item = pLyric->language[i];
-                if (!item.lines.empty())
-                {
-                    // type解析出来 0=音译, 1=翻译
-                    // 记录到变量里0=没有, 1=翻译, 2=音译, 3=两者都有
-                    if (item.type == 0)
-                        pTranslate2 = &item.lines;
-                    else if (item.type == 1)
-                        pTranslate1 = &item.lines;
-                }
-            }
-        }
+
         if (indexLine >= 0 && indexLine < (int)pLyric->lines.size())
         {
             auto& line = pLyric->lines[indexLine];
+            auto* line_fy = __query(pRet->nType, LYRIC_LANGUAGE_TYPE_FY) ? &pLyric->lines_fy[indexLine] : nullptr;
+            auto* line_yy = __query(pRet->nType, LYRIC_LANGUAGE_TYPE_YY) ? &pLyric->lines_yy[indexLine] : nullptr;
 
             if (line.width == 0 && pLyric->pfnCalcText)
             {
@@ -387,7 +371,8 @@ bool LYRICCALL lyric_get_line(HLYRIC hLyric, int indexLine, PLYRIC_LINE_STRUCT p
                 float left = 0.f, top = 0.f;
                 for (auto& word : line.words)
                 {
-                    word.width = pLyric->pfnCalcText(pLyric->pUserData, word.text, word.size, &word.height);
+                    if (word.size > 0)
+                        word.width = pLyric->pfnCalcText(pLyric->pUserData, word.text, word.size, &word.height);
                     word.left = left;
                     word.top = top;
                     left += word.width;
@@ -399,12 +384,12 @@ bool LYRICCALL lyric_get_line(HLYRIC hLyric, int indexLine, PLYRIC_LINE_STRUCT p
 
 
             pRet->pText = line.text.c_str();
-            pRet->nLength = (int)line.text.size();
+            pRet->nLength = (int)line.size;
 
-            if (pTranslate1)
-                pRet->pTranslate1 = (*pTranslate1)[indexLine].c_str(), pRet->nTranslate1 = (int)(*pTranslate1)[indexLine].size();
-            if (pTranslate2)
-                pRet->pTranslate2 = (*pTranslate2)[indexLine].c_str(), pRet->nTranslate2 = (int)(*pTranslate2)[indexLine].size();;
+            if (line_fy)
+                pRet->pTranslate1 = line_fy->text.c_str(), pRet->nTranslate1 = line_fy->size;
+            if (line_yy)
+                pRet->pTranslate2 = line_yy->text.c_str(), pRet->nTranslate2 = line_yy->size;
 
             pRet->nInterval = line.interval;
             pRet->nStart = line.start;
@@ -670,11 +655,7 @@ int LYRICCALL lyric_get_language(HLYRIC hLyric)
     int ret = 0;
     if (pLyric)
     {
-        for (auto& item : pLyric->language)
-        {
-            if (!item.lines.empty())
-                ret |= _lrc_get_language(pLyric, item.type);
-        }
+        ret = pLyric->language;
     }
     return ret;
 }

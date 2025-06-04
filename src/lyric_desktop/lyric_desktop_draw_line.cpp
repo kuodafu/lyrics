@@ -53,7 +53,7 @@ void lyric_wnd_draw_double_row(LYRIC_DESKTOP_INFO& wnd_info, LYRIC_CALC_STRUCT& 
     bool isSwitchLine_V = nLightHeight > arg.line.nHeight * 0.3;
 
     LYRIC_DESKTOP_DRAWTEXT_INFO* pLine1 = nullptr, * pLine2 = nullptr;
-    if (arg.indexLine % 2 == 0)
+    if (arg.indexLine % 2 == 1)
     {
         pLine1 = &wnd_info.line1;
         pLine2 = &wnd_info.line2;
@@ -249,7 +249,7 @@ void lyric_wnd_draw_calc_text_rect(LYRIC_DESKTOP_INFO& wnd_info,
         if (align == 1)
         {
             // 居中对齐
-            int nTemp = (cyClient - offset_top * 2 - (int)text_height) / 2;
+            int nTemp = (cyClient - (int)text_height) / 2;
             top = (float)max(offset_top, nTemp);
         }
         else if (align == 2)
@@ -263,7 +263,7 @@ void lyric_wnd_draw_calc_text_rect(LYRIC_DESKTOP_INFO& wnd_info,
             top = (float)offset_top;
         }
 
-        draw_info.rcText = { left, top, left + width, top + draw_info.text_height };
+        draw_info.rcText = { left, top, left + width, top + text_height };
     }
     else
     {
@@ -276,7 +276,7 @@ void lyric_wnd_draw_calc_text_rect(LYRIC_DESKTOP_INFO& wnd_info,
         if (align == 1)
         {
             // 居中对齐
-            int nTemp = (cxClient - offset_left * 2 - (int)text_width) / 2;
+            int nTemp = (cxClient - (int)text_width) / 2;
             left = (float)max(offset_left, nTemp);
         }
         else if (align == 2)
@@ -290,7 +290,7 @@ void lyric_wnd_draw_calc_text_rect(LYRIC_DESKTOP_INFO& wnd_info,
             left = (float)offset_left;
         }
 
-        draw_info.rcText = { left, top, left + draw_info.text_width, top + height };
+        draw_info.rcText = { left, top, left + text_width, top + height };
     }
 }
 

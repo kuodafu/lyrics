@@ -287,6 +287,7 @@ LYRIC_DESKTOP_INFO::LYRIC_DESKTOP_INFO()
 
     pfnCommand = nullptr;
     lParam = 0;
+    nAddref = 1;
 }
 
 // 设置歌词窗口数据到窗口

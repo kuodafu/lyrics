@@ -76,9 +76,10 @@ bool _lrc_decrypt_lrc(const void* pData, size_t nSize, wchar_t** ppLyricText)
 void __lrc_parse_text(PINSIDE_LYRIC_INFO pLyric, LPWSTR pStart, LPWSTR pEnd)
 {
     // 把pStart指向下一行数据, 遇到换行的时候会把换行改成\0
-    auto pfn_warp = [&pStart, &pEnd]()
+    auto pfn_warp = [&pStart, &pEnd](int& len)
         {
             auto pRet = pStart;
+            len = 0;
             while (pStart < pEnd)
             {
                 wchar_t& ch = *pStart++;
@@ -89,7 +90,7 @@ void __lrc_parse_text(PINSIDE_LYRIC_INFO pLyric, LPWSTR pStart, LPWSTR pEnd)
                         ++pStart;
                     break;
                 }
-               
+                len++;
             }
             return pRet;
         };
@@ -109,14 +110,17 @@ void __lrc_parse_text(PINSIDE_LYRIC_INFO pLyric, LPWSTR pStart, LPWSTR pEnd)
         LPCWSTR pTextWord = pStart;
         lines.start = m * 60 * 1000 + s * 1000 + ms * 10;
         lines.duration = 0;
-        lines.text = pfn_warp();
         lines.interval = MAXINT;
+
+        LPCWSTR pText = pfn_warp(lines.size);
+        lines.text.assign(pText, lines.size);
+
         // 加入一个字, 不然现有的代码会出错
         INSIDE_LYRIC_WORD& words = lines.words.emplace_back();
         words.start = 0;
         words.duration = 0;
         words.text = pTextWord;
-        words.size = (int)lines.text.size();
+        words.size = (int)lines.size;
 
         size_t lines_size = pLyric->lines.size();
         if (lines_size > 1)

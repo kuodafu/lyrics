@@ -16,7 +16,12 @@ PLYRIC_DESKTOP_INFO lyric_wnd_get_data(HWND hWnd);
 bool _ld_init();
 bool _ld_uninit();
 
-HWND lyric_create_layered_window(const LYRIC_DESKTOP_ARG* arg);
+// 创建歌词窗口, 创建的是分层窗口, 是支持透明的, 失败返回空指针
+PLYRIC_DESKTOP_INFO _ld_create_layered_window(const LYRIC_DESKTOP_ARG* arg);
+
+// 给窗口增加一个高精度定时器, 用于刷新歌词显示
+void _ld_start_high_precision_timer(PLYRIC_DESKTOP_INFO pWndInfo);
+
 void lyric_wnd_default_object(LYRIC_DESKTOP_INFO& wnd_info);
 
 

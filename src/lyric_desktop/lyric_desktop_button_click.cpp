@@ -170,7 +170,7 @@ bool lrc_click_translate(LYRIC_DESKTOP_INFO& wnd_info, int id)
 }
 static void _lrc_v_h_mode(LYRIC_DESKTOP_INFO& wnd_info)
 {
-    lyric_re_calc_text_width(wnd_info.hLyric);  // 重新计算歌词宽度
+    lyric_re_calc_text(wnd_info.hLyric);  // 重新计算歌词宽度
     lyric_wnd_load_image_recalc(wnd_info);      // 重新加载图片, 切换到竖屏模式
     wnd_info.change_btn = 1;    // 标记需要重新绘画按钮
     wnd_info.change_text = 1;   // 标记文本改变, 需要重新创建文本缓存
@@ -210,7 +210,7 @@ void lrc_click_font(LYRIC_DESKTOP_INFO& wnd_info, int id)
 
     wnd_info.lf.lfHeight += size;
     wnd_info.dx.re_create_font(&wnd_info);      // 调整尺寸后重新创建
-    lyric_re_calc_text_width(wnd_info.hLyric);  // 重新计算歌词宽度
+    lyric_re_calc_text(wnd_info.hLyric);  // 重新计算歌词宽度
     wnd_info.change_btn = 1;                    // 标记按钮需要重新绘画
     wnd_info.change_text = 1;                   // 标记文本改变, 需要重新创建文本缓存
 

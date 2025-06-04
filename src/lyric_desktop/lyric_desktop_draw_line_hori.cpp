@@ -16,8 +16,6 @@ void lyric_wnd_draw_cache_text_h(LYRIC_DESKTOP_INFO& wnd_info, LYRIC_DESKTOP_DRA
     ID2D1DeviceContext* pRenderTarget = hCanvas;
 
     LYRIC_LINE_STRUCT& line = draw_info.line;
-    const int _10 = wnd_info.scale(10);
-
     RECT& rcWindow = wnd_info.rcWindow;
 
     const float _offset = wnd_info.padding_text;

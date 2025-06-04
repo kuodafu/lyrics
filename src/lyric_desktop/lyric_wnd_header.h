@@ -226,9 +226,26 @@ struct LYRIC_DESKTOP_POS : RECT
     int height;
 };
 
+// 配置信息, 调试使用, 开启或者关闭一些功能, 方便查看效果
+typedef struct LYRIC_DESKTOP_CONFIG_DEBUG
+{
+    DWORD       clrTextBackNormal;   // 普通歌词文本背景颜色
+    DWORD       clrTextBackLight;    // 高亮歌词文本背景颜色
+
+}*PLYRIC_DESKTOP_CONFIG_DEBUG;
+
+// 配置信息, 所有用到的配置, 可以设置的, 都写在这里, 到时候生成一个json, 让外部保存
+typedef struct LYRIC_DESKTOP_CONFIG
+{
+    int         refreshRate;    // 刷新率, 刷新歌词的频率, 主流的刷新率是 30, 60, 75, 90, 100, 120, 144, 165, 240
+
+    LYRIC_DESKTOP_CONFIG_DEBUG debug;   // 调试配置信息
+}*PLYRIC_DESKTOP_CONFIG;
+
 // 歌词窗口 USERDATA 里存放的是这个结构
 typedef struct LYRIC_DESKTOP_INFO
 {
+    long        nAddref;        // 引用计数
     HWND        hWnd;           // 歌词窗口句柄
     HWND        hTips;          // 提示窗口句柄
     HLYRIC      hLyric;         // 歌词句柄
@@ -297,6 +314,8 @@ typedef struct LYRIC_DESKTOP_INFO
         USHORT  change;
     };
 
+    LYRIC_DESKTOP_CONFIG        config;     // 歌词的配置信息, 所有配置都在这里
+
     LYRIC_DESKTOP_DRAWTEXT_INFO line1;      // 第一行歌词信息, 包括缓存对象, 歌词行信息, 歌词文本绘画位置, 歌词高亮位置等
     LYRIC_DESKTOP_DRAWTEXT_INFO line2;      // 第二行歌词信息
 
@@ -311,13 +330,22 @@ typedef struct LYRIC_DESKTOP_INFO
     CScale                      scale;      // 缩放比例
     std::vector<RECT>           rcMonitors; // 所有显示器的矩形, 记录每个屏幕的位置, 限制窗口移动范围
     LYRIC_DESKTOP_INFO();
-
-    ~LYRIC_DESKTOP_INFO()
+    int Addref()
     {
-        lyric_destroy(hLyric);
-        DestroyWindow(hTips);
-        DeleteCriticalSection(pCritSec);
-        delete pCritSec;
+        return InterlockedIncrement(&nAddref);
+    }
+    int Release()
+    {
+        int nRet = InterlockedDecrement(&nAddref);
+        if (nRet == 0)
+        {
+            lyric_destroy(hLyric);
+            DestroyWindow(hTips);
+            DeleteCriticalSection(pCritSec);
+            delete pCritSec;
+            delete this;
+        }
+        return nRet;
     }
 
     void set_def_arg(const LYRIC_DESKTOP_ARG* arg);

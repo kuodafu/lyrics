@@ -52,6 +52,7 @@ struct INSIDE_LYRIC_LINE
     int                 interval;   // 距离下一行的间隔时间, 单位是毫秒, MAXINT表示是最后一行
     float               width;      // 这一行歌词占用的文本宽度
     float               height;     // 这一行歌词占用的文本高度, 纵向歌词使用
+    int                 size;       // 这一整行的歌词内容的字符数, 不包括结束符, 不能使用 text.size(), 音译歌词会存放3倍长度的文本
     std::wstring        text;       // 这一整行的歌词内容
     INSIDE_LYRIC_WORDS  words;      // 每一个字的结构
 
@@ -61,6 +62,22 @@ struct INSIDE_LYRIC_LINE
         width = 0;
         height = 0;
         interval = 0;
+        size = 0;
+    }
+    INSIDE_LYRIC_LINE(INSIDE_LYRIC_LINE&& obj) noexcept
+    {
+        start       = obj.start;
+        duration    = obj.duration;
+        interval    = obj.interval;
+        width       = obj.width;
+        height      = obj.height;
+        size        = obj.size;
+        text        = std::move(obj.text);
+        words       = std::move(obj.words);
+    }
+    ~INSIDE_LYRIC_LINE()
+    {
+
     }
 };
 using INSIDE_LYRIC_LINDS = std::vector<INSIDE_LYRIC_LINE>;
@@ -82,7 +99,8 @@ typedef struct INSIDE_LYRIC_INFO
 {
     LPWSTR                  krc;        // 解密后的krc数据, 解析后会把很多杂字符改成0
     INSIDE_LYRIC_LINDS      lines;      // 每一行的结构
-    INSIDE_LYRIC_LANGUAGE   language;   // 翻译/音译的结构
+    INSIDE_LYRIC_LINDS      lines_yy;   // 音译, 每一行的结构, 音译一般是和歌词字数一样, 音译也做逐字的
+    INSIDE_LYRIC_LINDS      lines_fy;   // 翻译, 每一行的结构, 翻译一般就是一行一行记录的
     LPCWSTR id;
     LPCWSTR ar;
     LPCWSTR ti;
@@ -95,6 +113,7 @@ typedef struct INSIDE_LYRIC_INFO
     LPCWSTR offset;
     LYRIC_PARSE_CALCTEXT pfnCalcText;
     void*   pUserData;
+    int     language;       // 当前歌词存在哪些翻译, LYRIC_LANGUAGE_TYPE 枚举值
     int     lyric_type;     // 当前解析的歌词类型, LYRIC_PARSE_TYPE 里低4位的值
     int     index;          // 歌词高亮索引, 当前是在第几行, 搜索时限搜索这个, 不是在这个索引才去搜索数组
     int     nTimeOffset;    // 时间偏移, 计算歌词位置的时候加上这个偏移
@@ -107,6 +126,7 @@ typedef struct INSIDE_LYRIC_INFO
         pfnCalcText = nullptr;
         pUserData = nullptr;
         nTimeOffset = 0;
+        language = 0;
     }
     ~INSIDE_LYRIC_INFO()
     {
@@ -151,6 +171,10 @@ bool _lrc_parse_lrc(PINSIDE_LYRIC_INFO pLyric);
 
 // 根据type确定歌词是否有翻译/音译, 1=翻译, 2=音译
 int _lrc_get_language(PINSIDE_LYRIC_INFO pLyric, int type);
+
+// 最后一个字加入时间间隔显示, 调试用
+void _lrc_dbg_append_interval_time(PINSIDE_LYRIC_INFO pLyric, size_t back_index);
+
 
 LYRIC_NAMESPACE_END
 

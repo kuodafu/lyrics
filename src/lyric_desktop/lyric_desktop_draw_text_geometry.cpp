@@ -212,11 +212,14 @@ void lyric_wnd_draw_text_geometry_draw_cache(LYRIC_DESKTOP_INFO& wnd_info, LYRIC
 
         pRender->BeginDraw();
         pRender->Clear();
+        if (wnd_info.config.debug.clrTextBackLight || wnd_info.config.debug.clrTextBackNormal)
+        {
+            if (hbrFill == hbrNormal)
+                pRender->Clear(ARGB_D2D(wnd_info.config.debug.clrTextBackLight));
+            else
+                pRender->Clear(ARGB_D2D(wnd_info.config.debug.clrTextBackNormal));
+        }
 
-        if (hbrFill == hbrNormal)
-            pRender->Clear(ARGB_D2D(MAKEARGB(200, 255, 0, 0)));
-        else
-            pRender->Clear(ARGB_D2D(MAKEARGB(200, 0, 255, 0)));
 
         if (pTextLayout)
         {

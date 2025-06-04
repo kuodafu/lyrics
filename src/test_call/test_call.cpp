@@ -74,11 +74,31 @@ static HSTREAM m_hStream;      // 音乐播放句柄
 static HWND m_hLyricWindow;    // 歌词窗口句柄
 static HWND m_hWnd;            // 主窗口句柄
 static CListView m_list;
+static CListView m_listlrc;
+struct LIST_DATA_LRC
+{
+    std::wstring szIndex;
+    std::wstring szName;
+    std::wstring szPath;
+};
+struct LIST_DAT
+{
+    int index{0};  // 序号, 排序用
+
+    std::wstring szIndex;
+    std::wstring szName;
+    std::wstring szPath;
+    std::vector<LIST_DATA_LRC> lrc_arr;  // 歌词文件数组, 为0的时候去搜索, 不为0就是已经有了
+};
+static std::vector<LIST_DAT> m_data;
+static std::vector<LIST_DATA_LRC>* m_datalrc;
 
 // 此代码模块中包含的函数的前向声明:
 BOOL                InitInstance(HINSTANCE, int);
 
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
+LRESULT CALLBACK    OnNotify_lrc(HWND, UINT, WPARAM, LPARAM);
+LRESULT CALLBACK    OnNotify_data(HWND, UINT, WPARAM, LPARAM);
 bool OnCommand(HWND hWnd, WPARAM wParam, LPARAM lParam);
 int CALLBACK OnLyricCommand(HWND hWindowLyric, int id, LPARAM lParam);
 
@@ -169,24 +189,23 @@ void EnumerateMP3Files(const std::wstring& directory)
         return;
     }
 
-    int i = 1;
     do
     {
         std::wstring filePath = directory + L"\\" + findFileData.cFileName;
         if (findFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
         {
-            if (findFileData.cFileName[0] != L'.')
+            if (findFileData.cFileName[0] != L'.' && findFileData.cFileName[0] != L'京')
                 EnumerateMP3Files(filePath);
         }
         else if (filePath.ends_with(L"mp3"))
         {
-            wchar_t buf[50];
-            swprintf_s(buf, L"%d", i++);
             // 有文件, 加载到列表里
-            int index = m_list.InsertItem(-1, buf);
-            m_list.SetItemText(index, 1, findFileData.cFileName);
-            m_list.SetItemText(index, 2, filePath.c_str());
-
+            m_data.emplace_back();
+            auto& item = m_data.back();
+            item.index = (int)m_data.size();
+            item.szIndex = std::to_wstring(item.index);
+            item.szName = findFileData.cFileName;
+            item.szPath = std::move(filePath);
         }
     } while (FindNextFileW(hFind, &findFileData) != 0);
 
@@ -194,7 +213,7 @@ void EnumerateMP3Files(const std::wstring& directory)
     FindClose(hFind);
 }
 
-std::wstring find_krc(LPCWSTR name)
+static void find_krc(const std::wstring& name, std::vector<LIST_DATA_LRC>& arr)
 {
     std::wstring directory = LR"(J:\cahce\kugou\Lyric\)";
     std::wstring searchPath = directory + L"*" + name + LR"(*.krc)";
@@ -202,24 +221,27 @@ std::wstring find_krc(LPCWSTR name)
     HANDLE hFind = FindFirstFileW(searchPath.c_str(), &findFileData);
 
     if (hFind == INVALID_HANDLE_VALUE)
-        return {};
+        return;
 
     do
     {
         for (wchar_t& ch : findFileData.cFileName)
             ch = towlower(ch);
 
-        if (wcsstr(findFileData.cFileName, name))
+        if (wcsstr(findFileData.cFileName, name.c_str()))
         {
-            FindClose(hFind);
-            return directory + findFileData.cFileName;
+            arr.emplace_back();
+            auto& item = arr.back();
+            item.szIndex = std::to_wstring(arr.size());
+            item.szName = findFileData.cFileName;
+            item.szPath = directory + findFileData.cFileName;
         }
-
+        
     } while (FindNextFileW(hFind, &findFileData) != 0);
 
 
     FindClose(hFind);
-    return {};
+    return;
 }
 
 void EnumerateKRCFiles(const std::wstring& directory) {
@@ -268,6 +290,7 @@ void EnumerateKRCFiles(const std::wstring& directory) {
 #define ID_LOCK 5000
 #define ID_SHOW 5001
 
+
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
@@ -293,13 +316,19 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
         pfn_create(IDOK, L"测试内存泄漏");
 
-        m_list.create(hWnd, left + 150, 10, 1000, 800, 0x00000200, 0x56000045, 0x00010423, 0);
+        m_list.create(hWnd, left + 150, 10, 1000, 800, 0x00000200, 0x56001045, 0x00010423, 0);
         m_list.SetFont(CWndBase::CreateFontW(L"微软雅黑", -18));
         m_list.InsertColumn(0, L"序号", 50);
         m_list.InsertColumn(1, L"歌曲", 500);
         m_list.InsertColumn(2, L"路径", 420);
+
+        m_listlrc.create(hWnd, left + 1150, 10, 600, 800, 0x00000200, 0x56001045, 0x00010423, 0);
+        m_listlrc.SetFont(CWndBase::CreateFontW(L"微软雅黑", -18));
+        m_listlrc.InsertColumn(0, L"序号", 50);
+        m_listlrc.InsertColumn(1, L"歌词", 530);
         EnumerateMP3Files(LR"(I:\音乐\)");
 
+        m_list.SetItemCount((int)m_data.size());
         std::vector<LPCWSTR> files =
         {
             LR"(I:\音乐\The Tech Thieves - Fake.mp3)",
@@ -311,6 +340,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             LR"(I:\音乐\音乐\Beyoncé - Halo.mp3)",
             LR"(I:\音乐\音乐\和田光司 - Butter-Fly - tri.mp3)",
             LR"(I:\音乐\周杰伦\05-2003-叶惠美\周杰伦 - 晴天.mp3)",
+            LR"(I:\音乐\煌めく瞬間に捕われて (Cinema Version) (Bonus Track).mp3)",
         };
 
 
@@ -367,8 +397,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         //arg.pszFontName = L"黑体";
         m_hLyricWindow = lyric_desktop_create(&arg, OnLyricCommand, 0);
         lyric_desktop_load_lyric(m_hLyricWindow, data.c_str(), (int)data.size(), LYRIC_PARSE_TYPE_KRC);
-        auto xxcs2 = LYRIC_PARSE_TYPE_LRC | LYRIC_PARSE_TYPE_UTF16 | LYRIC_PARSE_TYPE_PATH;
-        lyric_desktop_load_lyric(m_hLyricWindow, lrc.back(), -1, (LYRIC_PARSE_TYPE)xxcs2);
+        int nType = LYRIC_PARSE_TYPE_QRC | LYRIC_PARSE_TYPE_UTF16 | LYRIC_PARSE_TYPE_PATH;
+        lyric_desktop_load_lyric(m_hLyricWindow, qrc.back(), -1, static_cast<LYRIC_PARSE_TYPE>(nType));
         lyric_desktop_call_event(m_hLyricWindow, LYRIC_DESKTOP_BUTTON_ID_PLAY);
 
 
@@ -426,33 +456,52 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_NOTIFY:
     {
         LPNMHDR pnmh = (LPNMHDR)lParam;
-        if (pnmh->code == NM_DBLCLK)
+        if (pnmh->hwndFrom == m_list.m_hWnd)
+            return OnNotify_data(hWnd, message, wParam, lParam);
+        if (pnmh->hwndFrom == m_listlrc.m_hWnd)
+            return OnNotify_lrc(hWnd, message, wParam, lParam);
+        break;
+    }
+    default:
+        return DefWindowProc(hWnd, message, wParam, lParam);
+    }
+    return 0;
+}
+
+LRESULT CALLBACK OnNotify_lrc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    LPNMHDR pnmh = (LPNMHDR)lParam;
+    switch (pnmh->code)
+    {
+    case NM_DBLCLK:
+    {
+        LPNMITEMACTIVATE pItem = (LPNMITEMACTIVATE)lParam;
+        int index = pItem->iItem;
+        if (!m_datalrc || index < 0 || index >= (int)m_datalrc->size())
+            break;
+        auto& item = m_datalrc->at(index);
+        std::string data;
+        read_file(item.szPath.c_str(), data);
+        lyric_desktop_load_lyric(m_hLyricWindow, data.c_str(), (int)data.size(), LYRIC_PARSE_TYPE_KRC);
+        break;
+    }
+    case LVN_GETDISPINFOW:
+    {
+        NMLVDISPINFOW* pDispInfo = (NMLVDISPINFOW*)lParam;
+        int index = pDispInfo->item.iItem;
+        if (!m_datalrc || index < 0 || index >= (int)m_datalrc->size())
+            break;
+        auto& item = m_datalrc->at(index);
+        switch (pDispInfo->item.iSubItem)
         {
-            LPNMITEMACTIVATE pItem = (LPNMITEMACTIVATE)lParam;
-            int index = pItem->iItem;
-            std::wstring filePath = m_list.GetItemText(index, 2);
-
-            BASS_StreamFree(m_hStream);
-            m_hStream = BASS_StreamCreateFile(FALSE, filePath.c_str(), 0, 0, BASS_SAMPLE_FLOAT);
-            BASS_ChannelPlay(m_hStream, FALSE);
-
-            filePath.erase(filePath.rfind(L'.'));
-            size_t pos = filePath.rfind(L'\\');
-            LPWSTR name = &filePath[0] + pos + 1;
-            pos = 0;
-            while (name[pos])
-            {
-                name[pos] = towlower(name[pos]);
-                pos++;
-            }
-
-            std::wstring krc_name = find_krc(name);
-            std::string data;
-            if (!krc_name.empty())
-                read_file(krc_name.c_str(), data);
-
-            lyric_desktop_load_lyric(m_hLyricWindow, data.c_str(), (int)data.size(), LYRIC_PARSE_TYPE_KRC);
-            lyric_desktop_call_event(m_hLyricWindow, LYRIC_DESKTOP_BUTTON_ID_PLAY);
+        case 0:
+            pDispInfo->item.pszText = (LPWSTR)(item.szIndex.c_str());
+            break;
+        case 1:
+            pDispInfo->item.pszText = (LPWSTR)item.szName.c_str();
+            break;
+        case 2:
+            pDispInfo->item.pszText = (LPWSTR)item.szPath.c_str();
             break;
         }
         break;
@@ -463,6 +512,119 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     return 0;
 }
 
+LRESULT CALLBACK OnNotify_data(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    LPNMHDR pnmh = (LPNMHDR)lParam;
+    switch (pnmh->code)
+    {
+    case NM_DBLCLK:
+    {
+        LPNMITEMACTIVATE pItem = (LPNMITEMACTIVATE)lParam;
+        int index = pItem->iItem;
+        auto& item = m_data[index];
+        
+        const std::wstring& filePath = item.szPath;
+        m_datalrc = &item.lrc_arr;
+
+        BASS_StreamFree(m_hStream);
+        m_hStream = BASS_StreamCreateFile(FALSE, filePath.c_str(), 0, 0, BASS_SAMPLE_FLOAT);
+        BASS_ChannelPlay(m_hStream, FALSE);
+
+        if (m_datalrc->empty())
+        {
+            std::wstring find_name = item.szName;
+
+            find_name.erase(find_name.rfind(L'.'));
+            for (wchar_t& ch : find_name)
+                ch = towlower(ch);
+            LPWSTR name = &find_name[0];
+
+            find_krc(find_name, *m_datalrc);
+        }
+
+        size_t size = m_datalrc->size();
+        std::string data;
+        if (size > 0)
+            read_file(m_datalrc->front().szPath.c_str(), data);
+
+        m_listlrc.SetItemCount((int)size);
+        m_listlrc.InvalidateRect();
+
+        lyric_desktop_load_lyric(m_hLyricWindow, data.c_str(), (int)data.size(), LYRIC_PARSE_TYPE_KRC);
+        lyric_desktop_call_event(m_hLyricWindow, LYRIC_DESKTOP_BUTTON_ID_PLAY);
+        break;
+    }
+    case LVN_GETDISPINFOW:
+    {
+        NMLVDISPINFOW* pDispInfo = (NMLVDISPINFOW*)lParam;
+        int index = pDispInfo->item.iItem;
+        if (index < 0 || index >= (int)m_data.size())
+            break;
+        auto& item = m_data.at(index);
+        switch (pDispInfo->item.iSubItem)
+        {
+        case 0:
+            pDispInfo->item.pszText = (LPWSTR)item.szIndex.c_str();
+            break;
+        case 1:
+            pDispInfo->item.pszText = (LPWSTR)item.szName.c_str();
+            break;
+        case 2:
+            pDispInfo->item.pszText = (LPWSTR)item.szPath.c_str();
+            break;
+        }
+        break;
+    }
+    case LVN_COLUMNCLICK:
+    {
+        LPNMLISTVIEW pNMLV = (LPNMLISTVIEW)lParam;
+        int iSubItem = pNMLV->iSubItem;
+        static bool bAscending = true;
+        std::sort(m_data.begin(), m_data.end(), [iSubItem](const LIST_DAT& a, const LIST_DAT& b)
+                  {
+                      if (bAscending)
+                      {
+                          // 升序, 从小到大
+                          switch (iSubItem)
+                          {
+                          case 0:
+                              return a.index < b.index;
+                          case 1:
+                              return a.szName < b.szName;
+                          case 2:
+                              return a.szPath < b.szPath;
+                          default:
+                              __debugbreak();
+                          }
+                      }
+                      else
+                      {
+                          // 降序, 从大到小
+                          switch (iSubItem)
+                          {
+                          case 0:
+                              return a.index > b.index;
+                          case 1:
+                              return a.szName > b.szName;
+                          case 2:
+                              return a.szPath > b.szPath;
+                          default:
+                              __debugbreak();
+                          }
+                      }
+
+                      return false;
+                  });
+        bAscending = !bAscending;
+        m_list.SetItemCount((int)m_data.size());
+        m_list.InvalidateRect();
+        break;
+    }
+    default:
+        return DefWindowProc(hWnd, message, wParam, lParam);
+    }
+    return 0;
+}
 
 static bool IsCheck(HWND hWnd)
 {
@@ -473,46 +635,6 @@ static bool SetCheck(HWND hWnd, bool isCheck)
 {
     return SendMessageW(hWnd, BM_SETCHECK, isCheck ? BST_CHECKED : BST_UNCHECKED, 0);
 }
-
-LPCWSTR psz_krc = LR"_KRC_([ti:It's Not Right (&friends Remake) (Radio Edit)]
-[ar:Gianni Romano/Emanuele Esposito/&Friends/Helen Tesfazghi]
-[al:It's Not Right (&friends Remake) (Radio Edit)]
-[by:]
-[offset:0]
-[language:eyJjb250ZW50IjogW3sibHlyaWNDb250ZW50IjogW1siVE1FXHU0ZWFiXHU2NzA5XHU2NzJjXHU3ZmZiXHU4YmQxXHU0ZjVjXHU1NGMxXHU3Njg0XHU4NDU3XHU0ZjVjXHU2NzQzIl0sIFsiIl0sIFsiIl0sIFsiXHU4ZmQ5XHU2NjJmXHU0ZTBkXHU1YmY5XHU3Njg0IFx1NGY0Nlx1NmNhMVx1NTE3M1x1N2NmYiJdLCBbIlx1OGZkOVx1NjYyZlx1NGUwZFx1NWJmOVx1NzY4NCBcdTRmNDZcdTZjYTFcdTUxNzNcdTdjZmIiXSwgWyJcdTY1ZTBcdThiYmFcdTU5ODJcdTRmNTVcdTYyMTFcdTkwZmRcdTg5ODFcdTYyMTBcdTUyOWYiXSwgWyJcdThmZDlcdTY4MzdcdTRlMGRcdTViZjkiXSwgWyJcdThmZDlcdTY4MzdcdTRlMGRcdTViZjkiXSwgWyJcdThmZDlcdTY2MmZcdTRlMGRcdTViZjlcdTc2ODQgXHU0ZjQ2XHU2Y2ExXHU1MTczXHU3Y2ZiIl0sIFsiXHU4ZmQ5XHU2NjJmXHU0ZTBkXHU1YmY5XHU3Njg0IFx1NGY0Nlx1NmNhMVx1NTE3M1x1N2NmYiJdLCBbIlx1OGZkOVx1NjYyZlx1NGUwZFx1NWJmOVx1NzY4NCBcdTRmNDZcdTZjYTFcdTUxNzNcdTdjZmIiXSwgWyJcdTY1ZTBcdThiYmFcdTU5ODJcdTRmNTVcdTYyMTFcdTkwZmRcdTg5ODFcdTYyMTBcdTUyOWYiXSwgWyJcdThmZDlcdTY2MmZcdTRlMGRcdTViZjlcdTc2ODQgXHU0ZjQ2XHU2Y2ExXHU1MTczXHU3Y2ZiIl0sIFsiXHU2NWUwXHU4YmJhXHU1OTgyXHU0ZjU1XHU2MjExXHU5MGZkXHU4OTgxXHU2MjEwXHU1MjlmIl0sIFsiXHU2NTM2XHU2MmZlXHU0ZjYwXHU3Njg0XHU4ODRjXHU2NzRlXHU3OWJiXHU1ZjAwXHU1NDI3Il0sIFsiXHU0ZjExXHU2MGYzXHU1MThkXHU2NzY1XHU2MjdlXHU2MjExIl0sIFsiXHU4ZmQ5XHU2NjJmXHU0ZTBkXHU1YmY5XHU3Njg0IFx1NGY0Nlx1NmNhMVx1NTE3M1x1N2NmYiJdLCBbIlx1NjVlMFx1OGJiYVx1NTk4Mlx1NGY1NVx1NjIxMVx1OTBmZFx1ODk4MVx1NjIxMFx1NTI5ZiJdLCBbIlx1NTE3M1x1OTVlOFx1NTQwZVx1OGJmN1x1NjI4YVx1OTRhNVx1NTMxOVx1NzU1OVx1NGUwYiJdLCBbIlx1NjIxMVx1NWI4MVx1NjEzZlx1NWI2NFx1NzJlY1x1NGU1Zlx1NGUwZFx1NjEzZlx1OTZiZVx1OGZjNyJdLCBbIlx1OGZkOVx1NjYyZlx1NGUwZFx1NWJmOVx1NzY4NCBcdTRmNDZcdTZjYTFcdTUxNzNcdTdjZmIiXSwgWyJcdTY1ZTBcdThiYmFcdTU5ODJcdTRmNTVcdTYyMTFcdTkwZmRcdTg5ODFcdTYyMTBcdTUyOWYiXSwgWyJcdTY1MzZcdTYyZmVcdTRmNjBcdTc2ODRcdTg4NGNcdTY3NGVcdTc5YmJcdTVmMDBcdTU0MjciXSwgWyJcdTRmMTFcdTYwZjNcdTUxOGRcdTY3NjVcdTYyN2VcdTYyMTEiXSwgWyJcdThmZDlcdTY2MmZcdTRlMGRcdTViZjlcdTc2ODQgXHU0ZjQ2XHU2Y2ExXHU1MTczXHU3Y2ZiIl0sIFsiXHU2NWUwXHU4YmJhXHU1OTgyXHU0ZjU1XHU2MjExXHU5MGZkXHU4OTgxXHU2MjEwXHU1MjlmIl0sIFsiXHU1MTczXHU5NWU4XHU1NDBlXHU4YmY3XHU2MjhhXHU5NGE1XHU1MzE5XHU3NTU5XHU0ZTBiIl0sIFsiXHU2MjExXHU1YjgxXHU2MTNmXHU1YjY0XHU3MmVjXHU0ZTVmXHU0ZTBkXHU2MTNmXHU5NmJlXHU4ZmM3Il0sIFsiXHU4ZmQ5XHU2NjJmXHU0ZTBkXHU1YmY5XHU3Njg0IFx1NGY0Nlx1NmNhMVx1NTE3M1x1N2NmYiJdLCBbIlx1OGZkOVx1NjYyZlx1NGUwZFx1NWJmOVx1NzY4NCBcdTRmNDZcdTZjYTFcdTUxNzNcdTdjZmIiXSwgWyJcdTY1ZTBcdThiYmFcdTU5ODJcdTRmNTVcdTYyMTFcdTkwZmRcdTg5ODFcdTYyMTBcdTUyOWYiXSwgWyJcdThmZDlcdTY4MzdcdTRlMGRcdTViZjkiXV0sICJ0eXBlIjogMSwgImxhbmd1YWdlIjogMH1dLCAiY29udGVudFYyIjogW10sICJ2ZXJzaW9uIjogMX0=]
-[0,501]<0,35,0>It's <36,35,0>Not <72,35,0>Right (&<108,35,0>friends <143,35,0>Remake) (<179,35,0>Radio <215,35,0>Edit) - <251,35,0>Gianni <287,35,0>Romano/<323,35,0>Emanuele <359,35,0>Esposito/&<394,35,0>Friends/<430,35,0>Helen <466,35,0>Tesfazghi
-[502,501]<0,35,0>Lyrics <36,35,0>by：<72,35,0>Fred <108,35,0>Jerkins <143,35,0>Iii/<179,35,0>Isaac <215,35,0>Phillips/<251,35,0>Lashawn <287,35,0>Ameen <323,35,0>Daniels/<359,35,0>Toni <394,35,0>Estes/<430,35,0>Rodney <466,35,0>Jerkins
-[1004,501]<0,35,0>Composed <36,35,0>by：<72,35,0>Fred <108,35,0>Jerkins <143,35,0>Iii/<179,35,0>Isaac <215,35,0>Phillips/<251,35,0>Lashawn <287,35,0>Ameen <323,35,0>Daniels/<359,35,0>Toni <394,35,0>Estes/<430,35,0>Rodney <466,35,0>Jerkins
-[1506,9096]<0,207,0>It's <207,385,0>not <592,480,0>right <7463,185,0>but <7648,327,0>it's <7975,1121,0>okay
-[16921,5503]<0,272,0>It's <272,472,0>not <744,610,0>right <3658,211,0>but <3869,310,0>it's <4179,1324,0>okay
-[24601,5279]<0,367,0>I'm <367,408,0>gonna <775,481,0>make <1256,527,0>it <1783,1549,0>anyway <3720,1559,0>anyway
-[32616,1377]<0,191,0>It's <191,383,0>not <574,803,0>right
-[48239,1301]<0,207,0>It's <207,498,0>not <705,596,0>right
-[63771,9378]<0,231,0>It's <231,472,0>not <703,737,0>right <7679,176,0>but <7855,232,0>it's <8087,1291,0>okay
-[79430,9146]<0,227,0>It's <227,474,0>not <701,674,0>right <7565,196,0>but <7761,377,0>it's <8138,1008,0>okay
-[95017,5353]<0,263,0>It's <263,472,0>not <735,504,0>right <3728,208,0>but <3936,174,0>it's <4110,1243,0>okay
-[102656,5316]<0,336,0>I'm <336,466,0>gonna <802,511,0>make <1313,500,0>it <1813,1547,0>anyway <3760,1556,0>anyway
-[110629,3159]<0,214,0>It's <214,440,0>not <654,546,0>right <1703,176,0>but <1879,249,0>it's <2128,1031,0>okay
-[114229,3448]<0,430,0>I'm <430,472,0>gonna <902,451,0>make <1353,518,0>it <1871,1577,0>anyway
-[118084,3566]<0,439,0>Pack <439,536,0>your <975,661,0>bags <2007,401,0>up <2408,536,0>and <2944,622,0>leave
-[122027,3768]<0,407,0>Don't <407,490,0>you <897,375,0>dare <1272,168,0>come <1440,447,0>running <1887,464,0>back <2351,485,0>to <2836,932,0>me
-[126146,3381]<0,293,0>It's <293,458,0>not <751,583,0>right <1702,239,0>but <1941,346,0>it's <2287,1094,0>okay
-[129815,3656]<0,498,0>I'm <498,449,0>gonna <947,486,0>make <1433,518,0>it <1951,1705,0>anyway
-[133767,3451]<0,201,0>Close <201,290,0>the <491,265,0>door <756,670,0>behind <1426,490,0>you <1916,456,0>leave <2372,473,0>your <2845,606,0>key
-[137602,4212]<0,138,0>I'd <138,373,0>rather <511,356,0>be <867,561,0>alone <1428,591,0>than <2019,1659,0>unhappy <3678,534,0>yeah
-[141981,3017]<0,152,0>It's <152,400,0>not <552,545,0>right <1480,232,0>but <1712,320,0>it's <2032,985,0>okay
-[145397,3554]<0,480,0>I'm <480,512,0>gonna <992,448,0>make <1440,457,0>it <1897,1657,0>anyway
-[149317,3689]<0,466,0>Pack <466,534,0>your <1000,608,0>bags <1952,505,0>up <2457,463,0>and <2920,769,0>leave
-[153252,3689]<0,443,0>Don't <443,511,0>you <954,312,0>dare <1266,168,0>come <1434,439,0>running <1873,490,0>back <2363,567,0>to <2930,759,0>me
-[157517,3241]<0,209,0>It's <209,452,0>not <661,535,0>right <1513,273,0>but <1786,351,0>it's <2137,1104,0>okay
-[161017,3646]<0,463,0>I'm <463,496,0>gonna <959,405,0>make <1364,627,0>it <1991,1655,0>anyway
-[164951,3507]<0,317,0>Close <317,204,0>the <521,390,0>door <911,489,0>behind <1400,533,0>you <1933,473,0>leave <2406,586,0>your <2992,515,0>key
-[168728,4230]<0,165,0>I'd <165,424,0>rather <589,449,0>be <1038,495,0>alone <1533,544,0>than <2077,1769,0>unhappy <3846,384,0>yeah
-[172958,9409]<0,304,0>It's <304,519,0>not <823,599,0>right <7742,185,0>but <7927,319,0>it's <8246,1163,0>okay
-[188726,5251]<0,212,0>It's <212,444,0>not <656,599,0>right <3751,162,0>but <3913,182,0>it's <4095,1156,0>okay
-[196310,5401]<0,369,0>I'm <369,489,0>gonna <858,447,0>make <1305,479,0>it <1784,1521,0>anyway <3690,1711,0>anyway
-[204279,1432]<0,263,0>It's <263,512,0>not <775,657,0>right)_KRC_";
-
 
 // “关于”框的消息处理程序。
 bool OnCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)

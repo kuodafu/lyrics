@@ -166,11 +166,11 @@
     <ClCompile Include="src\test_call\test_call.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="lyrics.vcxproj">
+      <Project>{066db818-4c7f-4cbc-a6ef-3cfb6848576b}</Project>
+    </ProjectReference>
     <ProjectReference Include="lyrics_desktop.vcxproj">
       <Project>{d4c30d90-6531-4e0f-8156-4c7ee6f9afff}</Project>
-    </ProjectReference>
-    <ProjectReference Include="lyric_desktop_lib.vcxproj">
-      <Project>{d9631625-fe41-4d04-a04f-46ac6591fa80}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

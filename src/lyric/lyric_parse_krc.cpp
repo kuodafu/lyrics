@@ -4,10 +4,6 @@
 #include "../charset_stl.h"
 #include "../base64.h"
 
-#ifdef _DEBUG
-#   define DEBUG_SHOW_TIME 0
-#endif
-
 LYRIC_NAMESPACE_BEGIN
 
 void __krc_parse_text(PINSIDE_LYRIC_INFO pLyric, LPWSTR pStart, LPWSTR pEnd);
@@ -102,36 +98,6 @@ bool _lrc_decrypt_krc(const void* pData, size_t nSize, wchar_t** ppLyricText)
 }
 
 
-
-// 调试状态下把时间间隔加入到歌词尾部方便调试
-#if DEBUG_SHOW_TIME
-static void _dbg_append_interval_time(PINSIDE_LYRIC_INFO pLyric, size_t back_index)
-{
-    wchar_t num[50] = { 0 };
-    size_t lines_size = pLyric->lines.size();
-    if (lines_size > 1)
-    {
-        INSIDE_LYRIC_LINE& back = pLyric->lines[back_index];
-
-        int len = swprintf_s(num, L"{%d}", back.interval);
-        INSIDE_LYRIC_WORD& words = back.words.emplace_back();
-        auto& words_prev = back.words[back.words.size() - 2];
-        words.start = words_prev.start + words_prev.duration;
-        words.duration = 10;
-        words.t3 = 0;
-
-        words.text = back.words.front().text - len - 1;
-        words.size = len;
-        wcscpy_s((LPWSTR)words.text, (size_t)len + 1, num);
-
-        back.text.append(num, len);
-    }
-}
-#else
-#define _dbg_append_interval_time(x,r)
-#endif
-
-
 // 解析歌词行, "[开始时间,结束时间]<开始时间,结束时间,0>字" 解析这种内容
 void __krc_parse_text(PINSIDE_LYRIC_INFO pLyric, LPWSTR pStart, LPWSTR pEnd)
 {
@@ -151,6 +117,7 @@ void __krc_parse_text(PINSIDE_LYRIC_INFO pLyric, LPWSTR pStart, LPWSTR pEnd)
         return _wtol(num);
     };
 
+    pLyric->lines.reserve(30);
 
     while (pStart < pEnd)
     {
@@ -165,6 +132,8 @@ void __krc_parse_text(PINSIDE_LYRIC_INFO pLyric, LPWSTR pStart, LPWSTR pEnd)
         lines.start = pfn_get_num();
         lines.duration = pfn_get_num();
         lines.interval = MAXINT;    // 每次都假设这个是最后一行
+        int duration = 0;
+        lines.size = 0;
 
         // 这里开始就是 <0,1,2>字\r\n 这种格式了, 数量不一定, 需要循环解析
         while (pStart < pEnd && *pStart == L'<')
@@ -173,6 +142,7 @@ void __krc_parse_text(PINSIDE_LYRIC_INFO pLyric, LPWSTR pStart, LPWSTR pEnd)
             INSIDE_LYRIC_WORD& words = lines.words.emplace_back();
             words.start = pfn_get_num();
             words.duration = pfn_get_num();
+            duration += words.duration;
             words.t3 = pfn_get_num();
             if (words.t3 != 0)
                 __debugbreak();
@@ -213,11 +183,19 @@ void __krc_parse_text(PINSIDE_LYRIC_INFO pLyric, LPWSTR pStart, LPWSTR pEnd)
                 words.size = (int)replace_len;
             }
 
-            lines.text.append(words.text, words.size);
+            lines.size += words.size;
         }
 
+        // 上面循环先计算总长度, 然后一次性分配好空间, 逐个拷贝
+        lines.text.reserve(lines.size);
+        for (auto& words : lines.words)
+            lines.text.append(words.text, words.size);
+        
         while (*pStart == L'\r' || *pStart == L'\n')
             *pStart++ = 0;
+
+        if (duration < lines.duration)
+            lines.duration = duration;
 
         // 成员数大于1, 需要获取上一个成员, 然后计算当前成员和上一个成员的间隔时间
         // 当前成员就是最后一个, 上一个成员是倒数第二个
@@ -227,15 +205,84 @@ void __krc_parse_text(PINSIDE_LYRIC_INFO pLyric, LPWSTR pStart, LPWSTR pEnd)
             INSIDE_LYRIC_LINE& back = pLyric->lines[lines_size - 2];
             // 间隔 = 当前行的开始时间 减去 上一行的结束时间
             back.interval = lines.start - (back.start + back.duration);
-            _dbg_append_interval_time(pLyric, lines_size - 2);
-
+            _lrc_dbg_append_interval_time(pLyric, lines_size - 2);
         }
 
     }
 
-    _dbg_append_interval_time(pLyric, pLyric->lines.size() - 1);
+    _lrc_dbg_append_interval_time(pLyric, pLyric->lines.size() - 1);
 }
 
+void __krc_get_translate_yy(INSIDE_LYRIC_LINE& line, INSIDE_LYRIC_LINE& line_yy, cJSON* json_line, int line_count)
+{
+    line_yy.start    = line.start;
+    line_yy.duration = line.duration;
+    line_yy.interval = line.interval;
+    line_yy.width    = line.width;
+    line_yy.height   = line.height;
+    line_yy.size     = line.size;
+    line_yy.words.resize(line_count);
+
+    // 这里要给 line_fy.text 分配3倍长度的空间
+    // 然后字数组的指针都是指向这个text的内存
+
+    std::vector<std::wstring> arr;
+    arr.reserve(line_count);
+
+    size_t len = 0;
+    for (int i = 0; i < line_count; i++)
+    {
+        LPCSTR pText = cJSON_GetStringValue(cJSON_GetArrayItem(json_line, i));
+        arr.push_back(charset_stl::U2W(pText));
+        len += arr.back().size();
+    }
+    
+    // 两倍长度, 一个存放原始文本, 一个存放每个字的文本, 再加上每个字的中间间隔
+    size_t str_reserve = len * 2 + line_count + 1;
+    line_yy.text.reserve(str_reserve);
+    line_yy.size = (int)len; // 记录这一行的字符数, 不包含后面字信息
+    line_yy.text.clear();
+
+    LPWSTR pText = &line_yy.text[0];
+    LPWSTR pStart = pText + line_yy.size + 1;  // 存放字的起始位置, 是在原始文本结束标识符后面
+    LPWSTR pEnd = pText + str_reserve;
+
+
+    for (int i = 0; i < line_count; i++)
+    {
+        auto& word = line.words[i];
+        auto& word_yy = line_yy.words[i];
+        auto& str = arr[i];
+
+        word_yy.duration = word.duration;
+        word_yy.start = word.start;
+        word_yy.t3 = word.t3;
+        word_yy.width = 0;
+        word_yy.left = 0;
+        word_yy.top = 0;
+        word_yy.height = 0;
+        word_yy.text = pStart;
+        word_yy.size = (int)str.size();
+
+        wmemcpy(pText, str.c_str(), str.size());
+        pText += str.size();
+        *pText = L'\0'; // 加上结束符, 每次都视为是最后一个字, 其实不加也可以, resize() 得到的内存已经清0了
+
+        wmemcpy(pStart, str.c_str(), str.size());
+        pStart += str.size();
+        *pStart++ = L'\0';  // 加上结束符, 让他和其他字隔开
+        
+
+
+
+#ifdef _DEBUG
+        if (pStart > pEnd || (i + 1 == line_count && pStart != pEnd))
+            __debugbreak(); // 计算的长度是刚刚好的, 如果不对, 那就是有问题
+#endif
+
+    }
+
+}
 // 获取翻译的歌词, 翻译和音译都在这里统一处理
 void __krc_get_translate(PINSIDE_LYRIC_INFO pLyric, LPCWSTR language)
 {
@@ -263,36 +310,60 @@ void __krc_get_translate(PINSIDE_LYRIC_INFO pLyric, LPCWSTR language)
     std::string str(50, 0);
     int count = cJSON_GetArraySize(content);
 
-    pLyric->language.resize(count);
     for (int i = 0; i < count; i++)
     {
         cJSON* item = cJSON_GetArrayItem(content, i);
 
-        INSIDE_LYRIC_TRANSLATE& translate = pLyric->language[i];
+        // type 0 是音译, 1 是翻译
+        // language 暂时不知道是什么, 测试了很多歌词, 都是0
+        int language = (int)cJSON_GetNumberValue(cJSON_GetObjectItem(item, "language"));
+        int type = (int)cJSON_GetNumberValue(cJSON_GetObjectItem(item, "type"));
 
-        translate.language = (int)cJSON_GetNumberValue(cJSON_GetObjectItem(item, "language"));
-        translate.type = (int)cJSON_GetNumberValue(cJSON_GetObjectItem(item, "type"));
-        if (translate.language)
+        INSIDE_LYRIC_LINDS* pLines_fy = type == 0 ? &pLyric->lines_yy : &pLyric->lines_fy;
+
+        pLyric->language |= (type == 0 ? LYRIC_LANGUAGE_TYPE_YY : LYRIC_LANGUAGE_TYPE_FY);
+
+#ifdef _DEBUG
+        if (language)
             __debugbreak();
+#endif
+
         cJSON* lyricContent = cJSON_GetObjectItem(item, "lyricContent");
         if (lyricContent)
         {
             int lyricContent_count = cJSON_GetArraySize(lyricContent);
             if ((int)pLyric->lines.size() == lyricContent_count)
             {
-                translate.lines.resize(lyricContent_count);
+                auto& lines_fy = *pLines_fy;
+                lines_fy.resize(lyricContent_count);
                 for (int j = 0; j < lyricContent_count; j++)
                 {
-                    cJSON* line = cJSON_GetArrayItem(lyricContent, j);
-                    int line_count = cJSON_GetArraySize(line);
+                    INSIDE_LYRIC_LINE& line = pLyric->lines[j];
+                    INSIDE_LYRIC_LINE& line_fy = lines_fy[j];
+
+                    cJSON* json_line = cJSON_GetArrayItem(lyricContent, j);
+                    int line_count = cJSON_GetArraySize(json_line);
+                    // 音译的字数和歌词的字数一样就处理音译部分, 字数一样就是一个字对应音译的一个字
+                    if (type == 0 && line_count == (int)line.words.size())
+                    {
+                        __krc_get_translate_yy(line, line_fy, json_line, line_count);
+                        continue;   // 处理完了, 不往下处理
+                    }
+
+#ifdef _DEBUG
+                    if (type == 0)
+                        __debugbreak(); // 音译处理失败, 断下调试
+#endif
+                    // 翻译就直接拼接文本, 然后保存到 lines_fy 里面
                     str.clear();
                     for (int k = 0; k < line_count; k++)
                     {
-                        cJSON* text = cJSON_GetArrayItem(line, k);
+                        cJSON* text = cJSON_GetArrayItem(json_line, k);
                         str.append(cJSON_GetStringValue(text));
                     }
 
-                    translate.lines[j] = charset_stl::U2W(str.c_str(), str.size());
+                    line_fy.text = charset_stl::U2W(str.c_str(), str.size());
+                    line_fy.size = (int)line_fy.text.size();
                 }
             }
         }

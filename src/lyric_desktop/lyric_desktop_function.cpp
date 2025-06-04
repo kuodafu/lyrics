@@ -119,7 +119,58 @@ bool _ld_uninit()
     return d2d_uninit();
 }
 
-HWND lyric_create_layered_window(const LYRIC_DESKTOP_ARG* arg)
+// 计算给定刷新率对应的时钟周期（毫秒，向下取整）
+inline static int GetFrameIntervalMs(int refreshRate)
+{
+    if (refreshRate <= 0.0)
+        return 16; // 默认60Hz对应的周期
+
+    // 1000ms / Hz = 每帧所需时间（毫秒）
+    int interval = 1000 / refreshRate;
+    return interval;
+}
+void _ld_start_high_precision_timer(PLYRIC_DESKTOP_INFO pWndInfo)
+{
+    pWndInfo->Addref();
+    // 不使用时钟, 直接创建个线程, 如果高精度时钟创建失败, 就使用Sleep代替
+    std::thread([](PLYRIC_DESKTOP_INFO pWndInfo)
+                {
+                    HANDLE hTimer = CreateWaitableTimerW(NULL, FALSE, NULL);
+                    HWND hWnd = pWndInfo->hWnd;
+                    while (IsWindow(hWnd))
+                    {
+                        int interval = GetFrameIntervalMs(pWndInfo->config.refreshRate);
+                        LARGE_INTEGER liDueTime{};
+                        liDueTime.QuadPart = -static_cast<LONGLONG>(interval * 10000LL);  // 相对时间（单位100ns）
+                        bool isSleep = true;
+
+                        if (hTimer && SetWaitableTimer(hTimer, &liDueTime, 0, NULL, NULL, FALSE))
+                        {
+                            if (WaitForSingleObject(hTimer, INFINITE) == WAIT_OBJECT_0)
+                                isSleep = false;
+                        }
+                        if (isSleep)
+                            Sleep(interval);    // 高精度定时器处理失败, 这里使用Sleep代替
+                        // 需要使用发送, 让他处理完毕后才进行下一次循环
+                        SendMessageW(hWnd, WM_USER, 121007124, 20752843);
+                    }
+
+                    if (hTimer)
+                        CloseHandle(hTimer);
+                    
+                    pWndInfo->Release();
+                }, pWndInfo).detach();
+
+
+    //// 使用 SetTimer(精度大约 10~15ms)
+    //SetTimer(hWnd, fallbackTimerId, 10, [](HWND hWnd, UINT, UINT_PTR, DWORD)
+    //         {
+    //             PostMessageW(hWnd, WM_USER, 121007124, 20752843);
+    //         });
+}
+
+
+PLYRIC_DESKTOP_INFO _ld_create_layered_window(const LYRIC_DESKTOP_ARG* arg)
 {
     if (!m_hCursorArrow)
     {
@@ -135,20 +186,36 @@ HWND lyric_create_layered_window(const LYRIC_DESKTOP_ARG* arg)
                                 0, 0, 1, 1,
                                 NULL, NULL, GetModuleHandleW(0), NULL);
 
-
     if (!hWnd)
         return nullptr;
 
-    SetTimer(hWnd, 2000, 10, [](HWND hWnd, UINT message, UINT_PTR id, DWORD t)
-    {
-        PLYRIC_DESKTOP_INFO pWndInfo = lyric_wnd_get_data(hWnd);
-        lyric_wnd_invalidate(*pWndInfo);
-    });
+    //TODO: 这里初始化歌词的默认配置, 如果传递进来有配置, 就按传递进来的配置处理, 否则就按默认配置处理
 
-    //DWMNCRENDERINGPOLICY pv = DWMNCRP_ENABLED;
-    //HRESULT hr = DwmSetWindowAttribute(hWnd, DWMWA_NCRENDERING_POLICY, &pv, sizeof(pv));
+    LYRIC_DESKTOP_INFO* pWndInfo = new LYRIC_DESKTOP_INFO;
+    pWndInfo->hWnd = hWnd;
 
-    return hWnd;
+    pWndInfo->config.refreshRate = 240;
+
+    lyric_wnd_set_data(hWnd, pWndInfo);
+
+    // 创建一个提示窗口, 用来显示提示信息
+    pWndInfo->hTips = CreateWindowExW(WS_EX_TOPMOST | WS_EX_LAYERED | WS_EX_TRANSPARENT,
+                                      TOOLTIPS_CLASSW,
+                                      nullptr,
+                                      TTS_ALWAYSTIP,
+                                      0, 0, 0, 0, 0, 0, 0, 0);
+
+    SendMessageW(pWndInfo->hTips, TTM_SETMAXTIPWIDTH, 0, 500);
+    SendMessageW(pWndInfo->hTips, TTM_SETDELAYTIME, TTDT_AUTOPOP, 0x7fff);
+    TTTOOLINFOW ti = { 0 };
+    ti.cbSize = sizeof(ti);
+    ti.uFlags = TTF_SUBCLASS | TTF_IDISHWND;
+    ti.lpszText = (LPWSTR)L"";
+    ti.hwnd = pWndInfo->hWnd;
+    ti.uId = (UINT_PTR)pWndInfo->hWnd;
+    auto isInsertSuccess = SendMessageW(pWndInfo->hTips, TTM_ADDTOOLW, 0, (LPARAM)&ti);
+
+    return pWndInfo;
 }
 
 // 绘画的时候没有创建对象, 那就需要创建默认对象
@@ -238,6 +305,16 @@ LRESULT CALLBACK lyric_wnd_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
     //    //HRESULT hr = DwmSetWindowAttribute(hWnd, DWMWA_NCRENDERING_POLICY, &pv, sizeof(pv));
     //    return 0;
     //}
+    case WM_USER:
+    {
+        if (wParam == 121007124 && lParam == 20752843)
+        {
+            PLYRIC_DESKTOP_INFO pWndInfo = lyric_wnd_get_data(hWnd);
+            lyric_wnd_invalidate(*pWndInfo);
+            return 0;
+        }
+        break;
+    }
     case WM_DPICHANGED:
     {
         pWndInfo->dpi_change(hWnd);
@@ -296,7 +373,7 @@ LRESULT CALLBACK lyric_wnd_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
     case WM_DESTROY:
     {
         lyric_wnd_set_data(hWnd, 0);
-        delete pWndInfo;
+        pWndInfo->Release();
         return 0;
     }
     //case WM_NCCALCSIZE:

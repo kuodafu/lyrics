@@ -4,8 +4,8 @@ EXPORTS
     lyric_decrypt
     lyric_destroy
     lyric_free
-    lyric_calc_text_width
-    lyric_re_calc_text_width
+    lyric_calc_text
+    lyric_re_calc_text
     lyric_calc
     lyric_behind_ahead
     lyric_get_info

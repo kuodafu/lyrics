@@ -1,7 +1,209 @@
 #include "CD2DRender.h"
+#include <atlbase.h>
 
-NAMESPACE_D2D_BEGIN
+KUODAFU_NAMESPACE_BEGIN
 LPWSTR prefixstring(LPCWSTR text, DWORD format, size_t*& nPreFix, int& count);
+
+struct BitmapData
+{
+    BYTE* pixels = nullptr;
+    UINT width = 0;
+    UINT height = 0;
+    UINT stride = 0;
+};
+
+BitmapData* ExtractPixelsFromD2D(ID2D1DeviceContext* pRenderTarget)
+{
+    if (!pRenderTarget)
+        return nullptr;
+
+    CComPtr<ID2D1Image> pImage;
+    pRenderTarget->GetTarget(&pImage);
+    if (!pImage)
+        return nullptr;
+
+    CComPtr<ID2D1Bitmap1> pBitmap;
+    HRESULT hr = pImage->QueryInterface(&pBitmap);
+    if (FAILED(hr) || !pBitmap)
+        return nullptr;
+
+    D2D1_SIZE_U size = pBitmap->GetPixelSize();
+
+    CComPtr<IDXGISurface> dxgiSurface;
+    hr = pBitmap->GetSurface(&dxgiSurface);
+    if (FAILED(hr))
+        return nullptr;
+
+    CComPtr<ID3D11Texture2D> d3dTexture;
+    hr = dxgiSurface->QueryInterface(&d3dTexture);
+    if (FAILED(hr))
+        return nullptr;
+
+    CComPtr<ID3D11Device> d3dDevice;
+    d3dTexture->GetDevice(&d3dDevice);
+
+    CComPtr<ID3D11DeviceContext> d3dContext;
+    d3dDevice->GetImmediateContext(&d3dContext);
+
+    D3D11_TEXTURE2D_DESC desc;
+    d3dTexture->GetDesc(&desc);
+
+    D3D11_TEXTURE2D_DESC stagingDesc = desc;
+    stagingDesc.Usage = D3D11_USAGE_STAGING;
+    stagingDesc.BindFlags = 0;
+    stagingDesc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+    stagingDesc.MiscFlags = 0;
+
+    CComPtr<ID3D11Texture2D> stagingTexture;
+    hr = d3dDevice->CreateTexture2D(&stagingDesc, nullptr, &stagingTexture);
+    if (FAILED(hr))
+        return nullptr;
+
+    d3dContext->CopyResource(stagingTexture, d3dTexture);
+
+    D3D11_MAPPED_SUBRESOURCE mapped;
+    hr = d3dContext->Map(stagingTexture, 0, D3D11_MAP_READ, 0, &mapped);
+    if (FAILED(hr))
+        return nullptr;
+
+    UINT width = desc.Width;
+    UINT height = desc.Height;
+    UINT stride = width * 4;
+
+    BitmapData* bmpData = new BitmapData;
+    bmpData->pixels = new BYTE[stride * height];
+    bmpData->width = width;
+    bmpData->height = height;
+    bmpData->stride = stride;
+
+    BYTE* pSrc = (BYTE*)mapped.pData;
+    BYTE* pDst = bmpData->pixels;
+
+    for (UINT y = 0; y < height; ++y)
+    {
+        memcpy(pDst + y * stride, pSrc + y * mapped.RowPitch, stride);
+    }
+
+    d3dContext->Unmap(stagingTexture, 0);
+
+    return bmpData;
+}
+
+HDC CreateHDCFromD2D(ID2D1DeviceContext* pRenderTarget)
+{
+    BitmapData* bmpData = ExtractPixelsFromD2D(pRenderTarget);
+    if (!bmpData)
+        return nullptr;
+
+    HDC hdcScreen = GetDC(nullptr);
+    HDC hdcMem = CreateCompatibleDC(hdcScreen);
+    ReleaseDC(nullptr, hdcScreen);
+
+    BITMAPINFO bmi = {};
+    bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+    bmi.bmiHeader.biWidth = bmpData->width;
+    bmi.bmiHeader.biHeight = -(LONG)bmpData->height; // top-down bitmap
+    bmi.bmiHeader.biPlanes = 1;
+    bmi.bmiHeader.biBitCount = 32;
+    bmi.bmiHeader.biCompression = BI_RGB;
+
+    void* pBits = nullptr;
+    HBITMAP hBitmap = CreateDIBSection(hdcMem, &bmi, DIB_RGB_COLORS, &pBits, nullptr, 0);
+    if (!hBitmap)
+    {
+        delete[] bmpData->pixels;
+        delete bmpData;
+        DeleteDC(hdcMem);
+        return nullptr;
+    }
+
+    SelectObject(hdcMem, hBitmap);
+    memcpy(pBits, bmpData->pixels, bmpData->stride * bmpData->height);
+
+    delete[] bmpData->pixels;
+    delete bmpData;
+
+    return hdcMem;
+}
+
+bool CopyD2DRenderTargetToHDC(ID2D1DeviceContext* pRenderTarget, HDC hdc)
+{
+    if (!hdc)
+        return false;
+
+    BitmapData* bmpData = ExtractPixelsFromD2D(pRenderTarget);
+    if (!bmpData)
+        return false;
+
+    HBITMAP hBitmap = (HBITMAP)GetCurrentObject(hdc, OBJ_BITMAP);
+    if (!hBitmap)
+    {
+        delete[] bmpData->pixels;
+        delete bmpData;
+        return false;
+    }
+
+    BITMAP bmpInfo;
+    if (GetObject(hBitmap, sizeof(BITMAP), &bmpInfo) == 0)
+    {
+        delete[] bmpData->pixels;
+        delete bmpData;
+        return false;
+    }
+
+    if ((UINT)bmpInfo.bmWidth != bmpData->width || (UINT)abs(bmpInfo.bmHeight) != bmpData->height)
+    {
+        delete[] bmpData->pixels;
+        delete bmpData;
+        return false;
+    }
+
+    int rowBytes = bmpData->width * 4;
+    int heightAbs = abs(bmpInfo.bmHeight);
+
+    if (bmpInfo.bmHeight > 0)
+    {
+        // bottom-up bitmap
+        BYTE* pDst = new BYTE[rowBytes * heightAbs];
+        for (int y = 0; y < heightAbs; ++y)
+        {
+            memcpy(pDst + (heightAbs - 1 - y) * rowBytes, bmpData->pixels + y * rowBytes, rowBytes);
+        }
+
+        BITMAPINFO bmi = {};
+        bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+        bmi.bmiHeader.biWidth = bmpInfo.bmWidth;
+        bmi.bmiHeader.biHeight = bmpInfo.bmHeight;
+        bmi.bmiHeader.biPlanes = 1;
+        bmi.bmiHeader.biBitCount = 32;
+        bmi.bmiHeader.biCompression = BI_RGB;
+
+        BOOL bRet = SetDIBits(hdc, hBitmap, 0, heightAbs, pDst, &bmi, DIB_RGB_COLORS);
+        delete[] pDst;
+        delete[] bmpData->pixels;
+        delete bmpData;
+        return bRet != FALSE;
+    }
+    else
+    {
+        // top-down bitmap
+        BITMAPINFO bmi = {};
+        bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+        bmi.bmiHeader.biWidth = bmpInfo.bmWidth;
+        bmi.bmiHeader.biHeight = bmpInfo.bmHeight;
+        bmi.bmiHeader.biPlanes = 1;
+        bmi.bmiHeader.biBitCount = 32;
+        bmi.bmiHeader.biCompression = BI_RGB;
+
+        BOOL bRet = SetDIBits(hdc, hBitmap, 0, heightAbs, bmpData->pixels, &bmi, DIB_RGB_COLORS);
+
+        delete[] bmpData->pixels;
+        delete bmpData;
+        return bRet != FALSE;
+    }
+}
+
+
 
 static HRESULT _d2d_create_bitmap(ID2D1DeviceContext* pRenderTarget, int width, int height, ID2D1Bitmap1** ppBitmap)
 {
@@ -13,27 +215,29 @@ static HRESULT _d2d_create_bitmap(ID2D1DeviceContext* pRenderTarget, int width, 
     d2dbp.dpiY = 96;
 
     D2D1_SIZE_U size = { (UINT)width, (UINT)height };
-    return pRenderTarget->CreateBitmap(size, 0, 0, d2dbp, ppBitmap);
+    return pRenderTarget->CreateBitmap(size, nullptr, 0, d2dbp, ppBitmap);
 }
 
-CD2DRender::CD2DRender(int width, int height):
-    m_pRenderTarget(nullptr),
-    m_pBitmap(nullptr),
-    m_pGDIInterop(nullptr)
+CD2DRender::CD2DRender(int width, int height)
+    : m_pRenderTarget(nullptr)
+    , m_pBitmap(nullptr)
+    , m_pGDIInterop(nullptr)
 {
     if (width <= 0) width = 1;
     if (height <= 0) height = 1;
     auto& d2dInfo = d2d_get_info();
     HRESULT hr = 0;
-    if (!m_pRenderTarget)
-    {
-        hr = d2dInfo.pD2DDevice->CreateDeviceContext(D2D1_DEVICE_CONTEXT_OPTIONS_NONE,
-                                                             &m_pRenderTarget);
-        if (FAILED(hr))
-            return;
-        m_pRenderTarget->QueryInterface(IID_PPV_ARGS(&m_pGDIInterop));
-    }
 
+    hr = d2dInfo.pD2DDevice->CreateDeviceContext(D2D1_DEVICE_CONTEXT_OPTIONS_NONE, &m_pRenderTarget);
+    if (FAILED(hr))
+        return;
+
+    hr = m_pRenderTarget->QueryInterface(__uuidof(ID2D1GdiInteropRenderTarget), (void**)&m_pGDIInterop);
+    if (FAILED(hr))
+    {
+        SafeRelease(m_pRenderTarget);
+        return;
+    }
     hr = _d2d_create_bitmap(m_pRenderTarget, width, height, &m_pBitmap);
     m_pRenderTarget->SetTarget(m_pBitmap);
 
@@ -61,16 +265,26 @@ bool CD2DRender::resize(int width, int height)
     if (!m_pBitmap)
         return false;
 
-    D2D1_SIZE_U si = m_pBitmap->GetPixelSize();
+    if (width <= 0) width = 1;
+    if (height <= 0) height = 1;
+
+    D2D1_SIZE_U si = m_pBitmap ? m_pBitmap->GetPixelSize() : D2D1::SizeU(0, 0);
     if (si.width == (UINT)width && si.height == (UINT)height)
         return true;
+
+    m_pRenderTarget->SetTarget(nullptr);
     SafeRelease(m_pBitmap);
 
     HRESULT hr = _d2d_create_bitmap(m_pRenderTarget, width, height, &m_pBitmap);
     if (FAILED(hr))
+    {
+#ifdef _DEBUG
         __debugbreak();
+#endif
+        return false;
+    }
     m_pRenderTarget->SetTarget(m_pBitmap);
-    return SUCCEEDED(hr);
+    return true;
 }
 //
 //bool CD2DRender::calc_text(CD2DFont* pFont, LPCWSTR text, size_t textLen, DWORD textFormat, LPDRAWTEXTPARAMS lParam, float layoutWidth, float layoutHeight, float* pWidth, float* pHeight, IDWriteTextLayout** ppDWriteTextLayout)
@@ -224,5 +438,5 @@ LPWSTR prefixstring(LPCWSTR text, DWORD format, size_t*& nPreFix, int& count)
 }
 
 
-NAMESPACE_D2D_END
+KUODAFU_NAMESPACE_END
 

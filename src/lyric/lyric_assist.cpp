@@ -1,8 +1,7 @@
 #include "lyric_typedef.h"
 #include <zlib.h>
 #include <cjson/cJSON.h>
-
-#include "../base64.h"
+#include <base64.h>
 
 #ifdef _DEBUG
 #   define DEBUG_SHOW_TIME 0

@@ -1,6 +1,6 @@
 #pragma once
 #include "CD2DRender.h"
-NAMESPACE_D2D_BEGIN
+KUODAFU_NAMESPACE_BEGIN
 
 
 class CD2DBrush
@@ -55,4 +55,4 @@ public:
 
 
 
-NAMESPACE_D2D_END
+KUODAFU_NAMESPACE_END

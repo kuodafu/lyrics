@@ -1,7 +1,7 @@
 #include "CD2DFont.h"
 #include <string>
 
-NAMESPACE_D2D_BEGIN
+KUODAFU_NAMESPACE_BEGIN
 
 CD2DFont::CD2DFont(LPCWSTR name, LONG lfHeight, FONTSTYLE fontStyle)
 {
@@ -77,5 +77,5 @@ bool CD2DFont::create(const LOGFONTW* logFont)
 
 
 
-NAMESPACE_D2D_END
+KUODAFU_NAMESPACE_END
 

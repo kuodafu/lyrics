@@ -4,7 +4,7 @@
 #include "CD2DFont.h"
 #include "CD2DBrush.h"
 #include "CD2DImage.h"
-#include "../CScale.h"
+#include <CScale.h>
 #include <vector>
 #include <string>
 #include <mutex>
@@ -21,17 +21,17 @@ struct LYRIC_DESKTOP_INFO;
 // 歌词窗口dx相关的对象
 struct LYRIC_DESKTOP_DX
 {
-    NAMESPACE_D2D::CD2DRender* hCanvas;         // D2D绘画句柄
-    NAMESPACE_D2D::CD2DFont* hFont;             // 绘画歌词的字体, 这个是设备无关字体, 设备失效不需要重新创建
+    KUODAFU_NAMESPACE::CD2DRender* hCanvas;         // D2D绘画句柄
+    KUODAFU_NAMESPACE::CD2DFont* hFont;             // 绘画歌词的字体, 这个是设备无关字体, 设备失效不需要重新创建
 
-    NAMESPACE_D2D::CD2DImage* image;            // 歌词窗口按钮需要的图片
-    NAMESPACE_D2D::CD2DImage* image_shadow;     // 阴影图片
-    NAMESPACE_D2D::CD2DBrush* hbrBorder;        // 绘画歌词文本的边框画刷
-    NAMESPACE_D2D::CD2DBrush* hbrWndBorder;     // 歌词窗口的边框画刷
-    NAMESPACE_D2D::CD2DBrush* hbrWndBack;       // 歌词窗口的背景画刷
-    NAMESPACE_D2D::CD2DBrush* hbrLine;          // 歌词按钮分隔部分的线条画刷
-    NAMESPACE_D2D::CD2DBrush_LinearGradient* hbrNormal;      // 普通歌词画刷
-    NAMESPACE_D2D::CD2DBrush_LinearGradient* hbrLight;       // 高亮歌词画刷
+    KUODAFU_NAMESPACE::CD2DImage* image;            // 歌词窗口按钮需要的图片
+    KUODAFU_NAMESPACE::CD2DImage* image_shadow;     // 阴影图片
+    KUODAFU_NAMESPACE::CD2DBrush* hbrBorder;        // 绘画歌词文本的边框画刷
+    KUODAFU_NAMESPACE::CD2DBrush* hbrWndBorder;     // 歌词窗口的边框画刷
+    KUODAFU_NAMESPACE::CD2DBrush* hbrWndBack;       // 歌词窗口的背景画刷
+    KUODAFU_NAMESPACE::CD2DBrush* hbrLine;          // 歌词按钮分隔部分的线条画刷
+    KUODAFU_NAMESPACE::CD2DBrush_LinearGradient* hbrNormal;      // 普通歌词画刷
+    KUODAFU_NAMESPACE::CD2DBrush_LinearGradient* hbrLight;       // 高亮歌词画刷
 
     DWORD       clrBack;        // 鼠标移动上来之后显示的歌词ARGB背景颜色
     DWORD       clrWndBorder;   // 鼠标移动上来之后显示的歌词ARGB边框颜色

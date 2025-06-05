@@ -5,9 +5,10 @@
 
 #include "lyric_wnd_function.h"
 #include <CommCtrl.h>
+#include <atlbase.h>
 
 using namespace NAMESPACE_LYRIC_DESKTOP;
-using namespace NAMESPACE_D2D;
+using namespace KUODAFU_NAMESPACE;
 
 /// <summary>
 /// 初始化桌面歌词, 会初始化D2D, 开启DPI缩放, 注册窗口类等

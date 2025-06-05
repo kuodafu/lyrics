@@ -20,7 +20,7 @@
 #include <control/CListView.h>
 #include <kuodafu_lyric_desktop.h>
 #include <WaitObject.h>
-#include "../src/charset_stl.h"
+#include <charset_stl.h>
 #include <cJSON/cJSON.h>
 #include "bass.h"
 

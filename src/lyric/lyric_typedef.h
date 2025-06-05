@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 #include <kuodafu_lyric.h>
-#include "../charset_stl.h"
+#include <charset_stl.h>
 
 #define LYRIC_NAMESPACE lyric
 #define LYRIC_NAMESPACE_BEGIN namespace LYRIC_NAMESPACE {

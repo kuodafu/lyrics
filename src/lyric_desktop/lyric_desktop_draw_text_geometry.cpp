@@ -2,9 +2,10 @@
 
 #include "lyric_wnd_function.h"
 #include "CCustomTextRenderer.h"
+#include <atlbase.h>
 
 
-using namespace NAMESPACE_D2D;
+using namespace KUODAFU_NAMESPACE;
 
 constexpr float strokeWidth = 2.0f; // ¸è´ÊÎÄ±¾Ãè±ß¿í¶È
 

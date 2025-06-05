@@ -1,7 +1,8 @@
 #include "CD2DBrush.h"
 #include <vector>
+#include <atlbase.h>
 
-NAMESPACE_D2D_BEGIN
+KUODAFU_NAMESPACE_BEGIN
 
 CD2DBrush::CD2DBrush(CD2DRender& d2dRender, DWORD argb): m_pBrush(nullptr)
 {
@@ -128,5 +129,5 @@ CD2DBrush_RadialGradient::~CD2DBrush_RadialGradient()
 }
 
 
-NAMESPACE_D2D_END
+KUODAFU_NAMESPACE_END
 

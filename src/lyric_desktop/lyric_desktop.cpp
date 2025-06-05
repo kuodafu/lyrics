@@ -41,7 +41,7 @@
 #endif
 
 
-using namespace NAMESPACE_D2D;
+using namespace KUODAFU_NAMESPACE;
 
 NAMESPACE_LYRIC_DESKTOP_BEGIN
 

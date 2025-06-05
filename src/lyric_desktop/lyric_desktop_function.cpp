@@ -7,7 +7,7 @@
 #pragma comment(lib, "dwmapi.lib")
 #pragma comment(lib, "dxguid.lib")
 
-using namespace NAMESPACE_D2D;
+using namespace KUODAFU_NAMESPACE;
 
 NAMESPACE_LYRIC_DESKTOP_BEGIN
 
@@ -92,7 +92,7 @@ bool _ld_init()
 #else
     const bool isDebug = false;
 #endif
-    static bool init_d2d = d2d::d2d_init(isDebug);
+    static bool init_d2d = d2d_init(false, isDebug);
 
     WNDCLASSEX wc;
     wc.cbSize           = sizeof(WNDCLASSEX);

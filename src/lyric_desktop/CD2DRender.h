@@ -2,7 +2,7 @@
 #include "d2d.h"
 
 
-NAMESPACE_D2D_BEGIN
+KUODAFU_NAMESPACE_BEGIN
 
 class CD2DRender
 {
@@ -22,11 +22,7 @@ public:
 
     bool resize(int width, int height);
     bool getsize(int* width, int* height);
-
-    //bool calc_text(CD2DFont* font, LPCWSTR text, size_t textLen,
-    //               DWORD textFormat, LPDRAWTEXTPARAMS lParam, float layoutWidth, float layoutHeight,
-    //               float* pWidth, float* pHeight, IDWriteTextLayout** ppDWriteTextLayout);
 };
 
 
-NAMESPACE_D2D_END
+KUODAFU_NAMESPACE_END

@@ -1,8 +1,7 @@
 #include "lyric_typedef.h"
 #include <cjson/cJSON.h>
-
-#include "../charset_stl.h"
-#include "../base64.h"
+#include <charset_stl.h>
+#include <base64.h>
 
 LYRIC_NAMESPACE_BEGIN
 

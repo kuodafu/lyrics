@@ -1,7 +1,7 @@
 #pragma once
 #include "d2d.h"
 
-NAMESPACE_D2D_BEGIN
+KUODAFU_NAMESPACE_BEGIN
 
 // ×ÖÌוÑשÊ½
 enum class FONTSTYLE
@@ -33,4 +33,4 @@ private:
 };
 
 
-NAMESPACE_D2D_END
+KUODAFU_NAMESPACE_END

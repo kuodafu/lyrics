@@ -1,6 +1,7 @@
 #include "lyric_wnd_function.h"
+#include <atlbase.h>
 
-using namespace NAMESPACE_D2D;
+using namespace KUODAFU_NAMESPACE;
 
 NAMESPACE_LYRIC_DESKTOP_BEGIN
 
@@ -429,7 +430,7 @@ bool _canvas_drawimagegridPadding(CD2DRender& d2dRender, CD2DImage& img,
     return ret;
 }
 
-NAMESPACE_D2D::CD2DImage* __shadow_image(NAMESPACE_D2D::CD2DRender& d2dRender)
+KUODAFU_NAMESPACE::CD2DImage* __shadow_image(KUODAFU_NAMESPACE::CD2DRender& d2dRender)
 {
     const unsigned char img[] =
     {

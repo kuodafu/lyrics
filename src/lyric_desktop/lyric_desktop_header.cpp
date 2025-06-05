@@ -1,8 +1,9 @@
 #include "lyric_wnd_function.h"
 #include "CCustomTextRenderer.h"
 #include "GetMonitorRect.h"
+#include <atlbase.h>
 
-using namespace NAMESPACE_D2D;
+using namespace KUODAFU_NAMESPACE;
 
 
 NAMESPACE_LYRIC_DESKTOP_BEGIN
@@ -59,7 +60,7 @@ bool LYRIC_DESKTOP_DX::re_create_brush(LYRIC_DESKTOP_INFO* pWndInfo, bool isLigh
     DWORD* pClr;
     int size;
     LYRIC_DESKTOP_INFO& wnd_info = *pWndInfo;
-    NAMESPACE_D2D::CD2DBrush_LinearGradient** ppBrush;
+    CD2DBrush_LinearGradient** ppBrush;
     if (isLight)
     {
         SafeDelete(hbrLight);

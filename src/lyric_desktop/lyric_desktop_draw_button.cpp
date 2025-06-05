@@ -1,6 +1,6 @@
 #include "lyric_wnd_function.h"
 
-using namespace NAMESPACE_D2D;
+using namespace KUODAFU_NAMESPACE;
 
 
 

@@ -1,6 +1,7 @@
 #include "CD2DImage.h"
+#include <atlbase.h>
 
-NAMESPACE_D2D_BEGIN
+KUODAFU_NAMESPACE_BEGIN
 
 static inline IStream* _img_createfromstream_init(const void* pData, size_t len)
 {
@@ -202,6 +203,6 @@ void CD2DImage::_img_create_fromstream(IStream* stream)
 }
 
 
-NAMESPACE_D2D_END
+KUODAFU_NAMESPACE_END
 
 

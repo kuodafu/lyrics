@@ -10,17 +10,20 @@ void lyric_wnd_draw_button(LYRIC_DESKTOP_INFO& wnd_info)
 {
     if (!wnd_info.isFillBack)
         return;
-    CD2DRender& hCanvas = *wnd_info.dx.hCanvas;
-    ID2D1DeviceContext* pRenderTarget = hCanvas;
+    ID2DRender& hCanvas = *wnd_info.dx.hCanvas;
+    ID2D1DeviceContext* pRenderTarget = hCanvas.GetD2DContext();
 
     lyric_wnd_calc_btn_pos(wnd_info);
     lyric_wnd_calc_wnd_pos(wnd_info, false);
 
+    HRESULT hr = 0;
+    CComPtr<ID2D1Bitmap1> image;
+    hr = wnd_info.dx.image->GetBitmap(0, &image, nullptr);
+    if (FAILED(hr))
+        return;
+
     D2D1_ANTIALIAS_MODE oldMode = pRenderTarget->GetAntialiasMode();
     pRenderTarget->SetAntialiasMode(D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
-
-    HRESULT hr = 0;
-    ID2D1Bitmap1* image = wnd_info.dx.image->GetBitmap(*wnd_info.dx.hCanvas, &hr);
 
     const RECT& rcBtn = wnd_info.button.rc;
     for (LYRIC_DESKTOP_BUTTON_INFO& item : wnd_info.button.rcBtn)
@@ -36,7 +39,7 @@ void lyric_wnd_draw_button(LYRIC_DESKTOP_INFO& wnd_info)
             continue;
         }
         RECT_F rcDst = item.rc, rcSrc = *item.prcSrc;
-        hCanvas->DrawBitmap(image, rcDst, 1.0f, D2D1_BITMAP_INTERPOLATION_MODE_LINEAR, rcSrc);
+        pRenderTarget->DrawBitmap(image, rcDst, 1.0f, D2D1_BITMAP_INTERPOLATION_MODE_LINEAR, rcSrc);
     }
 
     pRenderTarget->SetAntialiasMode(oldMode);

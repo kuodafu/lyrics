@@ -174,13 +174,12 @@ bool LYRICCALL lyric_desktop_load_lyric(HWND hWindowLyric, LPCVOID pKrcData, int
 
     if (!wnd_info.hLyric)
         return false;
-    auto& d2dInfo = d2d_get_info();
 
     // 必须得用小数记, 不然歌词字多了会相差出很多个像素
     lyric_calc_text(wnd_info.hLyric, [](void* pUserData, LPCWSTR pText, int nTextLen, float* pRetHeight) -> float
                           {
                               LYRIC_DESKTOP_INFO* pWndInfo = (LYRIC_DESKTOP_INFO*)pUserData;
-                              CD2DRender& hCanvas = *pWndInfo->dx.hCanvas;
+                              ID2DRender& hCanvas = *pWndInfo->dx.hCanvas;
                               if (!pWndInfo->dx.hFont)
                                   lyric_wnd_default_object(*pWndInfo);
 

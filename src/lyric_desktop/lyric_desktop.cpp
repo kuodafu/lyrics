@@ -8,7 +8,7 @@
 #include <unordered_map>
 #include "lyric_wnd_function.h"
 #include <CommCtrl.h>
-#include "CCustomTextRenderer.h"
+#include <d2d/CCustomTextRenderer.h>
 
 #ifdef _LIB
 #   ifdef _WIN64
@@ -94,6 +94,8 @@ float _lyric_wnd_load_krc_calc_text(PLYRIC_DESKTOP_INFO pWndInfo, IDWriteTextLay
                                          else
                                              height += _height;  // 非旋转的字符就加上高度
                                      }
+
+                                     return S_OK;
                                  }
     );
     pTextLayout->Draw(0, &renderer, 0, 0);

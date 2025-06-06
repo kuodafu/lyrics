@@ -1,9 +1,9 @@
 #pragma once
 #include <kuodafu_lyric_desktop.h>
-#include "CD2DRender.h"
-#include "CD2DFont.h"
-#include "CD2DBrush.h"
-#include "CD2DImage.h"
+#include <d2d/CD2DRender.h>
+#include <d2d/CD2DFont.h>
+#include <d2d/CD2DBrush.h>
+#include <d2d/CD2DImage.h>
 #include <CScale.h>
 #include <vector>
 #include <string>
@@ -21,11 +21,12 @@ struct LYRIC_DESKTOP_INFO;
 // 歌词窗口dx相关的对象
 struct LYRIC_DESKTOP_DX
 {
-    KUODAFU_NAMESPACE::CD2DRender* hCanvas;         // D2D绘画句柄
+    ID2D1GdiInteropRenderTarget* pGDIInterop;
+    KUODAFU_NAMESPACE::ID2DRender* hCanvas;         // D2D绘画句柄
     KUODAFU_NAMESPACE::CD2DFont* hFont;             // 绘画歌词的字体, 这个是设备无关字体, 设备失效不需要重新创建
 
-    KUODAFU_NAMESPACE::CD2DImage* image;            // 歌词窗口按钮需要的图片
-    KUODAFU_NAMESPACE::CD2DImage* image_shadow;     // 阴影图片
+    KUODAFU_NAMESPACE::IRenderBitmap* image;        // 歌词窗口按钮需要的图片
+    KUODAFU_NAMESPACE::IRenderBitmap* image_shadow; // 阴影图片
     KUODAFU_NAMESPACE::CD2DBrush* hbrBorder;        // 绘画歌词文本的边框画刷
     KUODAFU_NAMESPACE::CD2DBrush* hbrWndBorder;     // 歌词窗口的边框画刷
     KUODAFU_NAMESPACE::CD2DBrush* hbrWndBack;       // 歌词窗口的背景画刷
@@ -41,6 +42,7 @@ struct LYRIC_DESKTOP_DX
 
     LYRIC_DESKTOP_DX()
     {
+        pGDIInterop = nullptr;
         hFont = nullptr;
         hCanvas = nullptr;
         image = nullptr;

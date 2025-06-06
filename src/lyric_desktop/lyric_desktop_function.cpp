@@ -14,6 +14,8 @@ NAMESPACE_LYRIC_DESKTOP_BEGIN
 
 static HCURSOR m_hCursorArrow;
 static HCURSOR m_hCursorHand;
+ID2DInterface* g_d2d_interface;
+
 
 #define TIMER_ID_LEAVE 1000
 
@@ -85,6 +87,7 @@ static bool init_dpi()
 }
 
 constexpr LPCWSTR pszClassName = L"www.kuodafu.com lyric_desktop_window";
+
 bool _ld_init()
 {
 #ifdef _DEBUG
@@ -92,7 +95,15 @@ bool _ld_init()
 #else
     const bool isDebug = false;
 #endif
-    static bool init_d2d = d2d_init(false, isDebug);
+    if (!g_d2d_interface)
+        g_d2d_interface = d2d_init(false, isDebug);
+
+    if (!m_hCursorArrow)
+    {
+        //m_hCursorArrow = LoadCursorW(0, IDC_ARROW);
+        m_hCursorArrow = LoadCursorW(0, IDC_SIZEALL);
+        m_hCursorHand = LoadCursorW(0, IDC_HAND);
+    }
 
     WNDCLASSEX wc;
     wc.cbSize           = sizeof(WNDCLASSEX);
@@ -110,13 +121,13 @@ bool _ld_init()
 
     static ATOM atom = RegisterClassExW(&wc);
     init_dpi();
-    return init_d2d;
+    return g_d2d_interface != nullptr;
 }
 
 bool _ld_uninit()
 {
-    UnregisterClassW(pszClassName, GetModuleHandleW(0));
-    return d2d_uninit();
+    UnregisterClassW(pszClassName, GetModuleHandleW(nullptr));
+    return d2d_uninit(g_d2d_interface);
 }
 
 // 计算给定刷新率对应的时钟周期（毫秒，向下取整）
@@ -172,14 +183,6 @@ void _ld_start_high_precision_timer(PLYRIC_DESKTOP_INFO pWndInfo)
 
 PLYRIC_DESKTOP_INFO _ld_create_layered_window(const LYRIC_DESKTOP_ARG* arg)
 {
-    if (!m_hCursorArrow)
-    {
-        //m_hCursorArrow = LoadCursorW(0, IDC_ARROW);
-        m_hCursorArrow = LoadCursorW(0, IDC_SIZEALL);
-        m_hCursorHand = LoadCursorW(0, IDC_HAND);
-    }
-
-
     HWND hWnd = CreateWindowExW(WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE,
                                 pszClassName, L"",
                                 WS_POPUP | WS_VISIBLE,// | WS_BORDER,
@@ -243,7 +246,7 @@ bool lyric_wnd_invalidate(LYRIC_DESKTOP_INFO& wnd_info)
     if (!wnd_info.dx.hCanvas)
         return false;
 
-    CD2DRender& hCanvas = *wnd_info.dx.hCanvas;
+    ID2DRender& hCanvas = *wnd_info.dx.hCanvas;
     RECT& rcWindow = wnd_info.rcWindow;
     GetWindowRect(wnd_info.hWnd, &rcWindow);
     //GetClientRect(wnd_info.hWnd, &rcWindow);
@@ -251,7 +254,7 @@ bool lyric_wnd_invalidate(LYRIC_DESKTOP_INFO& wnd_info)
     const int cyClient = rcWindow.bottom - rcWindow.top;
 
     int bmpWidth = 0, bmpHeight = 0;
-    hCanvas.getsize(&bmpWidth, &bmpHeight);
+    hCanvas.GetSize(&bmpWidth, &bmpHeight);
 
     bool isresize = false;
     if (cxClient != bmpWidth || cyClient != bmpHeight)
@@ -396,8 +399,8 @@ LRESULT CALLBACK lyric_wnd_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
     case WM_WINDOWPOSCHANGING:
     {
         // 限制窗口不能超出屏幕范围
-        auto pPos = (WINDOWPOS*)lParam;
-        if ((pPos->flags & SWP_NOMOVE) == SWP_NOMOVE)
+        auto wnd_pos = (WINDOWPOS*)lParam;
+        if ((wnd_pos->flags & SWP_NOMOVE) == SWP_NOMOVE)
             break;  // 有不移动的标志, 不处理
 
         LYRIC_DESKTOP_POS* pos = pWndInfo->has_mode(LYRIC_MODE::VERTICAL)
@@ -420,16 +423,18 @@ LRESULT CALLBACK lyric_wnd_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         //    rcMonitor = &rcMonitorAll;
 
 
-        if (pPos->x < rcMonitorAll.left)
-            pPos->x = rcMonitorAll.left;   // 限制窗口左侧不能超出左边界
-        else if (pPos->x + pos->width > rcMonitorAll.right)
-            pPos->x = rcMonitorAll.right - pos->width; // 限制窗口右侧不能超出右边界
+        if (wnd_pos->x < rcMonitorAll.left)
+            wnd_pos->x = rcMonitorAll.left;   // 限制窗口左侧不能超出左边界
+        else if (wnd_pos->x + pos->width > rcMonitorAll.right)
+            wnd_pos->x = rcMonitorAll.right - pos->width;  // 限制窗口右侧不能超出右边界
 
-        if (pPos->y < rcMonitorAll.top)
-            pPos->y = rcMonitorAll.top;    // 限制窗口顶部不能超出上边界
-        else if (pPos->y + pos->height > rcMonitorAll.bottom)
-            pPos->y = rcMonitorAll.bottom - pos->height;   // 限制窗口底部不能超出下边界
+        if (wnd_pos->y < rcMonitorAll.top)
+            wnd_pos->y = rcMonitorAll.top;    // 限制窗口顶部不能超出上边界
+        else if (wnd_pos->y + pos->height > rcMonitorAll.bottom)
+            wnd_pos->y = rcMonitorAll.bottom - pos->height;   // 限制窗口底部不能超出下边界
 
+        //wnd_pos->cx = pos->width;
+        //wnd_pos->cy = pos->height;
 
         break;
     }
@@ -646,9 +651,9 @@ bool lyric_wnd_create_text_layout(LPCWSTR str, int len, IDWriteTextFormat* dxFor
     if (!str)
         return false;
     IDWriteTextLayout* pDWriteTextLayout = 0;
-    auto& d2dInfo = d2d_get_info();
-    HRESULT hr = d2dInfo.pDWriteFactory->CreateTextLayout(str, (UINT32)len, dxFormat,
-                                                          layoutWidth, layoutHeight, &pDWriteTextLayout);
+    IDWriteFactory* pDWriteFactory = g_d2d_interface->GetD2DWriteFactory();
+    HRESULT hr = pDWriteFactory->CreateTextLayout(str, (UINT32)len, dxFormat,
+                                                  layoutWidth, layoutHeight, &pDWriteTextLayout);
     if (FAILED(hr))
         return false;
 

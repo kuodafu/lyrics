@@ -5,6 +5,8 @@
 
 NAMESPACE_LYRIC_DESKTOP_BEGIN
 
+extern KUODAFU_NAMESPACE::ID2DInterface* g_d2d_interface;
+
 float _lyric_wnd_load_krc_calc_text(PLYRIC_DESKTOP_INFO pWndInfo, IDWriteTextLayout* pTextLayout, float* pHeight);
 
 // 设置歌词窗口数据到窗口

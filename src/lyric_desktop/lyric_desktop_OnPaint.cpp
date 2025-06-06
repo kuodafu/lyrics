@@ -15,7 +15,7 @@ void lyric_wnd_fill_background(LYRIC_DESKTOP_INFO& wnd_info);
 
 
 
-bool _canvas_drawimagegridPadding(CD2DRender& d2dRender, CD2DImage& img,
+bool _canvas_drawimagegridPadding(ID2DRender* d2dRender, IRenderBitmap* img,
                                   float dstLeft, float dstTop, float dstRight, float dstBottom,
                                   float srcLeft, float srcTop, float srcRight, float srcBottom,
                                   float gridPaddingLeft, float gridPaddingTop, float gridPaddingRight, float gridPaddingBottom,
@@ -25,7 +25,8 @@ int UpdateLayered(HWND hWnd, int width, int height, HDC srcDC, PPOINT ppt = 0, i
 
 HRESULT lyric_wnd_OnPaint(LYRIC_DESKTOP_INFO& wnd_info, bool isresize, LYRIC_CALC_STRUCT& arg)
 {
-    CD2DRender& hCanvas = *wnd_info.dx.hCanvas;
+    ID2DRender& hCanvas = *wnd_info.dx.hCanvas;
+    ID2D1DeviceContext* pRenderTarget = hCanvas.GetD2DContext();
     RECT& rcWindow = wnd_info.rcWindow;
     const int cxClient = rcWindow.right - rcWindow.left;
     const int cyClient = rcWindow.bottom - rcWindow.top;
@@ -33,9 +34,9 @@ HRESULT lyric_wnd_OnPaint(LYRIC_DESKTOP_INFO& wnd_info, bool isresize, LYRIC_CAL
     //wnd_info.isFillBack = true;
 
     if (isresize)
-        hCanvas.resize(cxClient, cyClient);
+        hCanvas.Resize(cxClient, cyClient);
 
-    hCanvas->BeginDraw();
+    pRenderTarget->BeginDraw();
 
     lyric_wnd_fill_background(wnd_info);
 
@@ -50,23 +51,30 @@ HRESULT lyric_wnd_OnPaint(LYRIC_DESKTOP_INFO& wnd_info, bool isresize, LYRIC_CAL
 
     lyric_wnd_draw_lyric(wnd_info, arg);
 
-
-    ID2D1GdiInteropRenderTarget* pGdiInterop = hCanvas;
+    HRESULT hr_gdi = E_INVALIDARG;
     HDC hdcD2D = nullptr;
-    pGdiInterop->GetDC(D2D1_DC_INITIALIZE_MODE_COPY, &hdcD2D);
+
+    hr_gdi = wnd_info.dx.pGDIInterop->GetDC(D2D1_DC_INITIALIZE_MODE_COPY, &hdcD2D);
     UpdateLayered(wnd_info.hWnd, cxClient, cyClient, hdcD2D);
-    pGdiInterop->ReleaseDC(0);
+    wnd_info.dx.pGDIInterop->ReleaseDC(nullptr);
+    hdcD2D = nullptr;
 
     //hCanvas->SetAntialiasMode(oldAntialiasMode);
     //hCanvas->SetTextAntialiasMode(oldTextAntialiasMode);
 
-    HRESULT hr = hCanvas->EndDraw();
+    HRESULT hr = pRenderTarget->EndDraw();
     if (FAILED(hr))
     {
         // 这里需要清除对象, 然后在绘画前重新创建, 设备无效了
         wnd_info.dx.destroy(false);  // 销毁, 然后绘画前会判断有没有创建
     }
 
+    if (FAILED(hr_gdi))
+    {
+        hdcD2D = hCanvas.GetDC();
+        UpdateLayered(wnd_info.hWnd, cxClient, cyClient, hdcD2D);
+        hCanvas.ReleaseDC(hdcD2D);
+    }
     return hr;
 }
 
@@ -76,8 +84,8 @@ HRESULT DrawShadowRect2(
     D2D1_COLOR_F shadowColor
 )
 {
-    CD2DRender& hCanvas = *wnd_info.dx.hCanvas;
-    ID2D1DeviceContext* pRenderTarget = hCanvas;
+    ID2DRender& hCanvas = *wnd_info.dx.hCanvas;
+    ID2D1DeviceContext* pRenderTarget = hCanvas.GetD2DContext();
     HRESULT hr = S_OK;
 
     //// 取消抗锯齿
@@ -88,7 +96,7 @@ HRESULT DrawShadowRect2(
 
 
     // 把图片四个边画出来
-    _canvas_drawimagegridPadding(hCanvas, *wnd_info.dx.image_shadow,
+    _canvas_drawimagegridPadding(wnd_info.dx.hCanvas, wnd_info.dx.image_shadow,
                                  0, 0, rect.width(), rect.height(), // 画到哪个位置上
                                  0, 0, 40, 40,                      // 从图片的哪个位置
                                  16, 16, 20, 20,                    // 九宫区域
@@ -120,11 +128,10 @@ HRESULT DrawShadowRect(
 {
     if (*ppBitmapRet)
         SafeRelease(*ppBitmapRet);
-    CD2DRender& hCanvas = *wnd_info.dx.hCanvas;
-    ID2D1DeviceContext* pRenderTarget = hCanvas;
+    ID2DRender& hCanvas = *wnd_info.dx.hCanvas;
+    ID2D1DeviceContext* pRenderTarget = hCanvas.GetD2DContext();
     HRESULT hr = S_OK;
 
-    auto& d2dInfo = d2d_get_info();
     const float shadowRadius = wnd_info.shadowRadius; // 阴影向外扩散半径
 
     // 阴影区域
@@ -228,7 +235,7 @@ HRESULT DrawShadowRect(
 // 填充背景, 只填充背景颜色和边框
 void lyric_wnd_fill_background(LYRIC_DESKTOP_INFO& wnd_info)
 {
-    CD2DRender& hCanvas = *wnd_info.dx.hCanvas;
+    ID2DRender& hCanvas = *wnd_info.dx.hCanvas;
     RECT& rcWindow = wnd_info.rcWindow;
     const int cxClient = rcWindow.right - rcWindow.left;
     const int cyClient = rcWindow.bottom - rcWindow.top;
@@ -241,9 +248,9 @@ void lyric_wnd_fill_background(LYRIC_DESKTOP_INFO& wnd_info)
             isCreate = true;    // 尺寸不同, 需要创建
     }
 
-    ID2D1DeviceContext* pRenderTarget = hCanvas;
+    ID2D1DeviceContext* pRenderTarget = hCanvas.GetD2DContext();
 
-    hCanvas->Clear();   // 不管什么操作, 都需要先清除画布
+    pRenderTarget->Clear();   // 不管什么操作, 都需要先清除画布
     if (!wnd_info.isFillBack || wnd_info.isLock)
         return; // 不填充背景, 或者锁定, 就返回
     RECT_F rc(0, 0, (float)cxClient, (float)cyClient);
@@ -280,7 +287,7 @@ void lyric_wnd_fill_background(LYRIC_DESKTOP_INFO& wnd_info)
     else
     {
         // 走到这就是创建失败了, 就用默认颜色填充
-        hCanvas->Clear(ARGB_D2D(wnd_info.dx.clrBack));
+        pRenderTarget->Clear(ARGB_D2D(wnd_info.dx.clrBack));
     }
 
 }
@@ -402,13 +409,13 @@ inline static void  PixelFix(COLORREF crNew, LPBYTE lpBits, int nCount)
     }
 }
 
-bool _canvas_drawimagegridPadding(CD2DRender& d2dRender, CD2DImage& img,
-                                        float dstLeft, float dstTop, float dstRight, float dstBottom,
-                                        float srcLeft, float srcTop, float srcRight, float srcBottom,
-                                        float gridPaddingLeft, float gridPaddingTop, float gridPaddingRight, float gridPaddingBottom,
-                                        BYTE alpha)
+bool _canvas_drawimagegridPadding(ID2DRender* d2dRender, IRenderBitmap* img,
+                                  float dstLeft, float dstTop, float dstRight, float dstBottom,
+                                  float srcLeft, float srcTop, float srcRight, float srcBottom,
+                                  float gridPaddingLeft, float gridPaddingTop, float gridPaddingRight, float gridPaddingBottom,
+                                  BYTE alpha)
 {
-    ID2D1DeviceContext* pRenderTarget = d2dRender;
+    ID2D1DeviceContext* pRenderTarget = d2dRender->GetD2DContext();
     if (!pRenderTarget || alpha == 0)
         return false;
 
@@ -420,7 +427,8 @@ bool _canvas_drawimagegridPadding(CD2DRender& d2dRender, CD2DImage& img,
     //    img->unlock(&lockData);
     //}
 
-    ID2D1Bitmap1* image = img.GetBitmap(d2dRender);
+    CComPtr<ID2D1Bitmap1> image;
+    img->GetBitmap(0, &image, nullptr);
     bool ret = _canvas_DrawImage(pRenderTarget, image,
                                  dstLeft, dstTop, dstRight, dstBottom,
                                  srcLeft, srcTop, srcRight, srcBottom,
@@ -430,7 +438,7 @@ bool _canvas_drawimagegridPadding(CD2DRender& d2dRender, CD2DImage& img,
     return ret;
 }
 
-KUODAFU_NAMESPACE::CD2DImage* __shadow_image(KUODAFU_NAMESPACE::CD2DRender& d2dRender)
+KUODAFU_NAMESPACE::IRenderBitmap* __shadow_image(KUODAFU_NAMESPACE::ID2DRender* d2dRender)
 {
     const unsigned char img[] =
     {
@@ -607,7 +615,9 @@ KUODAFU_NAMESPACE::CD2DImage* __shadow_image(KUODAFU_NAMESPACE::CD2DRender& d2dR
     };
 
     unsigned int imgSize = sizeof(img) / sizeof(img[0]);
-    return new CD2DImage(d2dRender, img, imgSize);
+    KUODAFU_NAMESPACE::IRenderBitmap* pBitmap = nullptr;
+    d2dRender->CreateImage(img, imgSize, &pBitmap);
+    return pBitmap;
 }
 
 // 更新分层窗口, 返回错误码, 0=成功

@@ -178,15 +178,16 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\cpp\_git_works\CommonCode\d2d\Color.h" />
+    <ClInclude Include="..\..\cpp\_git_works\CommonCode\d2d\CCustomTextRenderer.h" />
+    <ClInclude Include="..\..\cpp\_git_works\CommonCode\d2d\CD2DBrush.h" />
+    <ClInclude Include="..\..\cpp\_git_works\CommonCode\d2d\CD2DFont.h" />
+    <ClInclude Include="..\..\cpp\_git_works\CommonCode\d2d\CD2DImage.h" />
+    <ClInclude Include="..\..\cpp\_git_works\CommonCode\d2d\CD2DRender.h" />
+    <ClInclude Include="..\..\cpp\_git_works\CommonCode\d2d\Color.h" />
+    <ClInclude Include="..\..\cpp\_git_works\CommonCode\d2d\d2d.h" />
+    <ClInclude Include="..\..\cpp\_git_works\CommonCode\d2d\d2d_interface.h" />
     <ClInclude Include="include\kuodafu_lyric.h" />
     <ClInclude Include="include\kuodafu_lyric_desktop.h" />
-    <ClInclude Include="src\lyric_desktop\CCustomTextRenderer.h" />
-    <ClInclude Include="src\lyric_desktop\CD2DBrush.h" />
-    <ClInclude Include="src\lyric_desktop\CD2DFont.h" />
-    <ClInclude Include="src\lyric_desktop\CD2DImage.h" />
-    <ClInclude Include="src\lyric_desktop\CD2DRender.h" />
-    <ClInclude Include="src\lyric_desktop\d2d.h" />
     <ClInclude Include="src\lyric_desktop\lyric_wnd_function.h" />
     <ClInclude Include="src\lyric_desktop\lyric_wnd_header.h" />
     <ClInclude Include="src\lyric_desktop\resource.h" />
@@ -194,11 +195,11 @@
     <ClInclude Include="src\lyric_desktop\tinyxml2.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\lyric_desktop\CCustomTextRenderer.cpp" />
-    <ClCompile Include="src\lyric_desktop\CD2DBrush.cpp" />
-    <ClCompile Include="src\lyric_desktop\CD2DFont.cpp" />
-    <ClCompile Include="src\lyric_desktop\CD2DImage.cpp" />
-    <ClCompile Include="src\lyric_desktop\CD2DRender.cpp" />
+    <ClCompile Include="..\..\cpp\_git_works\CommonCode\d2d\CD2DBrush.cpp" />
+    <ClCompile Include="..\..\cpp\_git_works\CommonCode\d2d\CD2DFont.cpp" />
+    <ClCompile Include="..\..\cpp\_git_works\CommonCode\d2d\CD2DImage.cpp" />
+    <ClCompile Include="..\..\cpp\_git_works\CommonCode\d2d\CD2DRender.cpp" />
+    <ClCompile Include="..\..\cpp\_git_works\CommonCode\d2d\d2d.cpp" />
     <ClCompile Include="src\lyric_desktop\lyric_desktop_button_click.cpp" />
     <ClCompile Include="src\lyric_desktop\lyric_desktop_button_hover.cpp" />
     <ClCompile Include="src\lyric_desktop\lyric_desktop_draw_button.cpp" />
@@ -206,7 +207,6 @@
     <ClCompile Include="src\lyric_desktop\lyric_desktop_draw_line_hori.cpp" />
     <ClCompile Include="src\lyric_desktop\lyric_desktop_draw_line_vert.cpp" />
     <ClCompile Include="src\lyric_desktop\lyric_desktop_draw_text_glow.cpp" />
-    <ClCompile Include="src\lyric_desktop\d2d.cpp" />
     <ClCompile Include="src\lyric_desktop\lyric_desktop.cpp" />
     <ClCompile Include="src\lyric_desktop\lyric_desktop_draw_text_geometry.cpp" />
     <ClCompile Include="src\lyric_desktop\lyric_desktop_function.cpp" />

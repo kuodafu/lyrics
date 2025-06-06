@@ -55,7 +55,7 @@ int main()
 {
     auto pszFile_u16 = LR"(d:\kuodafu\lyric\qrc\周杰伦 - 本草纲目.qrc)";
     auto pszFile_u8 = u8R"(d:\kuodafu\lyric\qrc\周杰伦 - 本草纲目.qrc)";
-    auto pszFile_gbk = u8R"(d:\kuodafu\lyric\qrc\周杰伦 - 本草纲目.qrc)";
+    auto pszFile_gbk = R"(d:\kuodafu\lyric\qrc\周杰伦 - 本草纲目.qrc)";
     //! 这里演示按传递文件
     {
         int nType = LYRIC_PARSE_TYPE_QRC    // 表示传递进去的歌词数据是qq音乐的qrc文件

@@ -1,5 +1,5 @@
 #include "lyric_wnd_function.h"
-#include "CCustomTextRenderer.h"
+#include <d2d/CCustomTextRenderer.h>
 #include "GetMonitorRect.h"
 #include <atlbase.h>
 
@@ -8,14 +8,6 @@ using namespace KUODAFU_NAMESPACE;
 
 NAMESPACE_LYRIC_DESKTOP_BEGIN
 
-
-template<typename _Ty>
-inline void SafeDelete(_Ty*& p)
-{
-    if (p)
-        delete p;
-    p = nullptr;
-}
 
 bool LYRIC_DESKTOP_DX::re_create(LYRIC_DESKTOP_INFO* pWndInfo)
 {
@@ -27,11 +19,12 @@ bool LYRIC_DESKTOP_DX::re_create(LYRIC_DESKTOP_INFO* pWndInfo)
     const int cxClient = rc.right - rc.left;
     const int cyClient = rc.bottom - rc.top;
 
-    SafeDelete(hCanvas);
-    hCanvas = new CD2DRender(cxClient, cyClient);
+    SafeRelease(hCanvas);
+    hCanvas = g_d2d_interface->CreateRender(cxClient, cyClient, true);
+    hCanvas->GetD2DContext()->QueryInterface(&pGDIInterop);
 
-    SafeDelete(image_shadow);
-    image_shadow = __shadow_image(*hCanvas);
+    SafeRelease(image_shadow);
+    image_shadow = __shadow_image(hCanvas);
 
     if (!hFont)
         re_create_font(pWndInfo);
@@ -41,14 +34,14 @@ bool LYRIC_DESKTOP_DX::re_create(LYRIC_DESKTOP_INFO* pWndInfo)
     re_create_border(pWndInfo);
     re_create_image(pWndInfo);
 
-    SafeDelete(hbrWndBorder);
-    SafeDelete(hbrWndBack);
-    hbrWndBorder = new CD2DBrush(*hCanvas, clrWndBorder);
-    hbrWndBack = new CD2DBrush(*hCanvas, clrBack);
+    SafeRelease(hbrWndBorder);
+    SafeRelease(hbrWndBack);
+    hbrWndBorder = new CD2DBrush(hCanvas, clrWndBorder);
+    hbrWndBack = new CD2DBrush(hCanvas, clrBack);
 
 
-    SafeDelete(hbrLine);
-    hbrLine = new CD2DBrush(*hCanvas, MAKEARGB(100, 255, 255, 255));
+    SafeRelease(hbrLine);
+    hbrLine = new CD2DBrush(hCanvas, MAKEARGB(100, 255, 255, 255));
 
 
 
@@ -63,14 +56,14 @@ bool LYRIC_DESKTOP_DX::re_create_brush(LYRIC_DESKTOP_INFO* pWndInfo, bool isLigh
     CD2DBrush_LinearGradient** ppBrush;
     if (isLight)
     {
-        SafeDelete(hbrLight);
+        SafeRelease(hbrLight);
         pClr = &wnd_info.clrLight[0];
         size = (int)wnd_info.clrLight.size();
         ppBrush = &hbrLight;
     }
     else
     {
-        SafeDelete(hbrNormal);
+        SafeRelease(hbrNormal);
         pClr = &wnd_info.clrNormal[0];
         size = (int)wnd_info.clrNormal.size();
         ppBrush = &hbrNormal;
@@ -78,24 +71,24 @@ bool LYRIC_DESKTOP_DX::re_create_brush(LYRIC_DESKTOP_INFO* pWndInfo, bool isLigh
 
     POINT_F pt1 = { 0.f, 0.f };
     POINT_F pt2 = { 1.f, .1f };
-    *ppBrush = new CD2DBrush_LinearGradient(*hCanvas, pt1, pt2, pClr, size);
+    *ppBrush = new CD2DBrush_LinearGradient(hCanvas, pt1, pt2, pClr, size);
     return *ppBrush != nullptr;
 }
 
 bool LYRIC_DESKTOP_DX::re_create_border(LYRIC_DESKTOP_INFO* pWndInfo)
 {
-    SafeDelete(hbrBorder);
-    hbrBorder = new CD2DBrush(*hCanvas, pWndInfo->clrBorder);
+    SafeRelease(hbrBorder);
+    hbrBorder = new CD2DBrush(hCanvas, pWndInfo->clrBorder);
     return hbrBorder != nullptr;
 }
 
 bool LYRIC_DESKTOP_DX::re_create_font(LYRIC_DESKTOP_INFO* pWndInfo)
 {
-    SafeDelete(hFont);
+    SafeRelease(hFont);
 
     LOGFONT lf = pWndInfo->lf;
     lf.lfHeight = -MulDiv(lf.lfHeight, pWndInfo->scale, 72);
-    hFont = new CD2DFont(&lf);
+    hFont = new CD2DFont(hCanvas, &lf);
 
     CComPtr<IDWriteTextLayout> pTextLayout;
     lyric_wnd_create_text_layout(pWndInfo->pszDefText, pWndInfo->nDefText, *hFont, 0, 0, &pTextLayout);
@@ -114,29 +107,30 @@ bool LYRIC_DESKTOP_DX::re_create_font(LYRIC_DESKTOP_INFO* pWndInfo)
                                          DWRITE_GLYPH_RUN const* glyphRun,
                                          DWRITE_GLYPH_RUN_DESCRIPTION const* glyphRunDescription,
                                          IUnknown* clientDrawingEffect)
-        {
-            // 获取字体度量
-            for (UINT32 i = 0; i < glyphRun->glyphCount; ++i)
-            {
-                DWRITE_FONT_METRICS metrics{};
-                glyphRun->fontFace->GetMetrics(&metrics);
+                                     {
+                                         // 获取字体度量
+                                         for (UINT32 i = 0; i < glyphRun->glyphCount; ++i)
+                                         {
+                                             DWRITE_FONT_METRICS metrics{};
+                                             glyphRun->fontFace->GetMetrics(&metrics);
 
-                float designUnitsPerEm = (float)metrics.designUnitsPerEm;
-                float _height = glyphRun->fontEmSize * metrics.ascent / designUnitsPerEm;
-                float _width = (glyphRun->glyphAdvances ? glyphRun->glyphAdvances[i] : 0.0f);
+                                             float designUnitsPerEm = (float)metrics.designUnitsPerEm;
+                                             float _height = glyphRun->fontEmSize * metrics.ascent / designUnitsPerEm;
+                                             float _width = (glyphRun->glyphAdvances ? glyphRun->glyphAdvances[i] : 0.0f);
 
-                if (pWndInfo->word_width < _width)
-                    pWndInfo->word_width = _width;      // 竖屏用宽度
-                if (pWndInfo->word_height < _height)
-                    pWndInfo->word_height = _height;    // 横屏用高度
+                                             if (pWndInfo->word_width < _width)
+                                                 pWndInfo->word_width = _width;      // 竖屏用宽度
+                                             if (pWndInfo->word_height < _height)
+                                                 pWndInfo->word_height = _height;    // 横屏用高度
 
-                wchar_t ch = glyphRunDescription && glyphRunDescription->string ? glyphRunDescription->string[i] : L'\0';
+                                             wchar_t ch = glyphRunDescription && glyphRunDescription->string ? glyphRunDescription->string[i] : L'\0';
 
-                pWndInfo->nLineDefWidth += _width;      // 记录总宽度, 横屏用
-                pWndInfo->nLineDefHeight += _height;    // 记录总高度, 竖屏用
+                                             pWndInfo->nLineDefWidth += _width;      // 记录总宽度, 横屏用
+                                             pWndInfo->nLineDefHeight += _height;    // 记录总高度, 竖屏用
 
-            }
-        });
+                                         }
+                                         return S_OK;
+                                     });
         pTextLayout->Draw(0, &renderer, 0, 0);
 
     }
@@ -146,7 +140,7 @@ bool LYRIC_DESKTOP_DX::re_create_font(LYRIC_DESKTOP_INFO* pWndInfo)
 
 bool LYRIC_DESKTOP_DX::re_create_image(LYRIC_DESKTOP_INFO* pWndInfo)
 {
-    SafeDelete(image);
+    SafeRelease(image);
     lyric_wnd_load_image(*pWndInfo);
     return false;
 }
@@ -155,19 +149,20 @@ bool LYRIC_DESKTOP_DX::destroy(bool isDestroyFont)
 {
     // 除了字体, 剩下的都是设备相关的
     if (isDestroyFont)
-        SafeDelete(hFont);
+        SafeRelease(hFont);
 
     SafeRelease(pBitmapBack);
 
-    SafeDelete(hCanvas);
-    SafeDelete(hbrBorder);
-    SafeDelete(hbrWndBorder);
-    SafeDelete(hbrWndBack);
-    SafeDelete(hbrLine);
-    SafeDelete(hbrNormal);
-    SafeDelete(hbrLight);
-    SafeDelete(image);
-    SafeDelete(image_shadow);
+    SafeRelease(hbrBorder);
+    SafeRelease(hbrWndBorder);
+    SafeRelease(hbrWndBack);
+    SafeRelease(hbrLine);
+    SafeRelease(hbrNormal);
+    SafeRelease(hbrLight);
+    SafeRelease(image);
+    SafeRelease(image_shadow);
+    SafeRelease(pGDIInterop);
+    SafeRelease(hCanvas);
     return true;
 }
 

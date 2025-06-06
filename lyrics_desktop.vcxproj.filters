@@ -29,15 +29,6 @@
     <ClInclude Include="src\lyric_desktop\targetver.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\cpp\_git_works\CommonCode\d2d\Color.h">
-      <Filter>d2d</Filter>
-    </ClInclude>
-    <ClInclude Include="src\lyric_desktop\d2d.h">
-      <Filter>d2d</Filter>
-    </ClInclude>
-    <ClInclude Include="src\lyric_desktop\CD2DFont.h">
-      <Filter>d2d</Filter>
-    </ClInclude>
     <ClInclude Include="src\lyric_desktop\lyric_wnd_function.h">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -46,9 +37,6 @@
     </ClInclude>
     <ClInclude Include="src\lyric_desktop\lyric_wnd_header.h">
       <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="src\lyric_desktop\CCustomTextRenderer.h">
-      <Filter>d2d</Filter>
     </ClInclude>
     <ClInclude Include="src\lyric_desktop\tinyxml2.h">
       <Filter>头文件</Filter>
@@ -59,25 +47,34 @@
     <ClInclude Include="include\kuodafu_lyric_desktop.h">
       <Filter>接口声明</Filter>
     </ClInclude>
-    <ClInclude Include="src\lyric_desktop\CD2DBrush.h">
+    <ClInclude Include="..\..\cpp\_git_works\CommonCode\d2d\CCustomTextRenderer.h">
       <Filter>d2d</Filter>
     </ClInclude>
-    <ClInclude Include="src\lyric_desktop\CD2DImage.h">
+    <ClInclude Include="..\..\cpp\_git_works\CommonCode\d2d\CD2DBrush.h">
       <Filter>d2d</Filter>
     </ClInclude>
-    <ClInclude Include="src\lyric_desktop\CD2DRender.h">
+    <ClInclude Include="..\..\cpp\_git_works\CommonCode\d2d\CD2DFont.h">
+      <Filter>d2d</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\cpp\_git_works\CommonCode\d2d\CD2DImage.h">
+      <Filter>d2d</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\cpp\_git_works\CommonCode\d2d\CD2DRender.h">
+      <Filter>d2d</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\cpp\_git_works\CommonCode\d2d\Color.h">
+      <Filter>d2d</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\cpp\_git_works\CommonCode\d2d\d2d_interface.h">
+      <Filter>d2d</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\cpp\_git_works\CommonCode\d2d\d2d.h">
       <Filter>d2d</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\lyric_desktop\lyric_desktop.cpp">
       <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="src\lyric_desktop\d2d.cpp">
-      <Filter>d2d</Filter>
-    </ClCompile>
-    <ClCompile Include="src\lyric_desktop\CD2DFont.cpp">
-      <Filter>d2d</Filter>
     </ClCompile>
     <ClCompile Include="src\lyric_desktop\lyric_desktop_function.cpp">
       <Filter>源文件</Filter>
@@ -88,20 +85,8 @@
     <ClCompile Include="src\lyric_desktop\lyric_desktop_header.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="src\lyric_desktop\CCustomTextRenderer.cpp">
-      <Filter>d2d</Filter>
-    </ClCompile>
     <ClCompile Include="src\lyric_desktop\lyric_desktop_main.cpp">
       <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="src\lyric_desktop\CD2DRender.cpp">
-      <Filter>d2d</Filter>
-    </ClCompile>
-    <ClCompile Include="src\lyric_desktop\CD2DImage.cpp">
-      <Filter>d2d</Filter>
-    </ClCompile>
-    <ClCompile Include="src\lyric_desktop\CD2DBrush.cpp">
-      <Filter>d2d</Filter>
     </ClCompile>
     <ClCompile Include="src\lyric_desktop\lyric_desktop_interface.cpp">
       <Filter>接口定义</Filter>
@@ -132,6 +117,21 @@
     </ClCompile>
     <ClCompile Include="src\lyric_desktop\lyric_desktop_button_hover.cpp">
       <Filter>事件部分</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\cpp\_git_works\CommonCode\d2d\CD2DBrush.cpp">
+      <Filter>d2d</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\cpp\_git_works\CommonCode\d2d\CD2DFont.cpp">
+      <Filter>d2d</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\cpp\_git_works\CommonCode\d2d\CD2DImage.cpp">
+      <Filter>d2d</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\cpp\_git_works\CommonCode\d2d\CD2DRender.cpp">
+      <Filter>d2d</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\cpp\_git_works\CommonCode\d2d\d2d.cpp">
+      <Filter>d2d</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

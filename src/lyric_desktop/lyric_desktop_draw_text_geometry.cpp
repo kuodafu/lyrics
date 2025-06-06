@@ -1,7 +1,7 @@
 // 绘画歌词文本, 路径的方式绘画
 
 #include "lyric_wnd_function.h"
-#include "CCustomTextRenderer.h"
+#include <d2d/CCustomTextRenderer.h>
 #include <atlbase.h>
 
 
@@ -54,8 +54,8 @@ void lyric_wnd_draw_geometry_DrawGlyphRun(LYRIC_DESKTOP_INFO& wnd_info,
 
 void lyric_wnd_draw_text_geometry(LYRIC_DESKTOP_INFO& wnd_info, LYRIC_DESKTOP_DRAWTEXT_INFO& draw_info, int nDrawLineIndex)
 {
-    CD2DRender& hCanvas = *wnd_info.dx.hCanvas;
-    ID2D1DeviceContext* pRenderTarget = hCanvas;
+    ID2DRender& hCanvas = *wnd_info.dx.hCanvas;
+    ID2D1DeviceContext* pRenderTarget = hCanvas.GetD2DContext();
 
     D2D1_ANTIALIAS_MODE oldMode = pRenderTarget->GetAntialiasMode();
     pRenderTarget->SetAntialiasMode(D2D1_ANTIALIAS_MODE_ALIASED);  // 关闭抗锯齿
@@ -67,15 +67,14 @@ void lyric_wnd_draw_text_geometry(LYRIC_DESKTOP_INFO& wnd_info, LYRIC_DESKTOP_DR
 
 void lyric_wnd_draw_text_geometry_draw_cache(LYRIC_DESKTOP_INFO& wnd_info, LYRIC_DESKTOP_DRAWTEXT_INFO& draw_info, int nDrawLineIndex)
 {
-    CD2DRender& hCanvas = *wnd_info.dx.hCanvas;
+    ID2DRender& hCanvas = *wnd_info.dx.hCanvas;
     CD2DFont& font = *wnd_info.dx.hFont;
     ID2D1LinearGradientBrush* hbrNormal = *wnd_info.dx.hbrNormal;
     ID2D1LinearGradientBrush* hbrLight = *wnd_info.dx.hbrLight;
     ID2D1SolidColorBrush* hbrBorder = *wnd_info.dx.hbrBorder;
     IDWriteTextFormat* dxFormat = font;
-    ID2D1DeviceContext* pRenderTarget = hCanvas;
-
-    auto& d2dInfo = d2d_get_info();
+    ID2D1DeviceContext* pRenderTarget = hCanvas.GetD2DContext();
+    ID2D1Factory1* pFactory = hCanvas.GetD2DInterface()->GetD2DFactory();
 
     LYRIC_LINE_STRUCT& line = draw_info.line;
 
@@ -104,7 +103,7 @@ void lyric_wnd_draw_text_geometry_draw_cache(LYRIC_DESKTOP_INFO& wnd_info, LYRIC
 
     if (nLength && pszText && *pszText)
     {
-        hr = d2dInfo.pFactory->CreatePathGeometry(&pTextGeometry);
+        hr = pFactory->CreatePathGeometry(&pTextGeometry);
         if (FAILED(hr))
             return;
 
@@ -157,12 +156,13 @@ void lyric_wnd_draw_text_geometry_draw_cache(LYRIC_DESKTOP_INFO& wnd_info, LYRIC
                                      DWRITE_GLYPH_RUN_DESCRIPTION const* glyphRunDescription,
                                      IUnknown* clientDrawingEffect
                                      )
-    {
-        lyric_wnd_draw_geometry_DrawGlyphRun(wnd_info, draw_info, m_glyphGeometries, clientDrawingContext,
-                                             baselineOriginX, baselineOriginY,
-                                             measuringMode,
-                                             glyphRun, glyphRunDescription, clientDrawingEffect);
-    });
+                                 {
+                                     lyric_wnd_draw_geometry_DrawGlyphRun(wnd_info, draw_info, m_glyphGeometries, clientDrawingContext,
+                                                                          baselineOriginX, baselineOriginY,
+                                                                          measuringMode,
+                                                                          glyphRun, glyphRunDescription, clientDrawingEffect);
+                                     return S_OK;
+                                 });
     if (pTextLayout)
     {
         pTextLayout->Draw(0, &renderer, 0, 0);
@@ -382,14 +382,15 @@ void lyric_wnd_draw_geometry_DrawGlyphRun(LYRIC_DESKTOP_INFO& wnd_info,
                                           DWRITE_GLYPH_RUN_DESCRIPTION const* glyphRunDescription,
                                           IUnknown* clientDrawingEffect)
 {
-    CD2DRender& hCanvas = *wnd_info.dx.hCanvas;
+    ID2DRender& hCanvas = *wnd_info.dx.hCanvas;
     CD2DFont& font = *wnd_info.dx.hFont;
     ID2D1LinearGradientBrush* hbrNormal = *wnd_info.dx.hbrNormal;
     ID2D1LinearGradientBrush* hbrLight = *wnd_info.dx.hbrLight;
     ID2D1SolidColorBrush* hbrBorder = *wnd_info.dx.hbrBorder;
     IDWriteTextFormat* dxFormat = font;
-    ID2D1DeviceContext* pRenderTarget = hCanvas;
-    auto& d2dInfo = d2d_get_info();
+    ID2D1DeviceContext* pRenderTarget = hCanvas.GetD2DContext();
+
+    ID2D1Factory1* pFactory = hCanvas.GetD2DInterface()->GetD2DFactory();
 
     const bool is_vertical = wnd_info.has_mode(LYRIC_MODE::VERTICAL);
 
@@ -401,7 +402,7 @@ void lyric_wnd_draw_geometry_DrawGlyphRun(LYRIC_DESKTOP_INFO& wnd_info,
     {
         // 1. 创建一个临时 path geometry 用来写入字形路径
         CComPtr<ID2D1PathGeometry1> tempGeometry;
-        hr = d2dInfo.pFactory->CreatePathGeometry(&tempGeometry);
+        hr = pFactory->CreatePathGeometry(&tempGeometry);
         if (FAILED(hr))
             break;
 
@@ -497,7 +498,7 @@ void lyric_wnd_draw_geometry_DrawGlyphRun(LYRIC_DESKTOP_INFO& wnd_info,
         }
 
         CComPtr<ID2D1TransformedGeometry> transformed;
-        hr = d2dInfo.pFactory->CreateTransformedGeometry(
+        hr = pFactory->CreateTransformedGeometry(
             tempGeometry,
             &item.transform,
             &transformed

@@ -22,17 +22,17 @@ struct LYRIC_DESKTOP_INFO;
 struct LYRIC_DESKTOP_DX
 {
     ID2D1GdiInteropRenderTarget* pGDIInterop;
-    KUODAFU_NAMESPACE::ID2DRender* hCanvas;         // D2D绘画句柄
+    KUODAFU_NAMESPACE::D2DRender* hCanvas;         // D2D绘画句柄
     KUODAFU_NAMESPACE::CD2DFont* hFont;             // 绘画歌词的字体, 这个是设备无关字体, 设备失效不需要重新创建
 
-    KUODAFU_NAMESPACE::IRenderBitmap* image;        // 歌词窗口按钮需要的图片
-    KUODAFU_NAMESPACE::IRenderBitmap* image_shadow; // 阴影图片
-    KUODAFU_NAMESPACE::CD2DBrush* hbrBorder;        // 绘画歌词文本的边框画刷
-    KUODAFU_NAMESPACE::CD2DBrush* hbrWndBorder;     // 歌词窗口的边框画刷
-    KUODAFU_NAMESPACE::CD2DBrush* hbrWndBack;       // 歌词窗口的背景画刷
-    KUODAFU_NAMESPACE::CD2DBrush* hbrLine;          // 歌词按钮分隔部分的线条画刷
-    KUODAFU_NAMESPACE::CD2DBrush_LinearGradient* hbrNormal;      // 普通歌词画刷
-    KUODAFU_NAMESPACE::CD2DBrush_LinearGradient* hbrLight;       // 高亮歌词画刷
+    KUODAFU_NAMESPACE::D2DImage* image;        // 歌词窗口按钮需要的图片
+    KUODAFU_NAMESPACE::D2DImage* image_shadow; // 阴影图片
+    KUODAFU_NAMESPACE::D2DSolidBrush* hbrBorder;        // 绘画歌词文本的边框画刷
+    KUODAFU_NAMESPACE::D2DSolidBrush* hbrWndBorder;     // 歌词窗口的边框画刷
+    KUODAFU_NAMESPACE::D2DSolidBrush* hbrWndBack;       // 歌词窗口的背景画刷
+    KUODAFU_NAMESPACE::D2DSolidBrush* hbrLine;          // 歌词按钮分隔部分的线条画刷
+    KUODAFU_NAMESPACE::D2DLinearGradientBrush* hbrNormal;      // 普通歌词画刷
+    KUODAFU_NAMESPACE::D2DLinearGradientBrush* hbrLight;       // 高亮歌词画刷
 
     DWORD       clrBack;        // 鼠标移动上来之后显示的歌词ARGB背景颜色
     DWORD       clrWndBorder;   // 鼠标移动上来之后显示的歌词ARGB边框颜色

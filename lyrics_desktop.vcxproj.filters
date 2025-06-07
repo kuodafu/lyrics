@@ -133,6 +133,12 @@
     <ClCompile Include="..\..\cpp\_git_works\CommonCode\d2d\d2d.cpp">
       <Filter>d2d</Filter>
     </ClCompile>
+    <ClCompile Include="src\lyric_desktop\lyric_desktop_shadow_image.cpp">
+      <Filter>绘画相关</Filter>
+    </ClCompile>
+    <ClCompile Include="src\lyric_desktop\lyric_desktop_d2d_init.cpp">
+      <Filter>绘画相关</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="src\lyric_desktop\lyric_desktop_export.def">

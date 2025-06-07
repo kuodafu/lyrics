@@ -54,7 +54,7 @@ void lyric_wnd_draw_geometry_DrawGlyphRun(LYRIC_DESKTOP_INFO& wnd_info,
 
 void lyric_wnd_draw_text_geometry(LYRIC_DESKTOP_INFO& wnd_info, LYRIC_DESKTOP_DRAWTEXT_INFO& draw_info, int nDrawLineIndex)
 {
-    ID2DRender& hCanvas = *wnd_info.dx.hCanvas;
+    D2DRender& hCanvas = *wnd_info.dx.hCanvas;
     ID2D1DeviceContext* pRenderTarget = hCanvas.GetD2DContext();
 
     D2D1_ANTIALIAS_MODE oldMode = pRenderTarget->GetAntialiasMode();
@@ -67,11 +67,11 @@ void lyric_wnd_draw_text_geometry(LYRIC_DESKTOP_INFO& wnd_info, LYRIC_DESKTOP_DR
 
 void lyric_wnd_draw_text_geometry_draw_cache(LYRIC_DESKTOP_INFO& wnd_info, LYRIC_DESKTOP_DRAWTEXT_INFO& draw_info, int nDrawLineIndex)
 {
-    ID2DRender& hCanvas = *wnd_info.dx.hCanvas;
+    D2DRender& hCanvas = *wnd_info.dx.hCanvas;
     CD2DFont& font = *wnd_info.dx.hFont;
-    ID2D1LinearGradientBrush* hbrNormal = *wnd_info.dx.hbrNormal;
-    ID2D1LinearGradientBrush* hbrLight = *wnd_info.dx.hbrLight;
-    ID2D1SolidColorBrush* hbrBorder = *wnd_info.dx.hbrBorder;
+    ID2D1LinearGradientBrush* hbrNormal = wnd_info.dx.hbrNormal->GetNative();
+    ID2D1LinearGradientBrush* hbrLight = wnd_info.dx.hbrLight->GetNative();
+    ID2D1SolidColorBrush* hbrBorder = wnd_info.dx.hbrBorder->GetNative();
     IDWriteTextFormat* dxFormat = font;
     ID2D1DeviceContext* pRenderTarget = hCanvas.GetD2DContext();
     ID2D1Factory1* pFactory = hCanvas.GetD2DInterface()->GetD2DFactory();
@@ -382,11 +382,11 @@ void lyric_wnd_draw_geometry_DrawGlyphRun(LYRIC_DESKTOP_INFO& wnd_info,
                                           DWRITE_GLYPH_RUN_DESCRIPTION const* glyphRunDescription,
                                           IUnknown* clientDrawingEffect)
 {
-    ID2DRender& hCanvas = *wnd_info.dx.hCanvas;
+    D2DRender& hCanvas = *wnd_info.dx.hCanvas;
     CD2DFont& font = *wnd_info.dx.hFont;
-    ID2D1LinearGradientBrush* hbrNormal = *wnd_info.dx.hbrNormal;
-    ID2D1LinearGradientBrush* hbrLight = *wnd_info.dx.hbrLight;
-    ID2D1SolidColorBrush* hbrBorder = *wnd_info.dx.hbrBorder;
+    ID2D1LinearGradientBrush* hbrNormal = wnd_info.dx.hbrNormal->GetNative();
+    ID2D1LinearGradientBrush* hbrLight = wnd_info.dx.hbrLight->GetNative();
+    ID2D1SolidColorBrush* hbrBorder = wnd_info.dx.hbrBorder->GetNative();
     IDWriteTextFormat* dxFormat = font;
     ID2D1DeviceContext* pRenderTarget = hCanvas.GetD2DContext();
 

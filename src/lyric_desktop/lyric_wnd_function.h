@@ -5,7 +5,7 @@
 
 NAMESPACE_LYRIC_DESKTOP_BEGIN
 
-extern KUODAFU_NAMESPACE::ID2DInterface* g_d2d_interface;
+extern KUODAFU_NAMESPACE::D2DInterface* g_d2d_interface;
 
 float _lyric_wnd_load_krc_calc_text(PLYRIC_DESKTOP_INFO pWndInfo, IDWriteTextLayout* pTextLayout, float* pHeight);
 
@@ -44,6 +44,9 @@ void lyric_wnd_button_leave(LYRIC_DESKTOP_INFO& wnd_info);
 
 // ÷ÿ–¬…Ë÷√∑≠“Î/“Ù“Î∞¥≈•◊¥Ã¨
 int lyric_wnd_set_state_translate(LYRIC_DESKTOP_INFO& wnd_info, int language);
+
+
+LPBYTE _lrc_dwsktop_get_shadow_image(size_t& size);
 
 
 NAMESPACE_LYRIC_DESKTOP_END

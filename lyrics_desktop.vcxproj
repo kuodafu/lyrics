@@ -202,6 +202,7 @@
     <ClCompile Include="..\..\cpp\_git_works\CommonCode\d2d\d2d.cpp" />
     <ClCompile Include="src\lyric_desktop\lyric_desktop_button_click.cpp" />
     <ClCompile Include="src\lyric_desktop\lyric_desktop_button_hover.cpp" />
+    <ClCompile Include="src\lyric_desktop\lyric_desktop_d2d_init.cpp" />
     <ClCompile Include="src\lyric_desktop\lyric_desktop_draw_button.cpp" />
     <ClCompile Include="src\lyric_desktop\lyric_desktop_draw_line.cpp" />
     <ClCompile Include="src\lyric_desktop\lyric_desktop_draw_line_hori.cpp" />
@@ -215,6 +216,7 @@
     <ClCompile Include="src\lyric_desktop\lyric_desktop_header.cpp" />
     <ClCompile Include="src\lyric_desktop\lyric_desktop_main.cpp" />
     <ClCompile Include="src\lyric_desktop\lyric_desktop_OnPaint.cpp" />
+    <ClCompile Include="src\lyric_desktop\lyric_desktop_shadow_image.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="lyrics.vcxproj">

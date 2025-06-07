@@ -11,9 +11,9 @@ void lyric_wnd_draw_cache_text_v(LYRIC_DESKTOP_INFO& wnd_info, LYRIC_DESKTOP_DRA
     if (!pBitmap)
         return;
 
-    ID2DRender& hCanvas = *wnd_info.dx.hCanvas;
-    ID2D1LinearGradientBrush* hbrNormal = *wnd_info.dx.hbrNormal;
-    ID2D1LinearGradientBrush* hbrLight = *wnd_info.dx.hbrLight;
+    D2DRender& hCanvas = *wnd_info.dx.hCanvas;
+    ID2D1LinearGradientBrush* hbrNormal = wnd_info.dx.hbrNormal->GetNative();
+    ID2D1LinearGradientBrush* hbrLight = wnd_info.dx.hbrLight->GetNative();
     ID2D1DeviceContext* pRenderTarget = hCanvas.GetD2DContext();
 
     LYRIC_LINE_STRUCT& line = draw_info.line;

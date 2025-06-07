@@ -179,7 +179,7 @@ bool LYRICCALL lyric_desktop_load_lyric(HWND hWindowLyric, LPCVOID pKrcData, int
     lyric_calc_text(wnd_info.hLyric, [](void* pUserData, LPCWSTR pText, int nTextLen, float* pRetHeight) -> float
                           {
                               LYRIC_DESKTOP_INFO* pWndInfo = (LYRIC_DESKTOP_INFO*)pUserData;
-                              ID2DRender& hCanvas = *pWndInfo->dx.hCanvas;
+                              D2DRender& hCanvas = *pWndInfo->dx.hCanvas;
                               if (!pWndInfo->dx.hFont)
                                   lyric_wnd_default_object(*pWndInfo);
 

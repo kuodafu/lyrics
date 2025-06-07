@@ -10,7 +10,7 @@ void lyric_wnd_draw_button(LYRIC_DESKTOP_INFO& wnd_info)
 {
     if (!wnd_info.isFillBack)
         return;
-    ID2DRender& hCanvas = *wnd_info.dx.hCanvas;
+    D2DRender& hCanvas = *wnd_info.dx.hCanvas;
     ID2D1DeviceContext* pRenderTarget = hCanvas.GetD2DContext();
 
     lyric_wnd_calc_btn_pos(wnd_info);
@@ -31,7 +31,7 @@ void lyric_wnd_draw_button(LYRIC_DESKTOP_INFO& wnd_info)
         if (item.id == 0)
         {
             // 需要画一个分割线
-            ID2D1SolidColorBrush* pBrush = *wnd_info.dx.hbrLine;
+            ID2D1SolidColorBrush* pBrush = (ID2D1SolidColorBrush*)wnd_info.dx.hbrLine->GetBrush();
             auto ppt = (POINT*)&item.rc;
             D2D1_POINT_2F pt1{ (float)ppt[0].x, (float)ppt[0].y };
             D2D1_POINT_2F pt2{ (float)ppt[1].x, (float)ppt[1].y };

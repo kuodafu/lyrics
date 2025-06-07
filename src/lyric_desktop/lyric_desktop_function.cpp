@@ -14,7 +14,7 @@ NAMESPACE_LYRIC_DESKTOP_BEGIN
 
 static HCURSOR m_hCursorArrow;
 static HCURSOR m_hCursorHand;
-ID2DInterface* g_d2d_interface;
+D2DInterface* g_d2d_interface;
 
 
 #define TIMER_ID_LEAVE 1000
@@ -246,7 +246,7 @@ bool lyric_wnd_invalidate(LYRIC_DESKTOP_INFO& wnd_info)
     if (!wnd_info.dx.hCanvas)
         return false;
 
-    ID2DRender& hCanvas = *wnd_info.dx.hCanvas;
+    D2DRender& hCanvas = *wnd_info.dx.hCanvas;
     RECT& rcWindow = wnd_info.rcWindow;
     GetWindowRect(wnd_info.hWnd, &rcWindow);
     //GetClientRect(wnd_info.hWnd, &rcWindow);

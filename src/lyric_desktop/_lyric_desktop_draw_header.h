@@ -56,8 +56,6 @@ void lyric_wnd_calc_wnd_pos(LYRIC_DESKTOP_INFO& wnd_info, bool isMoveWindow);
 // 这里统一都是不换行的文本布局, 左/顶对齐
 bool lyric_wnd_create_text_layout(LPCWSTR str, int len, IDWriteTextFormat* dxFormat, float layoutWidth, float layoutHeight, IDWriteTextLayout** ppTextLayout);
 
-KUODAFU_NAMESPACE::IRenderBitmap* __shadow_image(KUODAFU_NAMESPACE::ID2DRender* d2dRender);
-
 bool isLatinCharacter(wchar_t ch);
 
 NAMESPACE_LYRIC_DESKTOP_END

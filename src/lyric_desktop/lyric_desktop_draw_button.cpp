@@ -1,4 +1,4 @@
-#include "lyric_wnd_function.h"
+#include "lyric_desktop_function.h"
 
 using namespace KUODAFU_NAMESPACE;
 
@@ -17,8 +17,8 @@ void lyric_wnd_draw_button(LYRIC_DESKTOP_INFO& wnd_info)
     lyric_wnd_calc_wnd_pos(wnd_info, false);
 
     HRESULT hr = 0;
-    CComPtr<ID2D1Bitmap1> image;
-    hr = wnd_info.dx.image->GetBitmap(0, &image, nullptr);
+    CComPtr<ID2D1Bitmap1> image_button;
+    hr = wnd_info.dx.image_button->GetBitmap(0, &image_button, nullptr);
     if (FAILED(hr))
         return;
 
@@ -39,7 +39,7 @@ void lyric_wnd_draw_button(LYRIC_DESKTOP_INFO& wnd_info)
             continue;
         }
         RECT_F rcDst = item.rc, rcSrc = *item.prcSrc;
-        pRenderTarget->DrawBitmap(image, rcDst, 1.0f, D2D1_BITMAP_INTERPOLATION_MODE_LINEAR, rcSrc);
+        pRenderTarget->DrawBitmap(image_button, rcDst, 1.0f, D2D1_BITMAP_INTERPOLATION_MODE_LINEAR, rcSrc);
     }
 
     pRenderTarget->SetAntialiasMode(oldMode);
@@ -62,7 +62,7 @@ static void _lyric_wnd_calc_wnd_pos_get_monitor_info(RECT& rc, POINT& pt)
 
 void lyric_wnd_calc_wnd_pos(LYRIC_DESKTOP_INFO& wnd_info, bool isMoveWindow)
 {
-    const bool is_vertical = wnd_info.has_mode(LYRIC_MODE::VERTICAL);
+    const bool is_vertical = wnd_info.has_mode(LYRIC_DESKTOP_MODE::VERTICAL);
     const auto padding_wnd = (int)wnd_info.config.padding_wnd;
     const auto padding_text = (int)wnd_info.config.padding_text;
     const auto shadowRadius = (int)wnd_info.shadowRadius;
@@ -73,40 +73,39 @@ void lyric_wnd_calc_wnd_pos(LYRIC_DESKTOP_INFO& wnd_info, bool isMoveWindow)
         const int btn_height = rcButtom.bottom - rcButtom.top;
         const int text_width = (int)(wnd_info.word_width + padding_text * 2);
         wnd_info.nLineTop1 = wnd_info.button.rc.left + wnd_info.button.maxWidth + padding_wnd;
-        wnd_info.nLineTop2 = wnd_info.nLineTop1 + text_width + 2;
+        wnd_info.nLineTop2 = wnd_info.nLineTop1 + text_width + wnd_info.config.nLineSpace;
         wnd_info.nMinWidth = wnd_info.nLineTop2 + text_width + padding_wnd + shadowRadius;
         wnd_info.nMinHeight = btn_height + padding_wnd * 2 + shadowRadius * 2;
 
         if (isMoveWindow)
         {
-            auto& pos = wnd_info.config.pos_v;
+            auto& rect = wnd_info.config.rect_v;
             POINT pt = { 0 };
             GetCursorPos(&pt);
 
-            if (pos.height == 0 || pos.width == 0)
+            if (rect.right - rect.left <= 0 || rect.bottom - rect.top <= 0)
             {
                 // 做一个默认位置, 取当前鼠标所在的屏幕, 然后计算位置, 显示到窗口右边
                 RECT rcScreen;
                 _lyric_wnd_calc_wnd_pos_get_monitor_info(rcScreen, pt);
+                const int height = wnd_info.scale(800);
 
-                pos.width = wnd_info.nMinWidth;
-                pos.height = wnd_info.scale(800);
-                pos.left = rcScreen.right - wnd_info.nMinWidth - (int)wnd_info.config.padding_wnd;
-                pos.top = rcScreen.top + (rcScreen.bottom - rcScreen.top - pos.height) / 2;
-                pos.right = pos.left + pos.width;
-                pos.bottom = pos.top + pos.height;
+                rect.left = rcScreen.right - wnd_info.nMinWidth - (int)wnd_info.config.padding_wnd;
+                rect.top = rcScreen.top + (rcScreen.bottom - rcScreen.top - height) / 2;
+                rect.right = rect.left + wnd_info.nMinWidth;
+                rect.bottom = rect.top + height;
             }
             else
             {
-                pos.width = wnd_info.nMinWidth;
-                pos.right = pos.left + pos.width;
+                // 有值, 纵向显示, 调整的是宽度, 调整矩形右边
+                rect.right = rect.left + wnd_info.nMinWidth;
             }
 
-            if (!PtInRect(&pos, pt))
+            if (!PtInRect(&rect, pt))
                 wnd_info.isFillBack = false;    // 移动后鼠标不在窗口内, 不填充背景
 
             lyric_wnd_invalidate(wnd_info);
-            MoveWindow(wnd_info.hWnd, pos.left, pos.top, pos.width, pos.height, TRUE);
+            MoveWindow(wnd_info.hWnd, rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top, TRUE);
 
         }
         return;
@@ -115,40 +114,40 @@ void lyric_wnd_calc_wnd_pos(LYRIC_DESKTOP_INFO& wnd_info, bool isMoveWindow)
     const int btn_width = rcButtom.right - rcButtom.left;
     const int text_height = (int)(wnd_info.word_height + padding_text * 2);
     wnd_info.nLineTop1 = wnd_info.button.rc.top + wnd_info.button.maxHeight + padding_wnd;
-    wnd_info.nLineTop2 = wnd_info.nLineTop1 + text_height + 2;
+    wnd_info.nLineTop2 = wnd_info.nLineTop1 + text_height + wnd_info.config.nLineSpace;
     wnd_info.nMinWidth = btn_width + padding_wnd * 2 + shadowRadius * 2;
     wnd_info.nMinHeight = wnd_info.nLineTop2 + text_height + padding_wnd + shadowRadius;
 
     if (isMoveWindow)
     {
-        auto& pos = wnd_info.config.pos_h;
+        auto& rect = wnd_info.config.rect_h;
         POINT pt = { 0 };
         GetCursorPos(&pt);
 
-        if (pos.height == 0 || pos.width == 0)
+        if (rect.right - rect.left <= 0 || rect.bottom - rect.top <= 0)
         {
             // 做一个默认位置, 取当前鼠标所在的屏幕, 然后计算位置, 显示到窗口右边
             RECT rcScreen;
             _lyric_wnd_calc_wnd_pos_get_monitor_info(rcScreen, pt);
 
-            pos.width = wnd_info.scale(800);
-            pos.height = wnd_info.nMinHeight;
-            pos.left = (rcScreen.right - rcScreen.left - pos.width) / 2;
-            pos.top = rcScreen.bottom - wnd_info.nMinHeight - (int)wnd_info.config.padding_wnd - 100;
-            pos.right = pos.left + pos.width;
-            pos.bottom = pos.top + pos.height;
+            const int width = wnd_info.scale(800);
+
+            rect.left = (rcScreen.right - rcScreen.left - width) / 2;
+            rect.top = rcScreen.bottom - wnd_info.nMinHeight - (int)wnd_info.config.padding_wnd - 100;
+            rect.right = rect.left + width;
+            rect.bottom = rect.top + wnd_info.nMinHeight;
         }
         else
         {
-            pos.height = wnd_info.nMinHeight;
-            pos.bottom = pos.top + pos.height;
+            // 有值, 横向显示, 调整的是高度, 调整矩形底边
+            rect.bottom = rect.top + wnd_info.nMinHeight;
         }
 
-        if (!PtInRect(&pos, pt))
+        if (!PtInRect(&rect, pt))
             wnd_info.isFillBack = false;    // 移动后鼠标不在窗口内, 不填充背景
 
         lyric_wnd_invalidate(wnd_info);
-        MoveWindow(wnd_info.hWnd, pos.left, pos.top, pos.width, pos.height, TRUE);
+        MoveWindow(wnd_info.hWnd, rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top, TRUE);
     }
 }
 
@@ -160,15 +159,15 @@ void lyric_wnd_calc_btn_pos(LYRIC_DESKTOP_INFO& wnd_info)
 
     int height = 0;
     int width = 0;
-    const auto padding  = (int)wnd_info.config.padding_wnd / 2;
+    const auto padding  = (int)wnd_info.shadowRadius / 2;
     const auto padding2 = padding / 2;
-    const auto line_height = (int)wnd_info.config.padding_wnd * 2;
+    const auto line_height = (int)wnd_info.shadowRadius * 2;
 
     wnd_info.button.maxHeight = 50; // 最大宽高固定死
     wnd_info.button.maxWidth = 50;
 
     const auto dpi = wnd_info.scale.GetDpi();
-    const bool is_vertical  = wnd_info.has_mode(LYRIC_MODE::VERTICAL);
+    const bool is_vertical  = wnd_info.has_mode(LYRIC_DESKTOP_MODE::VERTICAL);
     const auto shadowRadius = (int)wnd_info.shadowRadius;
 
     int left = 0;

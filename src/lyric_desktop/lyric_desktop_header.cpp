@@ -1,4 +1,4 @@
-#include "lyric_wnd_function.h"
+#include "lyric_desktop_function.h"
 #include <d2d/CCustomTextRenderer.h>
 #include "GetMonitorRect.h"
 #include <atlbase.h>
@@ -9,31 +9,74 @@ using namespace KUODAFU_NAMESPACE;
 NAMESPACE_LYRIC_DESKTOP_BEGIN
 
 
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
 
-void LYRIC_DESKTOP_INFO::set_def_arg(const LYRIC_DESKTOP_ARG* arg)
+void LYRIC_DESKTOP_INFO::init(HWND hWnd, const char* argJson, PFN_LYRIC_DESKTOP_COMMAND pfnCommand, LPARAM lParam)
 {
-    // 有值就根据传递进来的值设置, 没有值就设置默认值
-    LYRIC_DESKTOP_ARG def = { 0 };
-    lyric_desktop_get_default_arg(&def);
-    if (!arg)
-        arg = &def;
+    this->pfnCommand    = pfnCommand;
+    this->lParam        = lParam;
+    this->nAddref       = 1;
+    this->hWnd          = hWnd;
+    this->scale         = hWnd;
 
-    if (arg->pClrNormal)
-        config.clrNormal.assign(&arg->pClrNormal[0], &arg->pClrNormal[arg->nClrNormal]);
-    if (arg->pClrLight)
-        config.clrLight.assign(&arg->pClrLight[0], &arg->pClrLight[arg->nClrLight]);
+    //////////////////////////////////////////////////////////////////////////
+    // 这里把结构的成员初始化一下
+    this->hTips             = nullptr;
+    this->hLyric            = nullptr;
+    this->prevIndexLine     = -1;
+    this->prevWidth         = 0;
+    this->prevHeight        = 0;
+    this->word_width        = 0;
+    this->word_height       = 0;
+    this->nLineDefWidth     = 0;
+    this->nLineDefHeight    = 0;  
+    this->nCurrentTimeMS    = 0;  
+    this->nTimeOffset       = 0;
+    this->nMinWidth         = 0;
+    this->nMinHeight        = 0;
+    this->nLineTop1         = 0;
+    this->nLineTop2         = 0;
+    this->rcWindow          = {};
+    this->rcMonitor         = {};
+    this->shadowRadius      = 10.f; // 固定死, 现在阴影图片就是10个像素
+    this->mode              = LYRIC_DESKTOP_MODE::DOUBLE_ROW;
 
-    config.clrBorder = arg->clrBorder;
-    config.clrWndBorder = arg->clrWndBorder;
-    config.clrWndBack = arg->clrWndBack;
 
-    LPCWSTR pszFontName = arg->pszFontName;
-    if (!pszFontName || !*pszFontName)
-        pszFontName = L"微软雅黑";
+    // 许可证, 加载歌词那需要进入, 显示歌词的时候也需要进入
+    // 一个线程在加载一个线程在显示的情况下不加锁会崩溃
+    pCritSec = new CRITICAL_SECTION;
+    InitializeCriticalSection(pCritSec);
 
-    config.pszFontName = pszFontName;
-    config.lfWeight = FW_BOLD;
-    config.nFontSize = arg->nFontSize;
+    this->status = 0;
+    this->change = 0;
+    
+    get_monitor();  // 获取所有屏幕矩形
+    //////////////////////////////////////////////////////////////////////////
+
+    //////////////////////////////////////////////////////////////////////////
+    // 初始化配置, 然后根据配置创建dx对象
+    config.init();    // 必须先初始化默认配置
+    config.parse(argJson, this);
+
+    //////////////////////////////////////////////////////////////////////////
+
+    // 上面配置初始化完了, 这里根据配置内容初始化一些数据
+    if (config.bVertical)
+        add_mode(LYRIC_DESKTOP_MODE::VERTICAL);
+    if (config.bSingleLine)
+        add_mode(LYRIC_DESKTOP_MODE::SINGLE_ROW);
+    if (config.bSelfy)  // 使用的时候判断有这个值就使用翻译
+        add_mode(LYRIC_DESKTOP_MODE::TRANSLATION_FY);
+    if (config.bSelyy)
+        add_mode(LYRIC_DESKTOP_MODE::TRANSLATION_YY);
+
+    //TODO 配置需要给个对齐模式, 然后这里设置对齐模式
+    line1.init(config.line1_align);
+    line2.init(config.line2_align);
+
 
 
 }
@@ -44,10 +87,6 @@ void LYRIC_DESKTOP_INFO::dpi_change(HWND hWnd)
     const int _10 = scale(10);
     if (dx.hFont)
         dx.re_create_font(this);
-    shadowRadius = (float)10;
-
-    config.padding_text_ = 5.f;
-    config.padding_wnd_ = 8.f;
 
     config.padding_text = (float)(scale((int)config.padding_text_));
     config.padding_wnd = (float)scale((int)config.padding_wnd_);
@@ -80,7 +119,7 @@ void LYRIC_DESKTOP_INFO::get_monitor()
 
 float LYRIC_DESKTOP_INFO::get_lyric_line_height() const
 {
-    if (has_mode(LYRIC_MODE::VERTICAL))
+    if (has_mode(LYRIC_DESKTOP_MODE::VERTICAL))
     {
         // 竖屏, 取宽度加上边距
         return word_width + config.padding_text * 2;
@@ -90,39 +129,18 @@ float LYRIC_DESKTOP_INFO::get_lyric_line_height() const
 
 float LYRIC_DESKTOP_INFO::get_lyric_line_width(float vl) const
 {
-    if (has_mode(LYRIC_MODE::VERTICAL))
+    if (has_mode(LYRIC_DESKTOP_MODE::VERTICAL))
         return (vl ? vl : nLineDefHeight) + config.padding_text * 2;
     
     return (vl ? vl : nLineDefWidth) + config.padding_text * 2;
 }
 
 
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
 
-LYRIC_DESKTOP_CACHE_OBJ::~LYRIC_DESKTOP_CACHE_OBJ()
-{
-    SafeRelease(pBitmapNormal);
-    SafeRelease(pBitmapLight);
-}
-
-LYRIC_DESKTOP_INFO::LYRIC_DESKTOP_INFO()
-{
-    const int clear_size = offsetof(LYRIC_DESKTOP_INFO, line1);
-    memset(this, 0, clear_size);
-    prevIndexLine = -1;
-    config.mode = LYRIC_MODE::DOUBLE_ROW;
-    config.pszDefText = L"该歌曲暂时没有歌词";
-    config.nDefText = 9;
-
-    pCritSec = new CRITICAL_SECTION;
-    InitializeCriticalSection(pCritSec);
-
-    config.clrWndBack = MAKEARGB(100, 0, 0, 0);
-    config.clrBorder = MAKEARGB(255, 33, 33, 33);
-
-    pfnCommand = nullptr;
-    lParam = 0;
-    nAddref = 1;
-}
 
 // 设置歌词窗口数据到窗口
 void lyric_wnd_set_data(HWND hWnd, PLYRIC_DESKTOP_INFO pWndInfo)

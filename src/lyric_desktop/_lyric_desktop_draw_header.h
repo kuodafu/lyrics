@@ -1,5 +1,5 @@
 #pragma once
-#include "lyric_wnd_header.h"
+#include "lyric_desktop_header.h"
 
 
 NAMESPACE_LYRIC_DESKTOP_BEGIN

@@ -1,4 +1,4 @@
-#include "lyric_wnd_function.h"
+#include "lyric_desktop_function.h"
 
 using namespace KUODAFU_NAMESPACE;
 
@@ -26,11 +26,11 @@ void lyric_wnd_draw_lyric(LYRIC_DESKTOP_INFO& wnd_info, LYRIC_CALC_STRUCT& arg)
     const RECT& rcWindow = wnd_info.rcWindow;
 
     if (!wnd_info.hLyric)
-        arg.line.pText = wnd_info.config.pszDefText, arg.line.nLength = wnd_info.config.nDefText;
+        arg.line.pText = wnd_info.config.szDefText.c_str(), arg.line.nLength = (int)wnd_info.config.szDefText.size();
 
-    if (wnd_info.has_mode(LYRIC_MODE::EXISTTRANS) && (wnd_info.has_mode(LYRIC_MODE::TRANSLATION1) || wnd_info.has_mode(LYRIC_MODE::TRANSLATION2)))
+    if (wnd_info.has_mode(LYRIC_DESKTOP_MODE::EXISTTRANS) && (wnd_info.has_mode(LYRIC_DESKTOP_MODE::TRANSLATION_FY) || wnd_info.has_mode(LYRIC_DESKTOP_MODE::TRANSLATION_YY)))
         lyric_wnd_draw_translate(wnd_info, arg, rcWindow);
-    else if (wnd_info.has_mode(LYRIC_MODE::SINGLE_ROW))
+    else if (wnd_info.has_mode(LYRIC_DESKTOP_MODE::SINGLE_ROW))
         lyric_wnd_draw_single_row(wnd_info, arg, rcWindow);
     else
         lyric_wnd_draw_double_row(wnd_info, arg, rcWindow); // 默认双行歌词, 前面条件不成立就走这里
@@ -78,7 +78,7 @@ void lyric_wnd_draw_double_row(LYRIC_DESKTOP_INFO& wnd_info, LYRIC_CALC_STRUCT& 
     pLine1->nLightWidth = nLightWidth;      // 当前行的高亮位置
     pLine1->nLightHeight = nLightHeight;    // 当前行的高亮位置
 
-    if (wnd_info.has_mode(LYRIC_MODE::VERTICAL))
+    if (wnd_info.has_mode(LYRIC_DESKTOP_MODE::VERTICAL))
     {
         // 如果需要换行, 那就获取下一行歌词信息保存到 pLine2, pLine2 高亮为0
         if (isSwitchLine_V || arg.indexLine == 0)
@@ -174,12 +174,12 @@ void lyric_wnd_draw_line(LYRIC_DESKTOP_INFO& wnd_info, LYRIC_DESKTOP_DRAWTEXT_IN
 void lyric_wnd_draw_cache_text(LYRIC_DESKTOP_INFO& wnd_info, LYRIC_DESKTOP_DRAWTEXT_INFO& draw_info, int nDrawLineIndex)
 {
     // 从缓存里把数据拿出来画到目标上
-    const bool is_vertical = wnd_info.has_mode(LYRIC_MODE::VERTICAL);
+    const bool is_vertical = wnd_info.has_mode(LYRIC_DESKTOP_MODE::VERTICAL);
 
     //TODO 如果是绘画翻译歌词, 这里需要计算翻译歌词的高亮位置, 然后设置到 draw_info.nLightWidth
-    if (wnd_info.has_mode(LYRIC_MODE::EXISTTRANS))
+    if (wnd_info.has_mode(LYRIC_DESKTOP_MODE::EXISTTRANS))
     {
-        if (wnd_info.has_mode(LYRIC_MODE::TRANSLATION1) || wnd_info.has_mode(LYRIC_MODE::TRANSLATION2))
+        if (wnd_info.has_mode(LYRIC_DESKTOP_MODE::TRANSLATION_FY) || wnd_info.has_mode(LYRIC_DESKTOP_MODE::TRANSLATION_YY))
         {
             // 计算高亮位置, 是通过第一行的高亮位置计算
             auto& line1 = wnd_info.line1;
@@ -233,12 +233,12 @@ void lyric_wnd_draw_calc_text_rect(LYRIC_DESKTOP_INFO& wnd_info,
 
 
     int align = draw_info.align;
-    if (wnd_info.has_mode(LYRIC_MODE::EXISTTRANS))
+    if (wnd_info.has_mode(LYRIC_DESKTOP_MODE::EXISTTRANS))
     {
-        if (wnd_info.has_mode(LYRIC_MODE::TRANSLATION1) || wnd_info.has_mode(LYRIC_MODE::TRANSLATION2))
+        if (wnd_info.has_mode(LYRIC_DESKTOP_MODE::TRANSLATION_FY) || wnd_info.has_mode(LYRIC_DESKTOP_MODE::TRANSLATION_YY))
             align = 1;  // 如果是翻译/音译, 那就强制居中对齐
     }
-    const bool is_vertical = wnd_info.has_mode(LYRIC_MODE::VERTICAL);
+    const bool is_vertical = wnd_info.has_mode(LYRIC_DESKTOP_MODE::VERTICAL);
     if (is_vertical)
     {
         const auto offset_top = (int)(wnd_info.shadowRadius + wnd_info.config.padding_wnd);

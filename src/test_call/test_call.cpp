@@ -23,6 +23,7 @@
 #include <charset_stl.h>
 #include <cJSON/cJSON.h>
 #include "bass.h"
+#include <d2d/Color.h>
 
 #pragma comment(lib, "Ws2_32.lib")
 #pragma comment(lib, "Crypt32.lib")
@@ -389,18 +390,108 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             LR"(I:\cpp_public\lyrics\res\晴天-MusicEnc.lrc)",
 
         };
+        char* json_config = nullptr;
+        {
+            // 横向窗口一些默认值, 有高度用高度
+            // 左边: (屏幕宽度 - 窗口宽度) / 2
+            // 顶边: 屏幕底边 - 窗口高度 - 100
+            // 宽度: 800
+            // 高度: 高度不允许设置, 内部根据字体大小自动调整
+
+            cJSON* json = cJSON_CreateObject();
+
+            cJSON_AddNumberToObject(json, "refreshRate", 144);
+            cJSON_AddBoolToObject(json, "bVertical", false);
+            cJSON_AddBoolToObject(json, "bSingleLine", false);
+            cJSON_AddBoolToObject(json, "bSelfy", false);
+            cJSON_AddBoolToObject(json, "bSelyy", false);
+
+
+            cJSON_AddStringToObject(json, "szDefText", (LPCSTR)u8"没有歌词时的默认文本, 可以做广告之类的");
+            cJSON_AddNumberToObject(json, "padding_text", 5);
+            cJSON_AddNumberToObject(json, "padding_wnd", 8);
+            cJSON_AddNumberToObject(json, "strokeWidth", 2.2);
+            cJSON_AddNumberToObject(json, "strokeWidth_div", 0);
+            cJSON_AddBoolToObject(json, "fillBeforeDraw", false);
+            cJSON_AddNumberToObject(json, "nLineSpace", 2);
+
+            // 歌词模式, 对齐方式
+            cJSON* lyric_mode = cJSON_AddObjectToObject(json, "lyric_mode");
+            cJSON* line1 = cJSON_AddObjectToObject(lyric_mode, "line1");
+            cJSON* line2 = cJSON_AddObjectToObject(lyric_mode, "line2");
+            cJSON_AddNumberToObject(line1, "align", 0);
+            cJSON_AddNumberToObject(line2, "align", 2);
+
+            cJSON_AddStringToObject(json, "szFontName", (LPCSTR)u8"微软雅黑");
+            cJSON_AddNumberToObject(json, "nFontSize", 24);
+            cJSON_AddNumberToObject(json, "lfWeight", 700);
+
+            cJSON* rect_v = cJSON_AddObjectToObject(json, "rect_v");
+            cJSON* rect_h = cJSON_AddObjectToObject(json, "rect_h");
+            cJSON_AddNumberToObject(rect_v, "left", 1700);
+            cJSON_AddNumberToObject(rect_v, "top", 100);
+            cJSON_AddNumberToObject(rect_v, "right", 2000);
+            cJSON_AddNumberToObject(rect_v, "bottom", 800);
+            cJSON_AddNumberToObject(rect_h, "left", 300);
+            cJSON_AddNumberToObject(rect_h, "top", 800);
+            cJSON_AddNumberToObject(rect_h, "right", 1000);
+            cJSON_AddNumberToObject(rect_h, "bottom", 1000);
+
+            cJSON* clrNormal = cJSON_AddArrayToObject(json, "clrNormal");
+            cJSON* clrNormal_GradientStop = cJSON_AddArrayToObject(json, "clrNormal_GradientStop");
+            cJSON* clrLight = cJSON_AddArrayToObject(json, "clrLight");
+            cJSON* clrLight_GradientStop = cJSON_AddArrayToObject(json, "clrLight_GradientStop");
+            cJSON_AddItemToArray(clrNormal, cJSON_CreateNumber(MAKEARGB(255, 0, 109, 178)));
+            cJSON_AddItemToArray(clrNormal, cJSON_CreateNumber(MAKEARGB(255, 3, 189, 241)));
+            cJSON_AddItemToArray(clrNormal, cJSON_CreateNumber(MAKEARGB(255, 3, 202, 252)));
+
+            cJSON_AddItemToArray(clrLight, cJSON_CreateNumber(MAKEARGB(255, 255,255,255)));
+            cJSON_AddItemToArray(clrLight, cJSON_CreateNumber(MAKEARGB(255, 130,247,253)));
+            cJSON_AddItemToArray(clrLight, cJSON_CreateNumber(MAKEARGB(255, 3, 233, 252)));
+
+            cJSON_AddItemToArray(clrNormal_GradientStop, cJSON_CreateNumber(0));
+            cJSON_AddItemToArray(clrNormal_GradientStop, cJSON_CreateNumber(0.5));
+            cJSON_AddItemToArray(clrNormal_GradientStop, cJSON_CreateNumber(1));
+
+            cJSON_AddItemToArray(clrLight_GradientStop, cJSON_CreateNumber(0));
+            cJSON_AddItemToArray(clrLight_GradientStop, cJSON_CreateNumber(0.5));
+            cJSON_AddItemToArray(clrLight_GradientStop, cJSON_CreateNumber(1));
+
+            cJSON_AddNumberToObject(json, "clrBorderNormal", MAKEARGB(255, 33, 33, 33));
+            cJSON_AddNumberToObject(json, "clrBorderLight", MAKEARGB(255, 33, 33, 33));
+            cJSON_AddNumberToObject(json, "clrWndBack", MAKEARGB(100, 0, 0, 0));
+            cJSON_AddNumberToObject(json, "clrWndBorder", MAKEARGB(200, 0, 0, 0));
+            cJSON_AddNumberToObject(json, "clrLine", MAKEARGB(100, 255, 255, 255));
+
+
+
+            cJSON* debug = cJSON_AddObjectToObject(json, "debug");
+            //cJSON_AddNumberToObject(debug, "clrTextBackNormal", MAKEARGB(200, 0, 255, 0));
+            //cJSON_AddNumberToObject(debug, "clrTextBackLight", MAKEARGB(200, 255, 0, 0));
+            cJSON_AddNumberToObject(debug, "clrTextBackNormal", 0);
+            cJSON_AddNumberToObject(debug, "clrTextBackLight", 0);
+            cJSON_AddBoolToObject(debug, "alwaysFillBack", 0);
+            cJSON_AddBoolToObject(debug, "alwaysDraw", 0);
+            cJSON_AddBoolToObject(debug, "alwaysCache", 0);
+            cJSON_AddBoolToObject(debug, "alwaysCache1", 0);
+
+            json_config = cJSON_PrintUnformatted(json);
+            cJSON_Delete(json);
+
+        }
+
         std::string data;
         read_file(krcs.back(), data);
-        LYRIC_DESKTOP_ARG arg{};
-        lyric_desktop_get_default_arg(&arg);
-        arg.rcWindow = { 300, 800, 1000, 1000 };
+
+
         //arg.pszFontName = L"黑体";
-        m_hLyricWindow = lyric_desktop_create(&arg, OnLyricCommand, 0);
+        m_hLyricWindow = lyric_desktop_create(json_config, OnLyricCommand, 0);
         lyric_desktop_load_lyric(m_hLyricWindow, data.c_str(), (int)data.size(), LYRIC_PARSE_TYPE_KRC);
         int nType = LYRIC_PARSE_TYPE_QRC | LYRIC_PARSE_TYPE_UTF16 | LYRIC_PARSE_TYPE_PATH;
         lyric_desktop_load_lyric(m_hLyricWindow, qrc.back(), -1, static_cast<LYRIC_PARSE_TYPE>(nType));
         lyric_desktop_call_event(m_hLyricWindow, LYRIC_DESKTOP_BUTTON_ID_PLAY);
 
+        cJSON_free(json_config);
 
         break;
     }
@@ -551,7 +642,7 @@ LRESULT CALLBACK OnNotify_data(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
         m_listlrc.InvalidateRect();
 
         lyric_desktop_load_lyric(m_hLyricWindow, data.c_str(), (int)data.size(), LYRIC_PARSE_TYPE_KRC);
-        lyric_desktop_call_event(m_hLyricWindow, LYRIC_DESKTOP_BUTTON_ID_PLAY);
+        //lyric_desktop_call_event(m_hLyricWindow, LYRIC_DESKTOP_BUTTON_ID_PLAY);
         break;
     }
     case LVN_GETDISPINFOW:

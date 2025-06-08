@@ -1,13 +1,11 @@
 // 绘画歌词文本, 路径的方式绘画
 
-#include "lyric_wnd_function.h"
+#include "lyric_desktop_function.h"
 #include <d2d/CCustomTextRenderer.h>
 #include <atlbase.h>
 
 
 using namespace KUODAFU_NAMESPACE;
-
-constexpr float strokeWidth = 2.0f; // 歌词文本描边宽度
 
 NAMESPACE_LYRIC_DESKTOP_BEGIN
 
@@ -70,7 +68,8 @@ void lyric_wnd_draw_text_geometry_draw_cache(LYRIC_DESKTOP_INFO& wnd_info, LYRIC
     D2DRender& pRender = *wnd_info.dx.pRender;
     ID2D1LinearGradientBrush* hbrNormal = wnd_info.dx.hbrNormal->GetNative();
     ID2D1LinearGradientBrush* hbrLight = wnd_info.dx.hbrLight->GetNative();
-    ID2D1SolidColorBrush* hbrBorder = wnd_info.dx.hbrBorder->GetNative();
+    ID2D1SolidColorBrush* hbrBorderNormal = wnd_info.dx.hbrBorderNormal->GetNative();
+    ID2D1SolidColorBrush* hbrBorderLight = wnd_info.dx.hbrBorderLight->GetNative();
     IDWriteTextFormat* dxFormat = wnd_info.dx.hFont->GetDWTextFormat();
     ID2D1DeviceContext* pRenderTarget = pRender.GetD2DContext();
     ID2D1Factory1* pFactory = pRender.GetD2DInterface()->GetD2DFactory();
@@ -87,11 +86,11 @@ void lyric_wnd_draw_text_geometry_draw_cache(LYRIC_DESKTOP_INFO& wnd_info, LYRIC
 
     LPCWSTR pszText = line.pText;
     UINT32 nLength = (UINT32)line.nLength;
-    if (nDrawLineIndex == 2 && wnd_info.has_mode(LYRIC_MODE::EXISTTRANS))
+    if (nDrawLineIndex == 2 && wnd_info.has_mode(LYRIC_DESKTOP_MODE::EXISTTRANS))
     {
-        if (wnd_info.has_mode(LYRIC_MODE::TRANSLATION1))
+        if (wnd_info.has_mode(LYRIC_DESKTOP_MODE::TRANSLATION_FY))
             pszText = line.pTranslate1, nLength = (UINT32)line.nTranslate1;
-        else if (wnd_info.has_mode(LYRIC_MODE::TRANSLATION2))
+        else if (wnd_info.has_mode(LYRIC_DESKTOP_MODE::TRANSLATION_YY))
             pszText = line.pTranslate2, nLength = (UINT32)line.nTranslate2;
     }
 
@@ -143,7 +142,7 @@ void lyric_wnd_draw_text_geometry_draw_cache(LYRIC_DESKTOP_INFO& wnd_info, LYRIC
 
     CComPtr<ID2D1StrokeStyle> pStrokeStyle = nullptr;
     //d2dInfo.pFactory->CreateStrokeStyle(&strokeProps, nullptr, 0, &pStrokeStyle);
-    const bool is_vertical = wnd_info.has_mode(LYRIC_MODE::VERTICAL);
+    const bool is_vertical = wnd_info.has_mode(LYRIC_DESKTOP_MODE::VERTICAL);
     std::vector<GlyphGeometryInfo> m_glyphGeometries;
 
     // 调用后每个文字的路径信息都记录到数组里
@@ -210,20 +209,36 @@ void lyric_wnd_draw_text_geometry_draw_cache(LYRIC_DESKTOP_INFO& wnd_info, LYRIC
         if (FAILED(hr))
             return;
 
+        const bool isLight = (hbrFill == hbrLight);
         pRender->BeginDraw();
         pRender->Clear();
         if (wnd_info.config.debug.clrTextBackLight || wnd_info.config.debug.clrTextBackNormal)
         {
-            if (hbrFill == hbrNormal)
+            if (isLight)
                 pRender->Clear(ARGB_D2D(wnd_info.config.debug.clrTextBackLight));
             else
                 pRender->Clear(ARGB_D2D(wnd_info.config.debug.clrTextBackNormal));
         }
 
+        auto hbrBorder = isLight ? hbrBorderLight : hbrBorderNormal;
 
         if (pTextLayout)
         {
-            DrawGlyphGeometriesWithDebugText(pRender, wnd_info, draw_info, m_glyphGeometries, hbrFill, hbrBorder, renderer, strokeWidth, _offset);
+            float strokeWidth = wnd_info.config.strokeWidth;
+            if (wnd_info.config.strokeWidth_div > 0.f)
+            {
+                UINT dpi = wnd_info.scale;
+                int nFontSize = -MulDiv(wnd_info.config.nFontSize, dpi, 72);
+                if (nFontSize < 0) nFontSize *= -1;
+
+                strokeWidth = (float)nFontSize / wnd_info.config.strokeWidth_div;
+            }
+            DrawGlyphGeometriesWithDebugText(pRender,
+                                             wnd_info,
+                                             draw_info,
+                                             m_glyphGeometries,
+                                             hbrFill, hbrBorder,
+                                             renderer, strokeWidth, _offset);
         }
 
         hr = pRender->EndDraw();
@@ -260,7 +275,7 @@ void DrawGlyphGeometriesWithDebugText(
     D2D1::Matrix3x2F matrix;
     pRenderTarget->GetTransform(&matrix);
     HRESULT hr = S_OK;
-    bool is_vertical = wnd_info.has_mode(LYRIC_MODE::VERTICAL);
+    bool is_vertical = wnd_info.has_mode(LYRIC_DESKTOP_MODE::VERTICAL);
 
     D2D1_RECT_F max_bound_top{};
     D2D1_RECT_F max_bound_left{};
@@ -304,9 +319,9 @@ void DrawGlyphGeometriesWithDebugText(
     float max_height = max_bottom - min_top;
 
     float line_height = wnd_info.get_lyric_line_height();
-    float offset_y = (line_height - (max_height)) / 2 - 2;
+    float offset_y = (line_height - (max_height)) / 2;
     //float offset_x = (line_height - (max_bound_top.right - max_bound_top.left)) / 2 + 2;
-    float offset_x = (line_height - (max_width)) / 2 + 2;
+    float offset_x = (line_height - (max_width)) / 2;
 
 
     D2D1_POINT_2F offset = {};
@@ -362,8 +377,16 @@ void DrawGlyphGeometriesWithDebugText(
         }
 
         pRenderTarget->SetTransform(&newTransform);
-        pRenderTarget->DrawGeometry(geometry, pStrokeBrush, strokeWidth);
-        pRenderTarget->FillGeometry(geometry, pFillBrush);
+        if (wnd_info.config.fillBeforeDraw)
+        {
+            pRenderTarget->FillGeometry(geometry, pFillBrush);
+            pRenderTarget->DrawGeometry(geometry, pStrokeBrush, strokeWidth);
+        }
+        else
+        {
+            pRenderTarget->DrawGeometry(geometry, pStrokeBrush, strokeWidth);
+            pRenderTarget->FillGeometry(geometry, pFillBrush);
+        }
 
         pRenderTarget->SetTransform(matrix);
         //break;
@@ -381,16 +404,10 @@ void lyric_wnd_draw_geometry_DrawGlyphRun(LYRIC_DESKTOP_INFO& wnd_info,
                                           DWRITE_GLYPH_RUN_DESCRIPTION const* glyphRunDescription,
                                           IUnknown* clientDrawingEffect)
 {
-    D2DRender& pRender = *wnd_info.dx.pRender;
-    ID2D1LinearGradientBrush* hbrNormal = wnd_info.dx.hbrNormal->GetNative();
-    ID2D1LinearGradientBrush* hbrLight = wnd_info.dx.hbrLight->GetNative();
-    ID2D1SolidColorBrush* hbrBorder = wnd_info.dx.hbrBorder->GetNative();
-    IDWriteTextFormat* dxFormat = wnd_info.dx.hFont->GetDWTextFormat();
-    ID2D1DeviceContext* pRenderTarget = pRender.GetD2DContext();
 
-    ID2D1Factory1* pFactory = pRender.GetD2DInterface()->GetD2DFactory();
+    ID2D1Factory1* pFactory = wnd_info.dx.pRender->GetD2DInterface()->GetD2DFactory();
 
-    const bool is_vertical = wnd_info.has_mode(LYRIC_MODE::VERTICAL);
+    const bool is_vertical = wnd_info.has_mode(LYRIC_DESKTOP_MODE::VERTICAL);
 
     //draw_info.text_wtdth = 0;
     //draw_info.text_height = 0;
@@ -466,7 +483,7 @@ void lyric_wnd_draw_geometry_DrawGlyphRun(LYRIC_DESKTOP_INFO& wnd_info,
             draw_info.text_width += item.width;
         }
         // 构建字符变换矩阵
-        if (wnd_info.has_mode(LYRIC_MODE::VERTICAL))
+        if (wnd_info.has_mode(LYRIC_DESKTOP_MODE::VERTICAL))
         {
             // 竖屏, 需要判断字符是否是字母, 
             // 如果是字母, 则需要将字母的高度加到 offset_y, 否则只需要加上字母的宽度

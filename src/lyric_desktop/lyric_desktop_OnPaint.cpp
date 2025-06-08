@@ -1,4 +1,4 @@
-#include "lyric_wnd_function.h"
+#include "lyric_desktop_function.h"
 #include <atlbase.h>
 
 using namespace KUODAFU_NAMESPACE;
@@ -32,7 +32,7 @@ HRESULT lyric_wnd_OnPaint(LYRIC_DESKTOP_INFO& wnd_info, bool isresize, LYRIC_CAL
     const int cyClient = rcWindow.bottom - rcWindow.top;
 
     if (wnd_info.config.debug.alwaysFillBack)
-        wnd_info.isFillBack = true; // 始终显示背景, 调试用
+        wnd_info.isFillBack = true, wnd_info.isLock = false;    // 始终显示背景, 调试用
 
     if (isresize)
         pRender.Resize(cxClient, cyClient);
@@ -295,11 +295,11 @@ void lyric_wnd_fill_background(LYRIC_DESKTOP_INFO& wnd_info)
 
 
 
-bool _canvas_DrawImage(ID2D1DeviceContext* pRenderTarget, ID2D1Bitmap1* image,
+bool _canvas_DrawImage(ID2D1DeviceContext* pRenderTarget, ID2D1Bitmap1* image_button,
                float dstLeft, float dstTop, float dstRight, float dstBottom,
                float srcLeft, float srcTop, float srcRight, float srcBottom, BYTE alpha)
 {
-    if (!image || !pRenderTarget) return false;
+    if (!image_button || !pRenderTarget) return false;
     HRESULT hr = S_OK;
 
     D2D1_RECT_F rcDst{}, rcSrc{};
@@ -315,7 +315,7 @@ bool _canvas_DrawImage(ID2D1DeviceContext* pRenderTarget, ID2D1Bitmap1* image,
     rcSrc.bottom = srcBottom;
 
     pRenderTarget->DrawBitmap(
-        image,
+        image_button,
         &rcDst,
         static_cast<float>(alpha) / 255.0f,
         D2D1_BITMAP_INTERPOLATION_MODE::D2D1_BITMAP_INTERPOLATION_MODE_LINEAR,
@@ -325,13 +325,13 @@ bool _canvas_DrawImage(ID2D1DeviceContext* pRenderTarget, ID2D1Bitmap1* image,
 
 }
 
-bool _canvas_DrawImage(ID2D1DeviceContext* pRenderTarget, ID2D1Bitmap1* image,
+bool _canvas_DrawImage(ID2D1DeviceContext* pRenderTarget, ID2D1Bitmap1* image_button,
                        float dstLeft, float dstTop, float dstRight, float dstBottom,
                        float srcLeft, float srcTop, float srcRight, float srcBottom,
                        float gridPaddingLeft, float gridPaddingTop, float gridPaddingRight, float gridPaddingBottom,
                        BYTE alpha)
 {
-    if (!image || alpha == 0)
+    if (!image_button || alpha == 0)
         return false;
     float pl = gridPaddingLeft;
     float pt = gridPaddingTop;
@@ -340,49 +340,49 @@ bool _canvas_DrawImage(ID2D1DeviceContext* pRenderTarget, ID2D1Bitmap1* image,
 
 
     // 右-中间
-    bool ret = _canvas_DrawImage(pRenderTarget, image,
+    bool ret = _canvas_DrawImage(pRenderTarget, image_button,
                                  dstRight - pr, dstTop + pt, dstRight, dstBottom - pb,
                                  srcRight - gridPaddingRight, srcTop + gridPaddingTop, srcRight, srcBottom - gridPaddingBottom,
                                  alpha);
 
 
     // 右下
-    ret = _canvas_DrawImage(pRenderTarget, image,
+    ret = _canvas_DrawImage(pRenderTarget, image_button,
                             dstRight - pr, dstBottom - pb, dstRight, dstBottom, srcRight - gridPaddingRight,
                             srcBottom - gridPaddingBottom, srcRight, srcBottom,
                             alpha);
 
     // 底-中间
-    ret = _canvas_DrawImage(pRenderTarget, image,
+    ret = _canvas_DrawImage(pRenderTarget, image_button,
                             dstLeft + pl, dstBottom - pb, dstRight - pr, dstBottom,
                             srcLeft + gridPaddingLeft, srcBottom - gridPaddingBottom, srcRight - gridPaddingRight, srcBottom,
                             alpha);
 
     // 左下
-    ret = _canvas_DrawImage(pRenderTarget, image,
+    ret = _canvas_DrawImage(pRenderTarget, image_button,
                             dstLeft, dstBottom - pb, dstLeft + pl, dstBottom,
                             srcLeft, srcBottom - gridPaddingBottom, srcLeft + gridPaddingLeft, srcBottom,
                             alpha);
     // 左-中间
-    ret = _canvas_DrawImage(pRenderTarget, image,
+    ret = _canvas_DrawImage(pRenderTarget, image_button,
                             dstLeft, dstTop + pt, dstLeft + pl, dstBottom - pb,
                             srcLeft, srcTop + gridPaddingTop, srcLeft + gridPaddingLeft, srcBottom - gridPaddingBottom,
                             alpha);
 
     // 左上
-    ret = _canvas_DrawImage(pRenderTarget, image,
+    ret = _canvas_DrawImage(pRenderTarget, image_button,
                             dstLeft, dstTop, dstLeft + pl, dstTop + pt,
                             srcLeft, srcTop, srcLeft + gridPaddingLeft, srcTop + gridPaddingTop,
                             alpha);
 
     // 右上
-    ret = _canvas_DrawImage(pRenderTarget, image,
+    ret = _canvas_DrawImage(pRenderTarget, image_button,
                             dstRight - pr, dstTop, dstRight, dstTop + pt,
                             srcRight - gridPaddingRight, srcTop, srcRight, srcTop + gridPaddingTop,
                             alpha);
 
     // 顶-中间
-    ret = _canvas_DrawImage(pRenderTarget, image,
+    ret = _canvas_DrawImage(pRenderTarget, image_button,
                             dstLeft + pl, dstTop, dstRight - pr, dstTop + pt,
                             srcLeft + gridPaddingLeft, srcTop, srcRight - gridPaddingRight, srcTop + gridPaddingTop,
                             alpha);
@@ -422,9 +422,9 @@ bool _canvas_drawimagegridPadding(D2DRender* d2dRender, D2DImage* img,
     if (!pRenderTarget || alpha == 0)
         return false;
 
-    CComPtr<ID2D1Bitmap1> image;
-    img->GetBitmap(0, &image, nullptr);
-    bool ret = _canvas_DrawImage(pRenderTarget, image,
+    CComPtr<ID2D1Bitmap1> image_button;
+    img->GetBitmap(0, &image_button, nullptr);
+    bool ret = _canvas_DrawImage(pRenderTarget, image_button,
                                  dstLeft, dstTop, dstRight, dstBottom,
                                  srcLeft, srcTop, srcRight, srcBottom,
                                  gridPaddingLeft, gridPaddingTop, gridPaddingRight, gridPaddingBottom,

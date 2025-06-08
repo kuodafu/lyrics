@@ -32,13 +32,13 @@
     <ClInclude Include="src\lyric_desktop\targetver.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="src\lyric_desktop\lyric_wnd_function.h">
+    <ClInclude Include="src\lyric_desktop\lyric_desktop_function.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="src\lyric_desktop\resource.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="src\lyric_desktop\lyric_wnd_header.h">
+    <ClInclude Include="src\lyric_desktop\lyric_desktop_header.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="src\lyric_desktop\tinyxml2.h">
@@ -79,9 +79,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\lyric_desktop\lyric_desktop.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="src\lyric_desktop\lyric_desktop_function.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -147,6 +144,9 @@
     </ClCompile>
     <ClCompile Include="src\lyric_desktop\lyric_desktop_config.cpp">
       <Filter>配置</Filter>
+    </ClCompile>
+    <ClCompile Include="src\lyric_desktop\lyric_desktop_button_image.cpp">
+      <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -1,4 +1,4 @@
-#include "lyric_wnd_function.h"
+#include "lyric_desktop_function.h"
 using namespace KUODAFU_NAMESPACE;
 
 
@@ -146,21 +146,21 @@ bool lrc_click_translate(LYRIC_DESKTOP_INFO& wnd_info, int id)
     {
     case LYRIC_DESKTOP_BUTTON_ID_TRANSLATE2:    // 音译按钮
         item.id = LYRIC_DESKTOP_BUTTON_ID_TRANSLATE2_SEL;
-        wnd_info.add_mode(LYRIC_MODE::TRANSLATION2);
+        wnd_info.add_mode(LYRIC_DESKTOP_MODE::TRANSLATION_YY);
         lrc_click_translate(wnd_info, LYRIC_DESKTOP_BUTTON_ID_TRANSLATE1_SEL);
         break;
     case LYRIC_DESKTOP_BUTTON_ID_TRANSLATE2_SEL:// 音译按钮, 选中模式
         item.id = LYRIC_DESKTOP_BUTTON_ID_TRANSLATE2;
-        wnd_info.del_mode(LYRIC_MODE::TRANSLATION2);
+        wnd_info.del_mode(LYRIC_DESKTOP_MODE::TRANSLATION_YY);
         break;
     case LYRIC_DESKTOP_BUTTON_ID_TRANSLATE1:    // 翻译按钮
         item.id = LYRIC_DESKTOP_BUTTON_ID_TRANSLATE1_SEL;
-        wnd_info.add_mode(LYRIC_MODE::TRANSLATION1);
+        wnd_info.add_mode(LYRIC_DESKTOP_MODE::TRANSLATION_FY);
         lrc_click_translate(wnd_info, LYRIC_DESKTOP_BUTTON_ID_TRANSLATE2_SEL);
         break;
     case LYRIC_DESKTOP_BUTTON_ID_TRANSLATE1_SEL:// 翻译按钮, 选中模式
         item.id = LYRIC_DESKTOP_BUTTON_ID_TRANSLATE1;
-        wnd_info.del_mode(LYRIC_MODE::TRANSLATION1);
+        wnd_info.del_mode(LYRIC_DESKTOP_MODE::TRANSLATION_FY);
         break;
     default:
         return false;
@@ -184,7 +184,7 @@ void lrc_click_vmode(LYRIC_DESKTOP_INFO& wnd_info, int id)
     if (pItem == nullptr)
         return;
     pItem->id = LYRIC_DESKTOP_BUTTON_ID_HORIZONTAL;
-    wnd_info.add_mode(LYRIC_MODE::VERTICAL);
+    wnd_info.add_mode(LYRIC_DESKTOP_MODE::VERTICAL);
     _lrc_v_h_mode(wnd_info);
 }
 
@@ -194,7 +194,7 @@ void lrc_click_hmode(LYRIC_DESKTOP_INFO& wnd_info, int id)
     if (pItem == nullptr)
         return;
     pItem->id = LYRIC_DESKTOP_BUTTON_ID_VERTICAL;
-    wnd_info.del_mode(LYRIC_MODE::VERTICAL);
+    wnd_info.del_mode(LYRIC_DESKTOP_MODE::VERTICAL);
     _lrc_v_h_mode(wnd_info);
 }
 

@@ -1,5 +1,5 @@
 #pragma once
-#include "lyric_wnd_header.h"
+#include "lyric_desktop_header.h"
 #include "_lyric_desktop_draw_header.h"
 
 
@@ -15,16 +15,15 @@ void lyric_wnd_set_data(HWND hWnd, PLYRIC_DESKTOP_INFO pWndInfo);
 PLYRIC_DESKTOP_INFO lyric_wnd_get_data(HWND hWnd);
 
 // 初始化桌面窗口
-bool _ld_init();
-bool _ld_uninit();
+bool _lyric_dwsktop_init();
+bool _lyric_dwsktop_uninit();
 
 // 创建歌词窗口, 创建的是分层窗口, 是支持透明的, 失败返回空指针
-PLYRIC_DESKTOP_INFO _ld_create_layered_window(const LYRIC_DESKTOP_ARG* arg);
+PLYRIC_DESKTOP_INFO _ld_create_layered_window(const char* arg, PFN_LYRIC_DESKTOP_COMMAND pfnCommand, LPARAM lParam);
 
 // 给窗口增加一个高精度定时器, 用于刷新歌词显示
 void _ld_start_high_precision_timer(PLYRIC_DESKTOP_INFO pWndInfo);
 
-void lyric_wnd_default_object(LYRIC_DESKTOP_INFO& wnd_info);
 
 
 // 歌词窗口上的按钮被点击
@@ -47,6 +46,7 @@ int lyric_wnd_set_state_translate(LYRIC_DESKTOP_INFO& wnd_info, int language);
 
 
 LPBYTE _lrc_dwsktop_get_shadow_image(size_t& size);
+LPBYTE _lrc_dwsktop_get_desktop_image(size_t& size);
 
 
 NAMESPACE_LYRIC_DESKTOP_END

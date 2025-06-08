@@ -1,5 +1,4 @@
 #pragma once
-#include <kuodafu_lyric_desktop.h>
 #include <d2d/d2d_interface.h>
 #include <CScale.h>
 #include <kuodafu_lyric.h>
@@ -9,7 +8,6 @@
 
 NAMESPACE_LYRIC_DESKTOP_BEGIN
 
-struct LYRIC_DESKTOP_INFO;
 // 歌词窗口dx相关的对象
 struct LYRIC_DESKTOP_DX
 {
@@ -17,16 +15,15 @@ struct LYRIC_DESKTOP_DX
     KUODAFU_NAMESPACE::D2DRender* pRender;                  // D2D绘画句柄
     KUODAFU_NAMESPACE::D2DFont*   hFont;                    // 绘画歌词的字体, 这个是设备无关字体, 设备失效不需要重新创建
 
-    KUODAFU_NAMESPACE::D2DImage* image;                     // 歌词窗口按钮需要的图片
+    KUODAFU_NAMESPACE::D2DImage* image_button;              // 歌词窗口按钮需要的图片
     KUODAFU_NAMESPACE::D2DImage* image_shadow;              // 阴影图片
-    KUODAFU_NAMESPACE::D2DSolidBrush* hbrBorder;            // 绘画歌词文本的边框画刷
+    KUODAFU_NAMESPACE::D2DSolidBrush* hbrBorderNormal;      // 绘画普通歌词文本的边框画刷
+    KUODAFU_NAMESPACE::D2DSolidBrush* hbrBorderLight;       // 绘画高亮歌词文本的边框画刷
     KUODAFU_NAMESPACE::D2DSolidBrush* hbrWndBorder;         // 歌词窗口的边框画刷
     KUODAFU_NAMESPACE::D2DSolidBrush* hbrWndBack;           // 歌词窗口的背景画刷
     KUODAFU_NAMESPACE::D2DSolidBrush* hbrLine;              // 歌词按钮分隔部分的线条画刷
     KUODAFU_NAMESPACE::D2DLinearGradientBrush* hbrNormal;   // 普通歌词画刷
     KUODAFU_NAMESPACE::D2DLinearGradientBrush* hbrLight;    // 高亮歌词画刷
-
-
 
     ID2D1Bitmap* pBitmapBack;   // 缓存位图, 窗口背景, 尺寸改变的时候需要重新创建
 
@@ -36,9 +33,10 @@ struct LYRIC_DESKTOP_DX
         pGDIInterop = nullptr;
         hFont = nullptr;
         pRender = nullptr;
-        image = nullptr;
+        image_button = nullptr;
         image_shadow = nullptr;
-        hbrBorder = nullptr;
+        hbrBorderNormal = nullptr;
+        hbrBorderLight = nullptr;
         hbrWndBorder = nullptr;
         hbrWndBack = nullptr;
         hbrLine = nullptr;
@@ -52,6 +50,9 @@ struct LYRIC_DESKTOP_DX
         destroy(true);
     }
 
+    // 配置已经初始化了, 根据配置创建dx对象
+    void init(LYRIC_DESKTOP_INFO* pWndInfo);
+
     // 重新创建所有对象
     bool re_create(LYRIC_DESKTOP_INFO* pWndInfo);
 
@@ -59,7 +60,7 @@ struct LYRIC_DESKTOP_DX
     bool re_create_brush(LYRIC_DESKTOP_INFO* pWndInfo, bool isLight);
 
     // 重新创建边框画刷
-    bool re_create_border(LYRIC_DESKTOP_INFO* pWndInfo);
+    bool re_create_brush(KUODAFU_NAMESPACE::D2DSolidBrush*& hbr, DWORD argb);
 
     // 重新创建字体对象, 外部重新设置字体的时候调用
     bool re_create_font(LYRIC_DESKTOP_INFO* pWndInfo);
@@ -87,7 +88,7 @@ struct LYRIC_DESKTOP_BUTTON_INFO
     int     index;      // 按钮索引, 从1开始, 表示显示的第几个按钮, 和xml里的顺序对应
     int     state;      // 按钮状态
     RECT    rc;         // 按钮实际的位置, 单位是像素, 判断鼠标移动到这个位置就在按钮上
-    RECT* prcSrc;     // 按钮的源矩形, 从大图片上的哪个位置拿出来绘画
+    RECT*   prcSrc;     // 按钮的源矩形, 从大图片上的哪个位置拿出来绘画
 };
 struct LYRIC_DESKTOP_BUTTON
 {
@@ -107,38 +108,59 @@ struct LYRIC_DESKTOP_BUTTON
 // 把一整行普通歌词 + 一整行高亮歌词绘画到缓存位图上, 只有歌词改变才会重新绘画第二次
 struct LYRIC_DESKTOP_CACHE_OBJ
 {
-    int     preIndex{-1};           // 上次绘画的行号索引
-    LPCWSTR preText{};              // 上次绘画的文本地址, 行号和文本都一样那就是不需要重新创建对象
-    int     preLength{};            // 上次绘画文本的长度
+    int     preIndex;               // 上次绘画的行号索引
+    LPCWSTR preText;                // 上次绘画的文本地址, 行号和文本都一样那就是不需要重新创建对象
+    int     preLength;              // 上次绘画文本的长度
 
-    D2D1_RECT_F rcBounds{};         // 实际绘画的区域
-    ID2D1Bitmap* pBitmapNormal{};   // 缓存位图, 普通歌词文本, 一次画好, 后面直接设定裁剪区就可以了
-    ID2D1Bitmap* pBitmapLight{};    // 缓存位图, 高亮歌词文本
+    D2D1_RECT_F rcBounds;           // 实际绘画的区域
+    ID2D1Bitmap* pBitmapNormal;     // 缓存位图, 普通歌词文本, 一次画好, 后面直接设定裁剪区就可以了
+    ID2D1Bitmap* pBitmapLight;      // 缓存位图, 高亮歌词文本
 
+    void init()
+    {
+        pBitmapNormal = nullptr;
+        pBitmapLight = nullptr;
+        clear();
+    }
+    void clear()
+    {
+        preIndex = -1;
+        preText = nullptr;
+        preLength = 0;
+        rcBounds = { 0 };
 
-    ~LYRIC_DESKTOP_CACHE_OBJ();
+    }
+
+    ~LYRIC_DESKTOP_CACHE_OBJ()
+    {
+        KUODAFU_NAMESPACE::SafeRelease(pBitmapNormal);
+        KUODAFU_NAMESPACE::SafeRelease(pBitmapLight);
+    }
 };
 
 // 记录绘画文本需要的数据, 路径, 阴影方式都是使用这个结构, 一行对应一个结构
 struct LYRIC_DESKTOP_DRAWTEXT_INFO
 {
-    LYRIC_LINE_STRUCT       line{}; // 歌词行信息
+    LYRIC_LINE_STRUCT       line;   // 歌词行信息
     LYRIC_DESKTOP_CACHE_OBJ cache;  // 缓存对象指针
 
-    int         index{ -1 };        // 歌词行号, 当前绘画的行号
+    int         index;              // 歌词行号, 当前绘画的行号
 
-    int         align{0};           // 对齐模式, 0=左对齐, 1=居中对齐, 2=右对齐
-    D2D1_RECT_F rcText{};           // 歌词文本绘画的位置, 这个位置是根据对齐模式计算的
+    int         align;              // 对齐模式, 0=左对齐, 1=居中对齐, 2=右对齐
+    D2D1_RECT_F rcText;             // 歌词文本绘画的位置, 这个位置是根据对齐模式计算的
 
-    float text_width{};             // 歌词文本宽度, 在绘画时会计算, 会有翻译和音译, 所以需要计算
-    float text_height{};            // 歌词文本高度, 在绘画时会计算, 计算每个字的时候只计算了普通歌词
+    float text_width;               // 歌词文本宽度, 在绘画时会计算, 会有翻译和音译, 所以需要计算
+    float text_height;              // 歌词文本高度, 在绘画时会计算, 计算每个字的时候只计算了普通歌词
 
-    float nLightWidth{};            // 歌词高亮位置, 大于0的话就是要绘画高亮区域
-    float nLightHeight{};           // 歌词高亮位置, 大于0的话就是要绘画高亮区域
+    float nLightWidth;              // 歌词高亮位置, 大于0的话就是要绘画高亮区域
+    float nLightHeight;             // 歌词高亮位置, 大于0的话就是要绘画高亮区域
 
-    LYRIC_DESKTOP_DRAWTEXT_INFO()
+    // 初始化歌词行信息, 传递这一行的对齐模式
+    // 后续的绘画都是根据这个对齐模式计算文本位置
+    void init(int algin)
     {
-        align = 0;
+        this->align = algin;
+        cache.init();
         clear();
     }
 
@@ -151,11 +173,7 @@ struct LYRIC_DESKTOP_DRAWTEXT_INFO
         nLightHeight = 0.f;
         text_width = 0.f;
         text_height = 0.f;
-
-        cache.preIndex = -1;
-        cache.preText = nullptr;
-        cache.preLength = 0;
-        cache.rcBounds = { 0 };
+        cache.clear();
     }
 };
 
@@ -184,25 +202,10 @@ typedef struct LYRIC_DESKTOP_INFO
     RECT        rcMonitor;      // 所有显示器合并后的矩形
     
     float       shadowRadius;   // 阴影半径
+    LYRIC_DESKTOP_MODE  mode;   // 歌词显示模式, LYRIC_DESKTOP_MODE 枚举类型
 
     LPCRITICAL_SECTION pCritSec;// 歌词加载的临界区, 防止有线程释放了歌词, 然后窗口线程去查询
     
-    bool has_mode(LYRIC_MODE flag) const
-    {
-        using T = std::underlying_type_t<LYRIC_MODE>;
-        return (static_cast<T>(config.mode) & static_cast<T>(flag)) != 0;
-    }
-    void add_mode(LYRIC_MODE flag)
-    {
-        using T = std::underlying_type_t<LYRIC_MODE>;
-        config.mode = static_cast<LYRIC_MODE>(static_cast<T>(config.mode) | static_cast<T>(flag));
-    }
-    void del_mode(LYRIC_MODE flag)
-    {
-        using T = std::underlying_type_t<LYRIC_MODE>;
-        config.mode = static_cast<LYRIC_MODE>(static_cast<T>(config.mode) & ~static_cast<T>(flag));
-    }
-
     union
     {
         struct
@@ -223,10 +226,11 @@ typedef struct LYRIC_DESKTOP_INFO
         USHORT  change;
     };
 
-    LYRIC_DESKTOP_CONFIG        config;     // 歌词的配置信息, 所有配置都在这里
 
     LYRIC_DESKTOP_DRAWTEXT_INFO line1;      // 第一行歌词信息, 包括缓存对象, 歌词行信息, 歌词文本绘画位置, 歌词高亮位置等
     LYRIC_DESKTOP_DRAWTEXT_INFO line2;      // 第二行歌词信息
+
+    LYRIC_DESKTOP_CONFIG        config;     // 歌词的配置信息, 所有配置都在这里
 
     LYRIC_DESKTOP_BUTTON        button;
     PFN_LYRIC_DESKTOP_COMMAND   pfnCommand; // 歌词窗口上的按钮被点击回调函数
@@ -234,7 +238,15 @@ typedef struct LYRIC_DESKTOP_INFO
     LYRIC_DESKTOP_DX            dx;         // dx相关的对象
     CScale                      scale;      // 缩放比例
     std::vector<RECT>           rcMonitors; // 所有显示器的矩形, 记录每个屏幕的位置, 限制窗口移动范围
-    LYRIC_DESKTOP_INFO();
+
+    // 初始化结构, 初始化配置, 初始化DX, 后续所有操作都是从这个结构进行的
+    // hWnd = 显示桌面歌词的窗口句柄
+    // argJson = 桌面歌词配置json字符串
+    // pfnCommand = 歌词窗口上的按钮被点击回调函数
+    // lParam = 歌词窗口上的按钮被点击回调函数的参数
+    void init(HWND hWnd, const char* argJson, PFN_LYRIC_DESKTOP_COMMAND pfnCommand, LPARAM lParam);
+
+    
     int Addref()
     {
         return InterlockedIncrement(&nAddref);
@@ -253,7 +265,21 @@ typedef struct LYRIC_DESKTOP_INFO
         return nRet;
     }
 
-    void set_def_arg(const LYRIC_DESKTOP_ARG* arg);
+    bool has_mode(LYRIC_DESKTOP_MODE flag) const
+    {
+        using T = std::underlying_type_t<LYRIC_DESKTOP_MODE>;
+        return (static_cast<T>(mode) & static_cast<T>(flag)) != 0;
+    }
+    void add_mode(LYRIC_DESKTOP_MODE flag)
+    {
+        using T = std::underlying_type_t<LYRIC_DESKTOP_MODE>;
+        mode = static_cast<LYRIC_DESKTOP_MODE>(static_cast<T>(mode) | static_cast<T>(flag));
+    }
+    void del_mode(LYRIC_DESKTOP_MODE flag)
+    {
+        using T = std::underlying_type_t<LYRIC_DESKTOP_MODE>;
+        mode = static_cast<LYRIC_DESKTOP_MODE>(static_cast<T>(mode) & ~static_cast<T>(flag));
+    }
 
     // DPI改变时调用, 会重新计算字体, 位置偏移等信息
     void dpi_change(HWND hWnd);

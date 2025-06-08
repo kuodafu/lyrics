@@ -80,22 +80,6 @@ enum LYRIC_DESKTOP_BUTTON_STATE
     LYRIC_DESKTOP_BUTTON_STATE_ERROR    = -1,   // 获取失败
 };
 
-typedef struct LYRIC_DESKTOP_ARG
-{
-    RECT        rcWindow;       // 要设置的窗口位置和大小
-    DWORD       clrWndBack;     // 背景颜色
-    DWORD       clrWndBorder;   // 窗口背景边框颜色, 为0则不显示边框
-    int         nFontSize;      // 字体大小
-    LPCWSTR     pszFontName;    // 字体名称
-    DWORD       clrBorder;      // 边框颜色
-
-    DWORD*      pClrNormal;     // 普通歌词颜色数组
-    int         nClrNormal;     // 普通歌词颜色数组长度
-
-    DWORD*      pClrLight;      // 高亮歌词颜色数组
-    int         nClrLight;      // 高亮歌词颜色数组长度
-
-}*PLYRIC_DESKTOP_ARG;
 
 // 歌词窗口按钮被点击事件, 返回0表示事件放行, 返回非0表示拦截事件
 typedef int (CALLBACK* PFN_LYRIC_DESKTOP_COMMAND)(HWND hWindowLyric, int id, LPARAM lParam);
@@ -113,19 +97,19 @@ bool LYRICCALL lyric_desktop_init();
 bool LYRICCALL lyric_desktop_uninit();
 
 /// <summary>
-/// 获取创建窗口的默认参数
+/// 释放歌词窗口返回的指针
 /// </summary>
-/// <param name="arg">接收默认参数的结构</param>
-void LYRICCALL lyric_desktop_get_default_arg(LYRIC_DESKTOP_ARG* arg);
+/// <returns></returns>
+void LYRICCALL lyric_desktop_free(void* ptr);
 
 /// <summary>
 /// 创建一个歌词窗口, 这个窗口是分层窗口, 主要显示歌词用
 /// </summary>
-/// <param name="arg">创建歌词窗口的参数, 字体, 窗口位置, 颜色等信息</param>
+/// <param name="arg">创建歌词窗口的参数, 为空则使用默认值, 字体, 窗口位置, 颜色等信息</param>
 /// <param name="pfnCommand">按钮被点击回调函数</param>
 /// <param name="lParam">传递到 pfnCommand() 函数里的参数</param>
 /// <returns>返回窗口句柄</returns>
-HWND LYRICCALL lyric_desktop_create(const LYRIC_DESKTOP_ARG* arg, PFN_LYRIC_DESKTOP_COMMAND pfnCommand, LPARAM lParam);
+HWND LYRICCALL lyric_desktop_create(const char* arg, PFN_LYRIC_DESKTOP_COMMAND pfnCommand, LPARAM lParam);
 
 /// <summary>
 /// 歌词窗口加载歌词数据, 歌词是什么类型在 nType 参数里指定
@@ -145,50 +129,22 @@ bool LYRICCALL lyric_desktop_load_lyric(HWND hWindowLyric, LPCVOID pKrcData, int
 /// <returns>返回是否更新成功</returns>
 bool LYRICCALL lyric_desktop_update(HWND hWindowLyric, int nCurrentTimeMS);
 
-/// <summary>
-/// 给歌词设置歌词文本颜色, 目前只支持普通颜色和高亮颜色
-/// </summary>
-/// <param name="hWindowLyric">歌词窗口句柄</param>
-/// <param name="isLight">设置的是否是高亮的歌词</param>
-/// <param name="pClr">颜色数组, ARGB颜色值</param>
-/// <param name="nCount">颜色数组差一点</param>
-/// <returns>返回是否设置成功</returns>
-bool LYRICCALL lyric_desktop_set_color(HWND hWindowLyric, bool isLight, DWORD* pClr, int nCount);
 
 /// <summary>
-/// 设置歌词文本字体, 高亮个普通都使用同一个字体, 就是使用不同颜色而已
-/// </summary>
-/// <param name="hWindowLyric">歌词窗口句柄</param>
-/// <param name="pszName">字体名字</param>
-/// <param name="nSize">字体尺寸</param>
-/// <param name="isBold">是否加粗</param>
-/// <param name="isItalic">是否斜体</param>
-/// <returns>返回是否设置成功</returns>
-bool LYRICCALL lyric_desktop_set_font(HWND hWindowLyric, LPCWSTR pszName, int nSize, bool isBold, bool isItalic);
-
-/// <summary>
-/// 设置歌词窗口背景色, ARGB颜色值
-/// </summary>
-/// <param name="hWindowLyric">歌词窗口句柄</param>
-/// <param name="clr">背景颜色ARGB颜色值</param>
-/// <returns>返回是否设置成功</returns>
-bool LYRICCALL lyric_desktop_set_clr_back(HWND hWindowLyric, DWORD clr);
-
-/// <summary>
-/// 设置歌词窗口歌词文本边框颜色, ARGB颜色值
-/// </summary>
-/// <param name="hWindowLyric">歌词窗口句柄</param>
-/// <param name="clr">ARGB颜色值</param>
-/// <returns>返回是否设置成功</returns>
-bool LYRICCALL lyric_desktop_set_clr_border(HWND hWindowLyric, DWORD clr);
-
-/// <summary>
-/// 获取歌词窗口的配置信息, 应该需要把这个保存到某个地方, 等创建的时候传递进来还原
+/// 获取歌词窗口的配置信息, 不使用时需要调用 lyric_desktop_free() 释放
 /// </summary>
 /// <param name="hWindowLyric">歌词窗口句柄</param>
 /// <param name="arg">参考返回歌词窗口的配置信息, 返回的内容不可修改</param>
-/// <returns></returns>
-bool LYRICCALL lyric_desktop_get_config(HWND hWindowLyric, LYRIC_DESKTOP_ARG* arg);
+/// <returns>返回配置json信息</returns>
+char* LYRICCALL lyric_desktop_get_config(HWND hWindowLyric);
+
+/// <summary>
+/// 设置歌词配置, 设置后会重新创建配置对应的对象
+/// </summary>
+/// <param name="hWindowLyric">歌词窗口句柄</param>
+/// <param name="argJson">配置的json字符串</param>
+/// <returns>返回影响了多少个配置, 失败返回0</returns>
+int LYRICCALL lyric_desktop_set_config(HWND hWindowLyric, const char* argJson);
 
 /// <summary>
 /// 调用歌词窗口的事件

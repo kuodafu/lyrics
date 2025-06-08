@@ -4,8 +4,25 @@
 #include <vector>
 #include <string>
 #include "lyric_desktop_namespace.h"
+#include <kuodafu_lyric_desktop.h>
 
 NAMESPACE_LYRIC_DESKTOP_BEGIN
+
+struct LYRIC_DESKTOP_INFO;
+
+
+// 歌词窗口的模式, 目前就这几个模式
+enum class LYRIC_DESKTOP_MODE : unsigned int
+{
+    DOUBLE_ROW      = 0x0000,   // 双行歌词
+    TRANSLATION_FY  = 0x0001,   // 翻译
+    TRANSLATION_YY  = 0x0002,   // 音译
+    SINGLE_ROW      = 0x0004,   // 单行显示
+
+    VERTICAL        = 0x10000,  // 竖屏模式
+    EXISTTRANS      = 0x20000,  // 存在翻译, 存在这个就判断歌词对齐模式, 否则默认双行
+
+};
 
 class CCriticalSection
 {
@@ -46,17 +63,6 @@ private:
     bool is_unlock{};
 };
 
-enum class LYRIC_MODE : unsigned int
-{
-    DOUBLE_ROW      = 0x0000,   // 双行歌词
-    TRANSLATION1    = 0x0001,   // 翻译
-    TRANSLATION2    = 0x0002,   // 音译
-    SINGLE_ROW      = 0x0004,   // 单行显示
-
-    VERTICAL        = 0x10000,  // 竖屏模式
-    EXISTTRANS      = 0x20000,  // 存在翻译, 存在这个就判断歌词对齐模式, 否则默认双行
-
-};
 
 
 NAMESPACE_LYRIC_DESKTOP_END

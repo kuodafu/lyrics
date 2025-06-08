@@ -1,4 +1,4 @@
-#include "lyric_wnd_function.h"
+#include "lyric_desktop_function.h"
 #include <d2d/CCustomTextRenderer.h>
 #include "GetMonitorRect.h"
 #include <atlbase.h>
@@ -8,6 +8,12 @@ using namespace KUODAFU_NAMESPACE;
 
 NAMESPACE_LYRIC_DESKTOP_BEGIN
 
+
+void LYRIC_DESKTOP_DX::init(LYRIC_DESKTOP_INFO* pWndInfo)
+{
+    if (!pRender)
+        re_create(pWndInfo);
+}
 
 bool LYRIC_DESKTOP_DX::re_create(LYRIC_DESKTOP_INFO* pWndInfo)
 {
@@ -24,12 +30,11 @@ bool LYRIC_DESKTOP_DX::re_create(LYRIC_DESKTOP_INFO* pWndInfo)
     g_d2d_interface->CreateD2DRender(cxClient, cyClient, true, &pRender);
     pRender->GetD2DContext()->QueryInterface(&pGDIInterop);
 
-    SafeRelease(image_shadow);
 
     size_t imgSize = 0;
     LPBYTE pImageData = _lrc_dwsktop_get_shadow_image(imgSize);
 
-
+    SafeRelease(image_shadow);
     pRender->CreateImage(pImageData, imgSize, &image_shadow);
 
     if (!hFont)
@@ -37,16 +42,16 @@ bool LYRIC_DESKTOP_DX::re_create(LYRIC_DESKTOP_INFO* pWndInfo)
 
     re_create_brush(pWndInfo, true);
     re_create_brush(pWndInfo, false);
-    re_create_border(pWndInfo);
+
+    re_create_brush(hbrBorderNormal, pWndInfo->config.clrBorderNormal);
+    re_create_brush(hbrBorderLight, pWndInfo->config.clrBorderLight);
+    re_create_brush(hbrWndBorder, pWndInfo->config.clrWndBorder);
+    re_create_brush(hbrWndBack, pWndInfo->config.clrWndBack);
+    re_create_brush(hbrLine, pWndInfo->config.clrLine);
+
+
     re_create_image(pWndInfo);
 
-    SafeRelease(hbrWndBorder);
-    SafeRelease(hbrWndBack);
-    SafeRelease(hbrLine);
-
-    pRender->CreateSolidBrush(pWndInfo->config.clrWndBorder, &hbrWndBorder);
-    pRender->CreateSolidBrush(pWndInfo->config.clrWndBack, &hbrWndBack);
-    pRender->CreateSolidBrush(MAKEARGB(100, 255, 255, 255), &hbrLine);
 
     return true;
 }
@@ -73,7 +78,7 @@ bool LYRIC_DESKTOP_DX::re_create_brush(LYRIC_DESKTOP_INFO* pWndInfo, bool isLigh
     }
 
     POINT_F pt1 = { 0.f, 0.f };
-    POINT_F pt2 = { 1.f, .1f };
+    POINT_F pt2 = { 1.f, 1.f };
     D2DBRUSH_CREATE_STRUCT arg{};
     arg.color = pClr;
     arg.colorCount = size;
@@ -81,10 +86,13 @@ bool LYRIC_DESKTOP_DX::re_create_brush(LYRIC_DESKTOP_INFO* pWndInfo, bool isLigh
     return SUCCEEDED(hr);
 }
 
-bool LYRIC_DESKTOP_DX::re_create_border(LYRIC_DESKTOP_INFO* pWndInfo)
+bool LYRIC_DESKTOP_DX::re_create_brush(KUODAFU_NAMESPACE::D2DSolidBrush*& hbr, DWORD argb)
 {
-    SafeRelease(hbrBorder);
-    HRESULT hr = pRender->CreateSolidBrush(pWndInfo->config.clrBorder, &hbrBorder);
+    // 已经创建的直接改颜色, 如果设备失效的话, 在结束绘画的时候就销毁了
+    if (hbr)
+        return hbr->SetColor(argb);
+    
+    HRESULT hr = pRender->CreateSolidBrush(argb, &hbr);
     return SUCCEEDED(hr);
 }
 
@@ -97,13 +105,25 @@ bool LYRIC_DESKTOP_DX::re_create_font(LYRIC_DESKTOP_INFO* pWndInfo)
     if (lf.lfHeight == 0)
         SystemParametersInfoW(SPI_GETICONTITLELOGFONT, sizeof(LOGFONTW), &lf, 0);
     
-    lf.lfHeight = -MulDiv(pWndInfo->config.nFontSize, pWndInfo->scale, 72);
-    lf.lfWeight = pWndInfo->config.lfWeight;
-    wcscpy_s(lf.lfFaceName, pWndInfo->config.pszFontName.c_str());
+    int nFontSize = pWndInfo->config.nFontSize;
+    int lfWeight = pWndInfo->config.lfWeight;
+    UINT dpi = pWndInfo->scale;
+    if (nFontSize == 0)
+        nFontSize = 24;
+    if (lfWeight == 0)
+        lfWeight = FW_NORMAL;
+    if (!dpi)
+        dpi = 96;
+
+    lf.lfHeight = -MulDiv(nFontSize, dpi, 72);
+    lf.lfWeight = lfWeight;
+    wcscpy_s(lf.lfFaceName, pWndInfo->config.szFontName.c_str());
     g_d2d_interface->CreateD2DFont(&lf, &hFont);
 
     CComPtr<IDWriteTextLayout> pTextLayout;
-    lyric_wnd_create_text_layout(pWndInfo->config.pszDefText, pWndInfo->config.nDefText, hFont->GetDWTextFormat(), 0, 0, &pTextLayout);
+    lyric_wnd_create_text_layout(pWndInfo->config.szDefText.c_str(),
+                                 (int)pWndInfo->config.szDefText.size(),
+                                 hFont->GetDWTextFormat(), 0, 0, &pTextLayout);
     if (pTextLayout)
     {
         float width = 0.f, height = 0.f;
@@ -152,9 +172,12 @@ bool LYRIC_DESKTOP_DX::re_create_font(LYRIC_DESKTOP_INFO* pWndInfo)
 
 bool LYRIC_DESKTOP_DX::re_create_image(LYRIC_DESKTOP_INFO* pWndInfo)
 {
-    SafeRelease(image);
-    lyric_wnd_load_image(*pWndInfo);
-    return false;
+    SafeRelease(image_button);
+    size_t png_size = 0;
+    LPBYTE png = _lrc_dwsktop_get_desktop_image(png_size);
+    pRender->CreateImage(png, png_size, &image_button);
+    lyric_wnd_load_image(*pWndInfo);    //TODO: 这里不应该这么写, 应该是加载图片和计算位置分开
+    return image_button != nullptr;
 }
 
 bool LYRIC_DESKTOP_DX::destroy(bool isDestroyFont)
@@ -165,16 +188,21 @@ bool LYRIC_DESKTOP_DX::destroy(bool isDestroyFont)
 
     SafeRelease(pBitmapBack);
 
-    SafeRelease(hbrBorder);
+    SafeRelease(image_button);
+    SafeRelease(image_shadow);
+
+    SafeRelease(hbrBorderNormal);
+    SafeRelease(hbrBorderLight);
     SafeRelease(hbrWndBorder);
     SafeRelease(hbrWndBack);
     SafeRelease(hbrLine);
     SafeRelease(hbrNormal);
     SafeRelease(hbrLight);
-    SafeRelease(image);
-    SafeRelease(image_shadow);
+
+
     SafeRelease(pGDIInterop);
-    SafeRelease(pRender);
+    SafeRelease(pRender);       // 渲染对象最后释放
+
     return true;
 }
 

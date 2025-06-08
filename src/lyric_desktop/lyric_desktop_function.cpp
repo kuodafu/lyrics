@@ -1,11 +1,45 @@
-#include "lyric_wnd_function.h"
+#include "lyric_desktop_function.h"
 #include <windowsx.h>
 #include "dwrite_1.h"
 #include <dwmapi.h>
 #include "GetMonitorRect.h"
+#include <d2d/CCustomTextRenderer.h>
 
 #pragma comment(lib, "dwmapi.lib")
 #pragma comment(lib, "dxguid.lib")
+
+
+#ifdef _LIB
+#   ifdef _WIN64
+#      ifdef _DEBUG
+#          pragma comment(lib, "output/x64/lyric_libD.lib")
+#      else
+#          pragma comment(lib, "output/x64/lyric_lib.lib")
+#      endif
+#   else
+#      ifdef _DEBUG
+#          pragma comment(lib, "output/x86/lyric_libD.lib")
+#      else
+#          pragma comment(lib, "output/x86/lyric_lib.lib")
+#      endif
+#   endif
+#else
+#   ifdef _WIN64
+#      ifdef _DEBUG
+#          pragma comment(lib, "output/x64/lyricD.lib")
+#      else
+#          pragma comment(lib, "output/x64/lyric.lib")
+#      endif
+#   else
+#      ifdef _DEBUG
+#          pragma comment(lib, "output/x86/lyricD.lib")
+#      else
+#          pragma comment(lib, "output/x86/lyric.lib")
+#      endif
+#   endif
+#endif
+
+
 
 using namespace KUODAFU_NAMESPACE;
 
@@ -88,7 +122,7 @@ static bool init_dpi()
 
 constexpr LPCWSTR pszClassName = L"www.kuodafu.com lyric_desktop_window";
 
-bool _ld_init()
+bool _lyric_dwsktop_init()
 {
 #ifdef _DEBUG
     const bool isDebug = true;
@@ -124,7 +158,7 @@ bool _ld_init()
     return g_d2d_interface != nullptr;
 }
 
-bool _ld_uninit()
+bool _lyric_dwsktop_uninit()
 {
     UnregisterClassW(pszClassName, GetModuleHandleW(nullptr));
     return d2d_uninit(g_d2d_interface);
@@ -181,25 +215,23 @@ void _ld_start_high_precision_timer(PLYRIC_DESKTOP_INFO pWndInfo)
 }
 
 
-PLYRIC_DESKTOP_INFO _ld_create_layered_window(const LYRIC_DESKTOP_ARG* arg)
+PLYRIC_DESKTOP_INFO _ld_create_layered_window(const char* arg, PFN_LYRIC_DESKTOP_COMMAND pfnCommand, LPARAM lParam)
 {
     HWND hWnd = CreateWindowExW(WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE,
                                 pszClassName, L"",
                                 WS_POPUP | WS_VISIBLE,// | WS_BORDER,
                                 0, 0, 1, 1,
-                                NULL, NULL, GetModuleHandleW(0), NULL);
+                                nullptr, nullptr, GetModuleHandleW(nullptr), nullptr);
 
     if (!hWnd)
         return nullptr;
 
     //TODO: 这里初始化歌词的默认配置, 如果传递进来有配置, 就按传递进来的配置处理, 否则就按默认配置处理
 
-    LYRIC_DESKTOP_INFO* pWndInfo = new LYRIC_DESKTOP_INFO;
-    pWndInfo->hWnd = hWnd;
-
-    pWndInfo->config.refreshRate = 240;
-
+    auto pWndInfo = new LYRIC_DESKTOP_INFO;
     lyric_wnd_set_data(hWnd, pWndInfo);
+
+    pWndInfo->init(hWnd, arg, pfnCommand, lParam);
 
     // 创建一个提示窗口, 用来显示提示信息
     pWndInfo->hTips = CreateWindowExW(WS_EX_TOPMOST | WS_EX_LAYERED | WS_EX_TRANSPARENT,
@@ -218,14 +250,34 @@ PLYRIC_DESKTOP_INFO _ld_create_layered_window(const LYRIC_DESKTOP_ARG* arg)
     ti.uId = (UINT_PTR)pWndInfo->hWnd;
     auto isInsertSuccess = SendMessageW(pWndInfo->hTips, TTM_ADDTOOLW, 0, (LPARAM)&ti);
 
+
+    RECT rc = pWndInfo->has_mode(LYRIC_DESKTOP_MODE::VERTICAL) ? pWndInfo->config.rect_v : pWndInfo->config.rect_h;
+    // 这里是创建, 所以需要缩放一下, 保存的配置也是按100%缩放保存的
+    pWndInfo->scale(rc);
+
+    const int width = rc.right - rc.left;
+    const int height = rc.bottom - rc.top;
+
+    const RECT& rcDesk = pWndInfo->rcMonitor;
+    const int cxScreen = rcDesk.right - rcDesk.left;
+    const int cyScreen = rcDesk.bottom - rcDesk.top;
+
+    if (rc.top > cyScreen - pWndInfo->scale(250))
+        rc.top = cyScreen - pWndInfo->scale(250), rc.bottom = rc.top + height;
+    if (rc.left < rcDesk.left)
+        rc.left = (cxScreen - width) / 2, rc.right = rc.left + width;
+
+    MoveWindow(hWnd, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, TRUE);
+
+    // 创建高精度定时器, 需要10毫秒以内的精度, 时钟最低只能10ms, 不满足要求
+    _ld_start_high_precision_timer(pWndInfo);
+
+    if (pWndInfo->nMinHeight)
+        MoveWindow(hWnd, rc.left, rc.top, rc.right - rc.left, pWndInfo->nMinHeight, TRUE);
+
     return pWndInfo;
 }
 
-// 绘画的时候没有创建对象, 那就需要创建默认对象
-void lyric_wnd_default_object(LYRIC_DESKTOP_INFO& wnd_info)
-{
-    wnd_info.dx.re_create(&wnd_info);
-}
 
 
 bool lyric_wnd_invalidate(LYRIC_DESKTOP_INFO& wnd_info)
@@ -235,16 +287,13 @@ bool lyric_wnd_invalidate(LYRIC_DESKTOP_INFO& wnd_info)
     if (!cs.TryLock())
         return false;   // 进入失败就不继续处理
 
-    //static bool asdas;
-    //if (asdas)
-    //    return true;
-    //asdas = true;
-
+    // 初始化DX对象, 如果已经初始化会直接返回
+    // 因为绘画结束有可能会返回设备失效错误码, 然后会销毁所有DX对象
+    // 所以进入绘画前先初始化一下
+    wnd_info.dx.init(&wnd_info);
 
     if (!wnd_info.dx.pRender)
-        lyric_wnd_default_object(wnd_info);
-    if (!wnd_info.dx.pRender)
-        return false;
+        return false;   // 初始化失败就不能继续处理
 
     D2DRender& pRender = *wnd_info.dx.pRender;
     RECT& rcWindow = wnd_info.rcWindow;
@@ -270,7 +319,7 @@ bool lyric_wnd_invalidate(LYRIC_DESKTOP_INFO& wnd_info)
 
     // 是否需要绘画歌词文本, 行数和上次记录的不一样, 或者宽度不一样, 那就为真, 需要重画
     bool bLight = false;
-    if (wnd_info.has_mode(LYRIC_MODE::VERTICAL))
+    if (wnd_info.has_mode(LYRIC_DESKTOP_MODE::VERTICAL))
         bLight = arg.nHeightWord != wnd_info.prevHeight;
     else
         bLight = arg.nWidthWord != wnd_info.prevWidth;
@@ -284,9 +333,9 @@ bool lyric_wnd_invalidate(LYRIC_DESKTOP_INFO& wnd_info)
     HRESULT hr = lyric_wnd_OnPaint(wnd_info, isresize, arg);
 
     wnd_info.change = 0;    // 把所有改变的标志位清零
-    wnd_info.prevIndexLine = arg.indexLine;
-    wnd_info.prevWidth = arg.nWidthWord;
-    wnd_info.prevHeight = arg.nHeightWord;
+    wnd_info.prevIndexLine  = arg.indexLine;
+    wnd_info.prevWidth      = arg.nWidthWord;
+    wnd_info.prevHeight     = arg.nHeightWord;
     return SUCCEEDED(hr);
 }
 
@@ -344,22 +393,28 @@ LRESULT CALLBACK lyric_wnd_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
     case WM_MOVE:
     case WM_SIZE:
     {
-        LYRIC_DESKTOP_POS* pos = pWndInfo->has_mode(LYRIC_MODE::VERTICAL)
-            ? &pWndInfo->config.pos_v
-            : &pWndInfo->config.pos_h;
+        RECT* rect = pWndInfo->has_mode(LYRIC_DESKTOP_MODE::VERTICAL)
+            ? &pWndInfo->config.rect_v
+            : &pWndInfo->config.rect_h;
 
-        if (message == WM_MOVE)
-        {
-            pos->left = GET_X_LPARAM(lParam);
-            pos->top = GET_Y_LPARAM(lParam);
-        }
-        else
-        {
-            pos->width = LOWORD(lParam);
-            pos->height = HIWORD(lParam);
-        }
-        pos->right = pos->left + pos->width;
-        pos->bottom = pos->top + pos->height;
+        // 直接获取, 省事, 一行代码搞定
+        GetWindowRect(hWnd, rect);
+
+        //if (message == WM_MOVE)
+        //{
+        //    const int width = rect->right - rect->left;
+        //    const int height = rect->bottom - rect->top;
+        //    rect->left = GET_X_LPARAM(lParam);
+        //    rect->top = GET_Y_LPARAM(lParam);
+        //    rect->right = rect->left + width;
+        //    rect->bottom = rect->top + height;
+        //}
+        //else
+        //{
+        //    rect->right = rect->left + LOWORD(lParam);
+        //    rect->bottom = rect->top + HIWORD(lParam);
+        //}
+
         return 0;
     }
     case WM_PAINT:
@@ -402,9 +457,9 @@ LRESULT CALLBACK lyric_wnd_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         if ((wnd_pos->flags & SWP_NOMOVE) == SWP_NOMOVE)
             break;  // 有不移动的标志, 不处理
 
-        LYRIC_DESKTOP_POS* pos = pWndInfo->has_mode(LYRIC_MODE::VERTICAL)
-            ? &pWndInfo->config.pos_v
-            : &pWndInfo->config.pos_h;
+        RECT* rect = pWndInfo->has_mode(LYRIC_DESKTOP_MODE::VERTICAL)
+            ? &pWndInfo->config.rect_v
+            : &pWndInfo->config.rect_h;
         const RECT& rcMonitorAll = pWndInfo->rcMonitor;
 
         //POINT pt;
@@ -421,16 +476,18 @@ LRESULT CALLBACK lyric_wnd_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         //if (!rcMonitor)
         //    rcMonitor = &rcMonitorAll;
 
+        const int width = rect->right - rect->left;
+        const int height = rect->bottom - rect->top;
 
         if (wnd_pos->x < rcMonitorAll.left)
             wnd_pos->x = rcMonitorAll.left;   // 限制窗口左侧不能超出左边界
-        else if (wnd_pos->x + pos->width > rcMonitorAll.right)
-            wnd_pos->x = rcMonitorAll.right - pos->width;  // 限制窗口右侧不能超出右边界
+        else if (wnd_pos->x + width > rcMonitorAll.right)
+            wnd_pos->x = rcMonitorAll.right - width;  // 限制窗口右侧不能超出右边界
 
         if (wnd_pos->y < rcMonitorAll.top)
             wnd_pos->y = rcMonitorAll.top;    // 限制窗口顶部不能超出上边界
-        else if (wnd_pos->y + pos->height > rcMonitorAll.bottom)
-            wnd_pos->y = rcMonitorAll.bottom - pos->height;   // 限制窗口底部不能超出下边界
+        else if (wnd_pos->y + height > rcMonitorAll.bottom)
+            wnd_pos->y = rcMonitorAll.bottom - height;   // 限制窗口底部不能超出下边界
 
         //wnd_pos->cx = pos->width;
         //wnd_pos->cy = pos->height;
@@ -440,7 +497,7 @@ LRESULT CALLBACK lyric_wnd_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
     case WM_GETMINMAXINFO:
     {
         MINMAXINFO* pMMI = (MINMAXINFO*)lParam;
-        const bool is_vertical = pWndInfo->has_mode(LYRIC_MODE::VERTICAL);
+        const bool is_vertical = pWndInfo->has_mode(LYRIC_DESKTOP_MODE::VERTICAL);
         RECT rcWindow;
         GetWindowRect(hWnd, &rcWindow);
         const int cxClient = rcWindow.right - rcWindow.left;
@@ -511,7 +568,7 @@ LRESULT lyric_wnd_OnHitTest(LYRIC_DESKTOP_INFO& wnd_info, UINT message, WPARAM w
     RECT rcWindow;
     GetWindowRect(wnd_info.hWnd, &rcWindow);
     
-    const bool is_vertical = wnd_info.has_mode(LYRIC_MODE::VERTICAL);
+    const bool is_vertical = wnd_info.has_mode(LYRIC_DESKTOP_MODE::VERTICAL);
     if (is_vertical)
     {
         // 纵向, 只检测上下两边, 宽度不让调整
@@ -677,6 +734,67 @@ bool lyric_wnd_create_text_layout(LPCWSTR str, int len, IDWriteTextFormat* dxFor
     *ppTextLayout = pDWriteTextLayout;
     return true;
 }
+
+
+float _lyric_wnd_load_krc_calc_text(PLYRIC_DESKTOP_INFO pWndInfo, IDWriteTextLayout* pTextLayout, float* pHeight)
+{
+    *pHeight = 0;
+
+    if (!pTextLayout)
+        return 0.f;
+    const bool is_vertical = pWndInfo->has_mode(LYRIC_DESKTOP_MODE::VERTICAL);
+    if (!is_vertical)
+    {
+        // 不是纵向, 直接计算然后返回
+        CCustomTextRenderer renderer;
+        pTextLayout->Draw(nullptr, &renderer, 0, 0);
+        *pHeight = renderer.get_height();
+        return renderer.get_width();
+    }
+
+    // 走到这里就是纵向, 需要额外计算, 因为纵向的英文数字 这些字符会旋转, 需要特别计算
+    // 只需要计算高度, 宽度是所有字符里最宽的那个, 高度是累加, 有旋转的加宽度, 没旋转的加高度
+
+    float width = 0.f, height = 0.f;
+
+    CCustomTextRenderer renderer([&](void* clientDrawingContext,
+                                     FLOAT baselineOriginX,
+                                     FLOAT baselineOriginY,
+                                     DWRITE_MEASURING_MODE measuringMode,
+                                     DWRITE_GLYPH_RUN const* glyphRun,
+                                     DWRITE_GLYPH_RUN_DESCRIPTION const* glyphRunDescription,
+                                     IUnknown* clientDrawingEffect)
+                                 {
+                                     // 获取字体度量
+                                     for (UINT32 i = 0; i < glyphRun->glyphCount; ++i)
+                                     {
+                                         DWRITE_FONT_METRICS metrics{};
+                                         glyphRun->fontFace->GetMetrics(&metrics);
+
+                                         float designUnitsPerEm = (float)metrics.designUnitsPerEm;
+                                         float _height = glyphRun->fontEmSize * metrics.ascent / designUnitsPerEm;
+                                         float _width = (glyphRun->glyphAdvances ? glyphRun->glyphAdvances[i] : 0.0f);
+
+                                         if (width < _width)
+                                             width = _width; // 宽度只记录最大的宽度, 竖屏歌词宽度是固定的
+
+                                         wchar_t ch = glyphRunDescription && glyphRunDescription->string ? glyphRunDescription->string[i] : L'\0';
+                                         bool is_alpha = isLatinCharacter(ch);
+                                         if (is_alpha)
+                                             height += _width;   // 需要旋转的字符就加上宽度
+                                         else
+                                             height += _height;  // 非旋转的字符就加上高度
+                                     }
+
+                                     return S_OK;
+                                 }
+    );
+    pTextLayout->Draw(nullptr, &renderer, 0, 0);
+
+    *pHeight = height;
+    return width;
+}
+
 
 NAMESPACE_LYRIC_DESKTOP_END
 

@@ -1,4 +1,4 @@
-#include "lyric_wnd_function.h"
+#include "lyric_desktop_function.h"
 
 using namespace KUODAFU_NAMESPACE;
 

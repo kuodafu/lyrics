@@ -25,26 +25,27 @@ int UpdateLayered(HWND hWnd, int width, int height, HDC srcDC, PPOINT ppt = 0, i
 
 HRESULT lyric_wnd_OnPaint(LYRIC_DESKTOP_INFO& wnd_info, bool isresize, LYRIC_CALC_STRUCT& arg)
 {
-    D2DRender& hCanvas = *wnd_info.dx.hCanvas;
-    ID2D1DeviceContext* pRenderTarget = hCanvas.GetD2DContext();
+    D2DRender& pRender = *wnd_info.dx.pRender;
+    ID2D1DeviceContext* pRenderTarget = pRender.GetD2DContext();
     RECT& rcWindow = wnd_info.rcWindow;
     const int cxClient = rcWindow.right - rcWindow.left;
     const int cyClient = rcWindow.bottom - rcWindow.top;
 
-    //wnd_info.isFillBack = true;
+    if (wnd_info.config.debug.alwaysFillBack)
+        wnd_info.isFillBack = true; // 始终显示背景, 调试用
 
     if (isresize)
-        hCanvas.Resize(cxClient, cyClient);
+        pRender.Resize(cxClient, cyClient);
 
     pRenderTarget->BeginDraw();
 
     lyric_wnd_fill_background(wnd_info);
 
 
-    //auto oldAntialiasMode = hCanvas->GetAntialiasMode();
-    //auto oldTextAntialiasMode = hCanvas->GetTextAntialiasMode();
-    //hCanvas->SetAntialiasMode(D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
-    //hCanvas->SetTextAntialiasMode(D2D1_TEXT_ANTIALIAS_MODE_GRAYSCALE);
+    //auto oldAntialiasMode = pRender->GetAntialiasMode();
+    //auto oldTextAntialiasMode = pRender->GetTextAntialiasMode();
+    //pRender->SetAntialiasMode(D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
+    //pRender->SetTextAntialiasMode(D2D1_TEXT_ANTIALIAS_MODE_GRAYSCALE);
 
     if (!wnd_info.isLock)   // 没锁定的时候才绘画按钮
         lyric_wnd_draw_button(wnd_info);
@@ -59,8 +60,8 @@ HRESULT lyric_wnd_OnPaint(LYRIC_DESKTOP_INFO& wnd_info, bool isresize, LYRIC_CAL
     wnd_info.dx.pGDIInterop->ReleaseDC(nullptr);
     hdcD2D = nullptr;
 
-    //hCanvas->SetAntialiasMode(oldAntialiasMode);
-    //hCanvas->SetTextAntialiasMode(oldTextAntialiasMode);
+    //pRender->SetAntialiasMode(oldAntialiasMode);
+    //pRender->SetTextAntialiasMode(oldTextAntialiasMode);
 
     HRESULT hr = pRenderTarget->EndDraw();
     if (FAILED(hr))
@@ -71,9 +72,9 @@ HRESULT lyric_wnd_OnPaint(LYRIC_DESKTOP_INFO& wnd_info, bool isresize, LYRIC_CAL
 
     if (FAILED(hr_gdi))
     {
-        hdcD2D = hCanvas.GetDC();
+        hdcD2D = pRender.GetDC();
         UpdateLayered(wnd_info.hWnd, cxClient, cyClient, hdcD2D);
-        hCanvas.ReleaseDC(hdcD2D);
+        pRender.ReleaseDC(hdcD2D);
     }
     return hr;
 }
@@ -84,19 +85,19 @@ HRESULT DrawShadowRect2(
     D2D1_COLOR_F shadowColor
 )
 {
-    D2DRender& hCanvas = *wnd_info.dx.hCanvas;
-    ID2D1DeviceContext* pRenderTarget = hCanvas.GetD2DContext();
+    D2DRender& pRender = *wnd_info.dx.pRender;
+    ID2D1DeviceContext* pRenderTarget = pRender.GetD2DContext();
     HRESULT hr = S_OK;
 
     //// 取消抗锯齿
-    //auto oldAntialiasMode = hCanvas->GetAntialiasMode();
-    //auto oldTextAntialiasMode = hCanvas->GetTextAntialiasMode();
+    //auto oldAntialiasMode = pRender->GetAntialiasMode();
+    //auto oldTextAntialiasMode = pRender->GetTextAntialiasMode();
     //pRenderTarget->SetAntialiasMode(D2D1_ANTIALIAS_MODE_ALIASED);
     //pRenderTarget->SetTextAntialiasMode(D2D1_TEXT_ANTIALIAS_MODE_ALIASED);
 
 
     // 把图片四个边画出来
-    _canvas_drawimagegridPadding(wnd_info.dx.hCanvas, wnd_info.dx.image_shadow,
+    _canvas_drawimagegridPadding(wnd_info.dx.pRender, wnd_info.dx.image_shadow,
                                  0, 0, rect.width(), rect.height(), // 画到哪个位置上
                                  0, 0, 40, 40,                      // 从图片的哪个位置
                                  16, 16, 20, 20,                    // 九宫区域
@@ -107,14 +108,14 @@ HRESULT DrawShadowRect2(
     rc.top = rect.top + 10.f;
     rc.right = rect.right - 10.f;
     rc.bottom = rect.bottom - 10.f;
-    //CD2DBrush brush(hCanvas, MAKEARGB(180,255,0,0));
+    //CD2DBrush brush(pRender, MAKEARGB(180,255,0,0));
     //pRenderTarget->FillRectangle(rc, brush);
     pRenderTarget->FillRectangle(rc, wnd_info.dx.hbrWndBack->GetBrush());
     //pRenderTarget->DrawRectangle(rc, *wnd_info.dx.hbrWndBorder);
 
 
-    //hCanvas->SetAntialiasMode(oldAntialiasMode);
-    //hCanvas->SetTextAntialiasMode(oldTextAntialiasMode);
+    //pRender->SetAntialiasMode(oldAntialiasMode);
+    //pRender->SetTextAntialiasMode(oldTextAntialiasMode);
 
     return S_OK;
 }
@@ -128,8 +129,8 @@ HRESULT DrawShadowRect(
 {
     if (*ppBitmapRet)
         SafeRelease(*ppBitmapRet);
-    D2DRender& hCanvas = *wnd_info.dx.hCanvas;
-    ID2D1DeviceContext* pRenderTarget = hCanvas.GetD2DContext();
+    D2DRender& pRender = *wnd_info.dx.pRender;
+    ID2D1DeviceContext* pRenderTarget = pRender.GetD2DContext();
     HRESULT hr = S_OK;
 
     const float shadowRadius = wnd_info.shadowRadius; // 阴影向外扩散半径
@@ -235,7 +236,7 @@ HRESULT DrawShadowRect(
 // 填充背景, 只填充背景颜色和边框
 void lyric_wnd_fill_background(LYRIC_DESKTOP_INFO& wnd_info)
 {
-    D2DRender& hCanvas = *wnd_info.dx.hCanvas;
+    D2DRender& pRender = *wnd_info.dx.pRender;
     RECT& rcWindow = wnd_info.rcWindow;
     const int cxClient = rcWindow.right - rcWindow.left;
     const int cyClient = rcWindow.bottom - rcWindow.top;
@@ -248,7 +249,7 @@ void lyric_wnd_fill_background(LYRIC_DESKTOP_INFO& wnd_info)
             isCreate = true;    // 尺寸不同, 需要创建
     }
 
-    ID2D1DeviceContext* pRenderTarget = hCanvas.GetD2DContext();
+    ID2D1DeviceContext* pRenderTarget = pRender.GetD2DContext();
 
     pRenderTarget->Clear();   // 不管什么操作, 都需要先清除画布
     if (!wnd_info.isFillBack || wnd_info.isLock)
@@ -287,7 +288,7 @@ void lyric_wnd_fill_background(LYRIC_DESKTOP_INFO& wnd_info)
     else
     {
         // 走到这就是创建失败了, 就用默认颜色填充
-        pRenderTarget->Clear(ARGB_D2D(wnd_info.dx.clrBack));
+        pRenderTarget->Clear(ARGB_D2D(wnd_info.config.clrWndBack));
     }
 
 }

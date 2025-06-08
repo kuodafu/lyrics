@@ -10,8 +10,8 @@ void lyric_wnd_draw_button(LYRIC_DESKTOP_INFO& wnd_info)
 {
     if (!wnd_info.isFillBack)
         return;
-    D2DRender& hCanvas = *wnd_info.dx.hCanvas;
-    ID2D1DeviceContext* pRenderTarget = hCanvas.GetD2DContext();
+    D2DRender& pRender = *wnd_info.dx.pRender;
+    ID2D1DeviceContext* pRenderTarget = pRender.GetD2DContext();
 
     lyric_wnd_calc_btn_pos(wnd_info);
     lyric_wnd_calc_wnd_pos(wnd_info, false);
@@ -63,8 +63,8 @@ static void _lyric_wnd_calc_wnd_pos_get_monitor_info(RECT& rc, POINT& pt)
 void lyric_wnd_calc_wnd_pos(LYRIC_DESKTOP_INFO& wnd_info, bool isMoveWindow)
 {
     const bool is_vertical = wnd_info.has_mode(LYRIC_MODE::VERTICAL);
-    const auto padding_wnd = (int)wnd_info.padding_wnd;
-    const auto padding_text = (int)wnd_info.padding_text;
+    const auto padding_wnd = (int)wnd_info.config.padding_wnd;
+    const auto padding_text = (int)wnd_info.config.padding_text;
     const auto shadowRadius = (int)wnd_info.shadowRadius;
 
     const RECT& rcButtom = wnd_info.button.rc;
@@ -79,7 +79,7 @@ void lyric_wnd_calc_wnd_pos(LYRIC_DESKTOP_INFO& wnd_info, bool isMoveWindow)
 
         if (isMoveWindow)
         {
-            auto& pos = wnd_info.pos_v;
+            auto& pos = wnd_info.config.pos_v;
             POINT pt = { 0 };
             GetCursorPos(&pt);
 
@@ -91,7 +91,7 @@ void lyric_wnd_calc_wnd_pos(LYRIC_DESKTOP_INFO& wnd_info, bool isMoveWindow)
 
                 pos.width = wnd_info.nMinWidth;
                 pos.height = wnd_info.scale(800);
-                pos.left = rcScreen.right - wnd_info.nMinWidth - (int)wnd_info.padding_wnd;
+                pos.left = rcScreen.right - wnd_info.nMinWidth - (int)wnd_info.config.padding_wnd;
                 pos.top = rcScreen.top + (rcScreen.bottom - rcScreen.top - pos.height) / 2;
                 pos.right = pos.left + pos.width;
                 pos.bottom = pos.top + pos.height;
@@ -121,7 +121,7 @@ void lyric_wnd_calc_wnd_pos(LYRIC_DESKTOP_INFO& wnd_info, bool isMoveWindow)
 
     if (isMoveWindow)
     {
-        auto& pos = wnd_info.pos_h;
+        auto& pos = wnd_info.config.pos_h;
         POINT pt = { 0 };
         GetCursorPos(&pt);
 
@@ -134,14 +134,14 @@ void lyric_wnd_calc_wnd_pos(LYRIC_DESKTOP_INFO& wnd_info, bool isMoveWindow)
             pos.width = wnd_info.scale(800);
             pos.height = wnd_info.nMinHeight;
             pos.left = (rcScreen.right - rcScreen.left - pos.width) / 2;
-            pos.top = rcScreen.bottom - wnd_info.nMinHeight - (int)wnd_info.padding_wnd - 100;
+            pos.top = rcScreen.bottom - wnd_info.nMinHeight - (int)wnd_info.config.padding_wnd - 100;
             pos.right = pos.left + pos.width;
             pos.bottom = pos.top + pos.height;
         }
         else
         {
             pos.height = wnd_info.nMinHeight;
-            pos.bottom = pos.left + pos.height;
+            pos.bottom = pos.top + pos.height;
         }
 
         if (!PtInRect(&pos, pt))
@@ -160,9 +160,9 @@ void lyric_wnd_calc_btn_pos(LYRIC_DESKTOP_INFO& wnd_info)
 
     int height = 0;
     int width = 0;
-    const auto padding  = (int)wnd_info.padding_wnd / 2;
+    const auto padding  = (int)wnd_info.config.padding_wnd / 2;
     const auto padding2 = padding / 2;
-    const auto line_height = (int)wnd_info.padding_wnd * 2;
+    const auto line_height = (int)wnd_info.config.padding_wnd * 2;
 
     wnd_info.button.maxHeight = 50; // 最大宽高固定死
     wnd_info.button.maxWidth = 50;

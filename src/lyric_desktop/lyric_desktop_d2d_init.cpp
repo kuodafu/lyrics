@@ -12,16 +12,17 @@ NAMESPACE_LYRIC_DESKTOP_BEGIN
 bool LYRIC_DESKTOP_DX::re_create(LYRIC_DESKTOP_INFO* pWndInfo)
 {
     LYRIC_DESKTOP_INFO& wnd_info = *pWndInfo;
-    auto& clrNormal = wnd_info.clrNormal;
-    auto& clrLight = wnd_info.clrLight;
+    auto& clrNormal = wnd_info.config.clrNormal;
+    auto& clrLight = wnd_info.config.clrLight;
     RECT rc;
     GetClientRect(wnd_info.hWnd, &rc);
     const int cxClient = rc.right - rc.left;
     const int cyClient = rc.bottom - rc.top;
 
-    SafeRelease(hCanvas);
-    hCanvas = g_d2d_interface->CreateRender(cxClient, cyClient, true);
-    hCanvas->GetD2DContext()->QueryInterface(&pGDIInterop);
+    SafeRelease(pGDIInterop);
+    SafeRelease(pRender);
+    g_d2d_interface->CreateD2DRender(cxClient, cyClient, true, &pRender);
+    pRender->GetD2DContext()->QueryInterface(&pGDIInterop);
 
     SafeRelease(image_shadow);
 
@@ -29,7 +30,7 @@ bool LYRIC_DESKTOP_DX::re_create(LYRIC_DESKTOP_INFO* pWndInfo)
     LPBYTE pImageData = _lrc_dwsktop_get_shadow_image(imgSize);
 
 
-    hCanvas->CreateImage(pImageData, imgSize, &image_shadow);
+    pRender->CreateImage(pImageData, imgSize, &image_shadow);
 
     if (!hFont)
         re_create_font(pWndInfo);
@@ -43,9 +44,9 @@ bool LYRIC_DESKTOP_DX::re_create(LYRIC_DESKTOP_INFO* pWndInfo)
     SafeRelease(hbrWndBack);
     SafeRelease(hbrLine);
 
-    hCanvas->CreateSolidBrush(clrWndBorder, &hbrWndBorder);
-    hCanvas->CreateSolidBrush(clrBack, &hbrWndBack);
-    hCanvas->CreateSolidBrush(MAKEARGB(100, 255, 255, 255), &hbrLine);
+    pRender->CreateSolidBrush(pWndInfo->config.clrWndBorder, &hbrWndBorder);
+    pRender->CreateSolidBrush(pWndInfo->config.clrWndBack, &hbrWndBack);
+    pRender->CreateSolidBrush(MAKEARGB(100, 255, 255, 255), &hbrLine);
 
     return true;
 }
@@ -59,15 +60,15 @@ bool LYRIC_DESKTOP_DX::re_create_brush(LYRIC_DESKTOP_INFO* pWndInfo, bool isLigh
     if (isLight)
     {
         SafeRelease(hbrLight);
-        pClr = &wnd_info.clrLight[0];
-        size = (int)wnd_info.clrLight.size();
+        pClr = &wnd_info.config.clrLight[0];
+        size = (int)wnd_info.config.clrLight.size();
         ppBrush = &hbrLight;
     }
     else
     {
         SafeRelease(hbrNormal);
-        pClr = &wnd_info.clrNormal[0];
-        size = (int)wnd_info.clrNormal.size();
+        pClr = &wnd_info.config.clrNormal[0];
+        size = (int)wnd_info.config.clrNormal.size();
         ppBrush = &hbrNormal;
     }
 
@@ -76,14 +77,14 @@ bool LYRIC_DESKTOP_DX::re_create_brush(LYRIC_DESKTOP_INFO* pWndInfo, bool isLigh
     D2DBRUSH_CREATE_STRUCT arg{};
     arg.color = pClr;
     arg.colorCount = size;
-    HRESULT hr = hCanvas->CreateLinearGradientBrush(&pt1, &pt2, &arg, ppBrush);
+    HRESULT hr = pRender->CreateLinearGradientBrush(&pt1, &pt2, &arg, ppBrush);
     return SUCCEEDED(hr);
 }
 
 bool LYRIC_DESKTOP_DX::re_create_border(LYRIC_DESKTOP_INFO* pWndInfo)
 {
     SafeRelease(hbrBorder);
-    HRESULT hr = hCanvas->CreateSolidBrush(pWndInfo->clrBorder, &hbrBorder);
+    HRESULT hr = pRender->CreateSolidBrush(pWndInfo->config.clrBorder, &hbrBorder);
     return SUCCEEDED(hr);
 }
 
@@ -91,12 +92,18 @@ bool LYRIC_DESKTOP_DX::re_create_font(LYRIC_DESKTOP_INFO* pWndInfo)
 {
     SafeRelease(hFont);
 
-    LOGFONT lf = pWndInfo->lf;
-    lf.lfHeight = -MulDiv(lf.lfHeight, pWndInfo->scale, 72);
-    hFont = new CD2DFont(hCanvas, &lf);
+    // 不会多线程进来, 所以放心使用/修改静态变量
+    static LOGFONT lf;
+    if (lf.lfHeight == 0)
+        SystemParametersInfoW(SPI_GETICONTITLELOGFONT, sizeof(LOGFONTW), &lf, 0);
+    
+    lf.lfHeight = -MulDiv(pWndInfo->config.nFontSize, pWndInfo->scale, 72);
+    lf.lfWeight = pWndInfo->config.lfWeight;
+    wcscpy_s(lf.lfFaceName, pWndInfo->config.pszFontName.c_str());
+    g_d2d_interface->CreateD2DFont(&lf, &hFont);
 
     CComPtr<IDWriteTextLayout> pTextLayout;
-    lyric_wnd_create_text_layout(pWndInfo->pszDefText, pWndInfo->nDefText, *hFont, 0, 0, &pTextLayout);
+    lyric_wnd_create_text_layout(pWndInfo->config.pszDefText, pWndInfo->config.nDefText, hFont->GetDWTextFormat(), 0, 0, &pTextLayout);
     if (pTextLayout)
     {
         float width = 0.f, height = 0.f;
@@ -167,7 +174,7 @@ bool LYRIC_DESKTOP_DX::destroy(bool isDestroyFont)
     SafeRelease(image);
     SafeRelease(image_shadow);
     SafeRelease(pGDIInterop);
-    SafeRelease(hCanvas);
+    SafeRelease(pRender);
     return true;
 }
 

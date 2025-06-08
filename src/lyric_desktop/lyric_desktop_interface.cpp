@@ -106,7 +106,7 @@ HWND LYRICCALL lyric_desktop_create(const LYRIC_DESKTOP_ARG* arg, PFN_LYRIC_DESK
     wnd_info.lParam = lParam;
     wnd_info.line1.align = 0;
     wnd_info.line2.align = 2;
-    wnd_info.mode = LYRIC_MODE::DOUBLE_ROW;
+    wnd_info.config.mode = LYRIC_MODE::DOUBLE_ROW;
 
     // 位置相关的放一起处理
     wnd_info.dpi_change(hWnd);
@@ -179,12 +179,12 @@ bool LYRICCALL lyric_desktop_load_lyric(HWND hWindowLyric, LPCVOID pKrcData, int
     lyric_calc_text(wnd_info.hLyric, [](void* pUserData, LPCWSTR pText, int nTextLen, float* pRetHeight) -> float
                           {
                               LYRIC_DESKTOP_INFO* pWndInfo = (LYRIC_DESKTOP_INFO*)pUserData;
-                              D2DRender& hCanvas = *pWndInfo->dx.hCanvas;
+                              D2DRender& pRender = *pWndInfo->dx.pRender;
                               if (!pWndInfo->dx.hFont)
                                   lyric_wnd_default_object(*pWndInfo);
 
                               CComPtr<IDWriteTextLayout> pTextLayout;
-                              lyric_wnd_create_text_layout(pText, nTextLen, *pWndInfo->dx.hFont, 0, 0, &pTextLayout);
+                              lyric_wnd_create_text_layout(pText, nTextLen, pWndInfo->dx.hFont->GetDWTextFormat(), 0, 0, &pTextLayout);
                               float width = _lyric_wnd_load_krc_calc_text(pWndInfo, pTextLayout, pRetHeight);
                               return width;
                           }, pWndInfo);
@@ -227,11 +227,11 @@ bool LYRICCALL lyric_desktop_set_color(HWND hWindowLyric, bool isLight, DWORD* p
 
     if (isLight)
     {
-        pWndInfo->clrLight.assign(&pClr[0], &pClr[nCount]);
+        pWndInfo->config.clrLight.assign(&pClr[0], &pClr[nCount]);
     }
     else
     {
-        pWndInfo->clrNormal.assign(&pClr[0], &pClr[nCount]);
+        pWndInfo->config.clrNormal.assign(&pClr[0], &pClr[nCount]);
     }
 
     return pWndInfo->dx.re_create_brush(pWndInfo, isLight);
@@ -256,8 +256,8 @@ bool LYRICCALL lyric_desktop_set_font(HWND hWindowLyric, LPCWSTR pszName, int nS
         pszName = L"微软雅黑";
     if (nSize == 0)
         nSize = 24;
-
-    LOGFONTW& lf = pWndInfo->lf;
+    //TODO 这里要么处理一下, 要么删掉这个功能
+    LOGFONTW lf = {};
     wcscpy_s(lf.lfFaceName, pszName);
     lf.lfHeight = nSize;
     lf.lfWeight = isBold ? FW_BOLD : FW_NORMAL;
@@ -278,7 +278,7 @@ bool LYRICCALL lyric_desktop_set_clr_back(HWND hWindowLyric, DWORD clr)
     if (!pWndInfo)
         return false;
 
-    pWndInfo->dx.clrBack = clr;
+    pWndInfo->config.clrWndBack = clr;
     return true;
 }
 
@@ -294,7 +294,7 @@ bool LYRICCALL lyric_desktop_set_clr_border(HWND hWindowLyric, DWORD clr)
     if (!pWndInfo)
         return false;
 
-    pWndInfo->clrBorder = clr;
+    pWndInfo->config.clrBorder = clr;
     return true;
 }
 
@@ -316,14 +316,14 @@ bool LYRICCALL lyric_desktop_get_config(HWND hWindowLyric, LYRIC_DESKTOP_ARG* ar
     GetWindowRect(hWindowLyric, &arg->rcWindow);
     pWndInfo->scale.unscale(arg->rcWindow); // 保存到配置里的是要保存未缩放的坐标
 
-    arg->clrWndBack = pWndInfo->dx.clrBack;
-    arg->nFontSize = pWndInfo->lf.lfHeight;
-    arg->pszFontName = pWndInfo->lf.lfFaceName;
-    arg->clrBorder = pWndInfo->clrBorder;
-    arg->nClrNormal = (int)pWndInfo->clrLight.size();
-    arg->pClrNormal = arg->nClrNormal > 0 ? &pWndInfo->clrLight[0] : nullptr;
-    arg->nClrLight = (int)pWndInfo->clrNormal.size();
-    arg->pClrLight = arg->nClrLight > 0 ? &pWndInfo->clrNormal[0] : nullptr;
+    arg->clrWndBack = pWndInfo->config.clrWndBack;
+    arg->nFontSize = pWndInfo->config.nFontSize;
+    arg->pszFontName = pWndInfo->config.pszFontName.c_str();
+    arg->clrBorder = pWndInfo->config.clrBorder;
+    arg->nClrNormal = (int)pWndInfo->config.clrLight.size();
+    arg->pClrNormal = arg->nClrNormal > 0 ? &pWndInfo->config.clrLight[0] : nullptr;
+    arg->nClrLight = (int)pWndInfo->config.clrNormal.size();
+    arg->pClrLight = arg->nClrLight > 0 ? &pWndInfo->config.clrNormal[0] : nullptr;
 
     return true;
 }

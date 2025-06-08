@@ -208,9 +208,9 @@ void lrc_click_font(LYRIC_DESKTOP_INFO& wnd_info, int id)
     // 调整字体尺寸, 还要根据字体尺寸然后调整窗口尺寸, 然后重新创建字体
     int size = id == LYRIC_DESKTOP_BUTTON_ID_FONT_DOWN ? -2 : 2;
 
-    wnd_info.lf.lfHeight += size;
+    wnd_info.config.nFontSize += size;
     wnd_info.dx.re_create_font(&wnd_info);      // 调整尺寸后重新创建
-    lyric_re_calc_text(wnd_info.hLyric);  // 重新计算歌词宽度
+    lyric_re_calc_text(wnd_info.hLyric);        // 重新计算歌词宽度
     wnd_info.change_btn = 1;                    // 标记按钮需要重新绘画
     wnd_info.change_text = 1;                   // 标记文本改变, 需要重新创建文本缓存
 

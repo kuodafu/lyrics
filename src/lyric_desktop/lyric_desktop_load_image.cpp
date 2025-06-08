@@ -107,7 +107,7 @@ bool lyric_wnd_load_image(LYRIC_DESKTOP_INFO& wnd_info)
     int png_size = 0;
     LPBYTE png = _lrc_desktop_get_image(png_size);
 
-    wnd_info.dx.hCanvas->CreateImage(png, png_size, &wnd_info.dx.image);
+    wnd_info.dx.pRender->CreateImage(png, png_size, &wnd_info.dx.image);
     wnd_info.button.rcSrc.clear();
     wnd_info.button.rcBtn.clear();
     return lyric_wnd_load_image_recalc(wnd_info);

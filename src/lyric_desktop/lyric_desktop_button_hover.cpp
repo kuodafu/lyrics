@@ -50,7 +50,7 @@ void lyric_wnd_button_hover(LYRIC_DESKTOP_INFO& wnd_info)
         LPCWSTR fmt = id == LYRIC_DESKTOP_BUTTON_ID_FONT_DOWN
             ? L"缩小桌面歌词字体, 当前字体大小: %d"
             : L"放大桌面歌词字体, 当前字体大小: %d";
-        swprintf_s(buffer, fmt, wnd_info.lf.lfHeight);
+        swprintf_s(buffer, fmt, wnd_info.config.nFontSize);
         pszTips = buffer;
         break;
     }

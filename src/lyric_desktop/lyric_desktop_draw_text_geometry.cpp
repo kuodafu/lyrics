@@ -54,8 +54,8 @@ void lyric_wnd_draw_geometry_DrawGlyphRun(LYRIC_DESKTOP_INFO& wnd_info,
 
 void lyric_wnd_draw_text_geometry(LYRIC_DESKTOP_INFO& wnd_info, LYRIC_DESKTOP_DRAWTEXT_INFO& draw_info, int nDrawLineIndex)
 {
-    D2DRender& hCanvas = *wnd_info.dx.hCanvas;
-    ID2D1DeviceContext* pRenderTarget = hCanvas.GetD2DContext();
+    D2DRender& pRender = *wnd_info.dx.pRender;
+    ID2D1DeviceContext* pRenderTarget = pRender.GetD2DContext();
 
     D2D1_ANTIALIAS_MODE oldMode = pRenderTarget->GetAntialiasMode();
     pRenderTarget->SetAntialiasMode(D2D1_ANTIALIAS_MODE_ALIASED);  // 关闭抗锯齿
@@ -67,14 +67,13 @@ void lyric_wnd_draw_text_geometry(LYRIC_DESKTOP_INFO& wnd_info, LYRIC_DESKTOP_DR
 
 void lyric_wnd_draw_text_geometry_draw_cache(LYRIC_DESKTOP_INFO& wnd_info, LYRIC_DESKTOP_DRAWTEXT_INFO& draw_info, int nDrawLineIndex)
 {
-    D2DRender& hCanvas = *wnd_info.dx.hCanvas;
-    CD2DFont& font = *wnd_info.dx.hFont;
+    D2DRender& pRender = *wnd_info.dx.pRender;
     ID2D1LinearGradientBrush* hbrNormal = wnd_info.dx.hbrNormal->GetNative();
     ID2D1LinearGradientBrush* hbrLight = wnd_info.dx.hbrLight->GetNative();
     ID2D1SolidColorBrush* hbrBorder = wnd_info.dx.hbrBorder->GetNative();
-    IDWriteTextFormat* dxFormat = font;
-    ID2D1DeviceContext* pRenderTarget = hCanvas.GetD2DContext();
-    ID2D1Factory1* pFactory = hCanvas.GetD2DInterface()->GetD2DFactory();
+    IDWriteTextFormat* dxFormat = wnd_info.dx.hFont->GetDWTextFormat();
+    ID2D1DeviceContext* pRenderTarget = pRender.GetD2DContext();
+    ID2D1Factory1* pFactory = pRender.GetD2DInterface()->GetD2DFactory();
 
     LYRIC_LINE_STRUCT& line = draw_info.line;
 
@@ -165,13 +164,13 @@ void lyric_wnd_draw_text_geometry_draw_cache(LYRIC_DESKTOP_INFO& wnd_info, LYRIC
                                  });
     if (pTextLayout)
     {
-        pTextLayout->Draw(0, &renderer, 0, 0);
+        pTextLayout->Draw(nullptr, &renderer, 0, 0);
         lyric_wnd_draw_calc_text_rect(wnd_info, draw_info, nDrawLineIndex);
     }
 
 
     // 绘画左边顶边偏移的位置, 不从0开始, 画阴影部分会小于0, 这里偏移一些像素
-    const float _offset = wnd_info.padding_text;
+    const float _offset = wnd_info.config.padding_text;
     //const float _offset = 0;
 
     auto pfn_draw_text = [&](ID2D1LinearGradientBrush* hbrFill, ID2D1Bitmap*& pBitmap) -> void
@@ -382,15 +381,14 @@ void lyric_wnd_draw_geometry_DrawGlyphRun(LYRIC_DESKTOP_INFO& wnd_info,
                                           DWRITE_GLYPH_RUN_DESCRIPTION const* glyphRunDescription,
                                           IUnknown* clientDrawingEffect)
 {
-    D2DRender& hCanvas = *wnd_info.dx.hCanvas;
-    CD2DFont& font = *wnd_info.dx.hFont;
+    D2DRender& pRender = *wnd_info.dx.pRender;
     ID2D1LinearGradientBrush* hbrNormal = wnd_info.dx.hbrNormal->GetNative();
     ID2D1LinearGradientBrush* hbrLight = wnd_info.dx.hbrLight->GetNative();
     ID2D1SolidColorBrush* hbrBorder = wnd_info.dx.hbrBorder->GetNative();
-    IDWriteTextFormat* dxFormat = font;
-    ID2D1DeviceContext* pRenderTarget = hCanvas.GetD2DContext();
+    IDWriteTextFormat* dxFormat = wnd_info.dx.hFont->GetDWTextFormat();
+    ID2D1DeviceContext* pRenderTarget = pRender.GetD2DContext();
 
-    ID2D1Factory1* pFactory = hCanvas.GetD2DInterface()->GetD2DFactory();
+    ID2D1Factory1* pFactory = pRender.GetD2DInterface()->GetD2DFactory();
 
     const bool is_vertical = wnd_info.has_mode(LYRIC_MODE::VERTICAL);
 

@@ -10,15 +10,15 @@ void lyric_wnd_draw_cache_text_h(LYRIC_DESKTOP_INFO& wnd_info, LYRIC_DESKTOP_DRA
     if (!pBitmap)
         return;
 
-    D2DRender& hCanvas = *wnd_info.dx.hCanvas;
+    D2DRender& pRender = *wnd_info.dx.pRender;
     ID2D1LinearGradientBrush* hbrNormal = wnd_info.dx.hbrNormal->GetNative();
     ID2D1LinearGradientBrush* hbrLight = wnd_info.dx.hbrLight->GetNative();
-    ID2D1DeviceContext* pRenderTarget = hCanvas.GetD2DContext();
+    ID2D1DeviceContext* pRenderTarget = pRender.GetD2DContext();
 
     LYRIC_LINE_STRUCT& line = draw_info.line;
     RECT& rcWindow = wnd_info.rcWindow;
 
-    const float _offset = wnd_info.padding_text;
+    const float _offset = wnd_info.config.padding_text;
     //const float _offset = (draw_info.layout_text_max_height - wnd_info.nLineHeight) / 2;
     const int shadowRadius = (int)wnd_info.shadowRadius;    // “ı”∞œÚÕ‚¿©…¢∞Îæ∂
 

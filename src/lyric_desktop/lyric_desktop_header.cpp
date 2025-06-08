@@ -9,6 +9,7 @@ using namespace KUODAFU_NAMESPACE;
 NAMESPACE_LYRIC_DESKTOP_BEGIN
 
 
+
 void LYRIC_DESKTOP_INFO::set_def_arg(const LYRIC_DESKTOP_ARG* arg)
 {
     // 有值就根据传递进来的值设置, 没有值就设置默认值
@@ -18,21 +19,21 @@ void LYRIC_DESKTOP_INFO::set_def_arg(const LYRIC_DESKTOP_ARG* arg)
         arg = &def;
 
     if (arg->pClrNormal)
-        clrNormal.assign(&arg->pClrNormal[0], &arg->pClrNormal[arg->nClrNormal]);
+        config.clrNormal.assign(&arg->pClrNormal[0], &arg->pClrNormal[arg->nClrNormal]);
     if (arg->pClrLight)
-        clrLight.assign(&arg->pClrLight[0], &arg->pClrLight[arg->nClrLight]);
+        config.clrLight.assign(&arg->pClrLight[0], &arg->pClrLight[arg->nClrLight]);
 
-    clrBorder = arg->clrBorder;
-    dx.clrWndBorder = arg->clrWndBorder;
-    dx.clrBack = arg->clrWndBack;
+    config.clrBorder = arg->clrBorder;
+    config.clrWndBorder = arg->clrWndBorder;
+    config.clrWndBack = arg->clrWndBack;
 
     LPCWSTR pszFontName = arg->pszFontName;
     if (!pszFontName || !*pszFontName)
         pszFontName = L"微软雅黑";
 
-    wcscpy_s(lf.lfFaceName, pszFontName);
-    lf.lfWeight = FW_BOLD;
-    lf.lfHeight = arg->nFontSize;
+    config.pszFontName = pszFontName;
+    config.lfWeight = FW_BOLD;
+    config.nFontSize = arg->nFontSize;
 
 
 }
@@ -43,9 +44,13 @@ void LYRIC_DESKTOP_INFO::dpi_change(HWND hWnd)
     const int _10 = scale(10);
     if (dx.hFont)
         dx.re_create_font(this);
-    padding_text = (float)(_10 / 2);
     shadowRadius = (float)10;
-    padding_wnd = (float)scale(8);
+
+    config.padding_text_ = 5.f;
+    config.padding_wnd_ = 8.f;
+
+    config.padding_text = (float)(scale((int)config.padding_text_));
+    config.padding_wnd = (float)scale((int)config.padding_wnd_);
     change_btn = true;
     change_text = true;
     change_wnd = true;
@@ -78,29 +83,20 @@ float LYRIC_DESKTOP_INFO::get_lyric_line_height() const
     if (has_mode(LYRIC_MODE::VERTICAL))
     {
         // 竖屏, 取宽度加上边距
-        return word_width + padding_text * 2;
+        return word_width + config.padding_text * 2;
     }
-    return word_height + padding_text * 2;
+    return word_height + config.padding_text * 2;
 }
 
 float LYRIC_DESKTOP_INFO::get_lyric_line_width(float vl) const
 {
     if (has_mode(LYRIC_MODE::VERTICAL))
-        return (vl ? vl : nLineDefHeight) + padding_text * 2;
+        return (vl ? vl : nLineDefHeight) + config.padding_text * 2;
     
-    return (vl ? vl : nLineDefWidth) + padding_text * 2;
+    return (vl ? vl : nLineDefWidth) + config.padding_text * 2;
 }
 
 
-LYRIC_DESKTOP_CACHE_OBJ::LYRIC_DESKTOP_CACHE_OBJ()
-{
-    preIndex = -1;
-    preText = nullptr;
-    preLength = 0;
-    pBitmapNormal = nullptr;
-    pBitmapLight = nullptr;
-    rcBounds = { 0 };
-}
 
 LYRIC_DESKTOP_CACHE_OBJ::~LYRIC_DESKTOP_CACHE_OBJ()
 {
@@ -113,15 +109,15 @@ LYRIC_DESKTOP_INFO::LYRIC_DESKTOP_INFO()
     const int clear_size = offsetof(LYRIC_DESKTOP_INFO, line1);
     memset(this, 0, clear_size);
     prevIndexLine = -1;
-    mode = LYRIC_MODE::DOUBLE_ROW;
-    pszDefText = L"该歌曲暂时没有歌词";
-    nDefText = 9;
+    config.mode = LYRIC_MODE::DOUBLE_ROW;
+    config.pszDefText = L"该歌曲暂时没有歌词";
+    config.nDefText = 9;
 
     pCritSec = new CRITICAL_SECTION;
     InitializeCriticalSection(pCritSec);
 
-    dx.clrBack = MAKEARGB(100, 0, 0, 0);
-    clrBorder = MAKEARGB(255, 33, 33, 33);
+    config.clrWndBack = MAKEARGB(100, 0, 0, 0);
+    config.clrBorder = MAKEARGB(255, 33, 33, 33);
 
     pfnCommand = nullptr;
     lParam = 0;

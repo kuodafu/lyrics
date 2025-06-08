@@ -1,0 +1,5 @@
+#pragma once
+
+#define NAMESPACE_LYRIC_DESKTOP lyric_desktop
+#define NAMESPACE_LYRIC_DESKTOP_BEGIN namespace NAMESPACE_LYRIC_DESKTOP{
+#define NAMESPACE_LYRIC_DESKTOP_END }

@@ -26,7 +26,7 @@ void lyric_wnd_draw_lyric(LYRIC_DESKTOP_INFO& wnd_info, LYRIC_CALC_STRUCT& arg)
     const RECT& rcWindow = wnd_info.rcWindow;
 
     if (!wnd_info.hLyric)
-        arg.line.pText = wnd_info.pszDefText, arg.line.nLength = wnd_info.nDefText;
+        arg.line.pText = wnd_info.config.pszDefText, arg.line.nLength = wnd_info.config.nDefText;
 
     if (wnd_info.has_mode(LYRIC_MODE::EXISTTRANS) && (wnd_info.has_mode(LYRIC_MODE::TRANSLATION1) || wnd_info.has_mode(LYRIC_MODE::TRANSLATION2)))
         lyric_wnd_draw_translate(wnd_info, arg, rcWindow);
@@ -148,7 +148,8 @@ void lyric_wnd_draw_line(LYRIC_DESKTOP_INFO& wnd_info, LYRIC_DESKTOP_DRAWTEXT_IN
     auto& cache = line_info.cache;
     auto& line = line_info.line;
     // 下面判断总结, 有改变的标志, 或者文本内容不同, 那就重新创建缓存
-    if (wnd_info.change_text    // 有文本改变标志, 需要重新创建缓存
+    if (wnd_info.config.debug.alwaysCache   // 强制缓存
+        || wnd_info.change_text             // 有文本改变标志, 需要重新创建缓存
         || cache.preLength != line.nLength  // 文本长度不同, 需要重新创建缓存
         || (cache.preText && wcscmp(cache.preText, line.pText) != 0)   // 文本内容不同
         )
@@ -240,7 +241,7 @@ void lyric_wnd_draw_calc_text_rect(LYRIC_DESKTOP_INFO& wnd_info,
     const bool is_vertical = wnd_info.has_mode(LYRIC_MODE::VERTICAL);
     if (is_vertical)
     {
-        const auto offset_top = (int)(wnd_info.shadowRadius + wnd_info.padding_wnd);
+        const auto offset_top = (int)(wnd_info.shadowRadius + wnd_info.config.padding_wnd);
         const auto left = (float)(nDrawLineIndex == 1 ? wnd_info.nLineTop1 : wnd_info.nLineTop2);
         const auto width = (float)wnd_info.get_lyric_line_height();
         const auto text_height = (float)wnd_info.get_lyric_line_width(draw_info.text_height);
@@ -267,7 +268,7 @@ void lyric_wnd_draw_calc_text_rect(LYRIC_DESKTOP_INFO& wnd_info,
     }
     else
     {
-        const auto offset_left = (int)(wnd_info.shadowRadius + wnd_info.padding_wnd);
+        const auto offset_left = (int)(wnd_info.shadowRadius + wnd_info.config.padding_wnd);
         const auto top = (float)(nDrawLineIndex == 1 ? wnd_info.nLineTop1 : wnd_info.nLineTop2);
         const auto height = (float)wnd_info.get_lyric_line_height();
         const auto text_width = (float)wnd_info.get_lyric_line_width(draw_info.text_width);
@@ -282,7 +283,7 @@ void lyric_wnd_draw_calc_text_rect(LYRIC_DESKTOP_INFO& wnd_info,
         else if (align == 2)
         {
             // 右对齐
-            int nTemp = cxClient - (int)(wnd_info.padding_wnd + wnd_info.shadowRadius + text_width);
+            int nTemp = cxClient - (int)(wnd_info.config.padding_wnd + wnd_info.shadowRadius + text_width);
             left = (float)max(offset_left, nTemp);
         }
         else

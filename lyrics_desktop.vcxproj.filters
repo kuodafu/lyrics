@@ -24,6 +24,9 @@
     <Filter Include="事件部分">
       <UniqueIdentifier>{745ac9ab-8dbe-4625-ac5b-317510e20518}</UniqueIdentifier>
     </Filter>
+    <Filter Include="配置">
+      <UniqueIdentifier>{65e48626-764c-4ced-b568-ed380592441d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\lyric_desktop\targetver.h">
@@ -70,6 +73,9 @@
     </ClInclude>
     <ClInclude Include="..\..\cpp\_git_works\CommonCode\d2d\d2d.h">
       <Filter>d2d</Filter>
+    </ClInclude>
+    <ClInclude Include="src\lyric_desktop\lyric_desktop_config.h">
+      <Filter>配置</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -138,6 +144,9 @@
     </ClCompile>
     <ClCompile Include="src\lyric_desktop\lyric_desktop_d2d_init.cpp">
       <Filter>绘画相关</Filter>
+    </ClCompile>
+    <ClCompile Include="src\lyric_desktop\lyric_desktop_config.cpp">
+      <Filter>配置</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

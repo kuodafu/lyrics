@@ -241,12 +241,12 @@ bool lyric_wnd_invalidate(LYRIC_DESKTOP_INFO& wnd_info)
     //asdas = true;
 
 
-    if (!wnd_info.dx.hCanvas)
+    if (!wnd_info.dx.pRender)
         lyric_wnd_default_object(wnd_info);
-    if (!wnd_info.dx.hCanvas)
+    if (!wnd_info.dx.pRender)
         return false;
 
-    D2DRender& hCanvas = *wnd_info.dx.hCanvas;
+    D2DRender& pRender = *wnd_info.dx.pRender;
     RECT& rcWindow = wnd_info.rcWindow;
     GetWindowRect(wnd_info.hWnd, &rcWindow);
     //GetClientRect(wnd_info.hWnd, &rcWindow);
@@ -254,7 +254,7 @@ bool lyric_wnd_invalidate(LYRIC_DESKTOP_INFO& wnd_info)
     const int cyClient = rcWindow.bottom - rcWindow.top;
 
     int bmpWidth = 0, bmpHeight = 0;
-    hCanvas.GetSize(&bmpWidth, &bmpHeight);
+    pRender.GetSize(&bmpWidth, &bmpHeight);
 
     bool isresize = false;
     if (cxClient != bmpWidth || cyClient != bmpHeight)
@@ -275,8 +275,7 @@ bool lyric_wnd_invalidate(LYRIC_DESKTOP_INFO& wnd_info)
     else
         bLight = arg.nWidthWord != wnd_info.prevWidth;
     const bool isDrawString = arg.indexLine != wnd_info.prevIndexLine || bLight;
-    const bool isDraw = isDrawString || wnd_info.change;
-    
+    const bool isDraw = isDrawString || wnd_info.change || wnd_info.config.debug.alwaysCache;
 
     // 这里需要判断一下是否需要更新, 如果按钮没变化, 不是强制更新, 并且歌词文本也没变, 那就不需要重画
     if (!isDraw)
@@ -346,8 +345,8 @@ LRESULT CALLBACK lyric_wnd_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
     case WM_SIZE:
     {
         LYRIC_DESKTOP_POS* pos = pWndInfo->has_mode(LYRIC_MODE::VERTICAL)
-            ? &pWndInfo->pos_v
-            : &pWndInfo->pos_h;
+            ? &pWndInfo->config.pos_v
+            : &pWndInfo->config.pos_h;
 
         if (message == WM_MOVE)
         {
@@ -404,8 +403,8 @@ LRESULT CALLBACK lyric_wnd_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
             break;  // 有不移动的标志, 不处理
 
         LYRIC_DESKTOP_POS* pos = pWndInfo->has_mode(LYRIC_MODE::VERTICAL)
-            ? &pWndInfo->pos_v
-            : &pWndInfo->pos_h;
+            ? &pWndInfo->config.pos_v
+            : &pWndInfo->config.pos_h;
         const RECT& rcMonitorAll = pWndInfo->rcMonitor;
 
         //POINT pt;

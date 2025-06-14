@@ -3,7 +3,7 @@
 */
 #include "lyric_exe.h"
 #include "ixwebsocket/IXWebSocketServer.h"
-#include "../charset_stl.h"
+#include <charset_stl.h>
 
 static PFN_ON_MESSAGE_RECEIVED s_on_message_received;
 static std::string s_server_ip;
@@ -24,6 +24,19 @@ bool lrc_exe_ws_client(const std::wstring& server_ip, PFN_ON_MESSAGE_RECEIVED on
 
     return lrc_exe_ws_client_connect();
 }
+void lrc_exe_ws_client_try_connect(HWND hWnd)
+{
+    if (s_server_ip.empty())
+        return;
+
+    SetTimer(hWnd, 300, 10000, [](HWND hWnd, UINT message, UINT_PTR id, DWORD t)
+             {
+                 if (s_ws_connected)
+                     return;
+                 lrc_exe_ws_client_connect();
+             });
+    return;
+}
 // 关闭ws客户端
 bool lrc_exe_ws_client_close()
 {
@@ -33,6 +46,8 @@ bool lrc_exe_ws_client_close()
 
 bool lrc_exe_ws_client_send(const std::string& text)
 {
+    if (!s_ws_connected)
+        return false;
     auto s = s_ws.sendText(text);
     return s.success;
 }
@@ -47,16 +62,10 @@ bool lrc_exe_ws_client_connect()
         if (msg->type == ix::WebSocketMessageType::Open)
         {
             s_ws_connected = true;
-            SetTimer(g_hWnd, 300, 10000, [](HWND hWnd, UINT message, UINT_PTR id, DWORD t)
-            {
-                if (s_ws_connected)
-                    return;
-                lrc_exe_ws_client_connect();
-            });
         }
         else if (msg->type == ix::WebSocketMessageType::Message)
         {
-            s_on_message_received(msg->str.c_str(), msg->str.size(), msg->binary);
+            s_on_message_received(msg->str.c_str(), msg->str.size(), msg->binary, lrc_exe_ws_server_send);
         }
         else if (msg->type == ix::WebSocketMessageType::Close)
         {

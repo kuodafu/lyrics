@@ -29,6 +29,8 @@ void lyric_wnd_draw_cache_text_v(LYRIC_DESKTOP_INFO& wnd_info, LYRIC_DESKTOP_DRA
 // 绘画横屏歌词
 void lyric_wnd_draw_cache_text_h(LYRIC_DESKTOP_INFO& wnd_info, LYRIC_DESKTOP_DRAWTEXT_INFO& draw_info, ID2D1Bitmap* pBitmap);
 
+// 加载歌词
+bool _lyric_desktop_load_lyric(PLYRIC_DESKTOP_INFO pWndInfo, LPCVOID pData, int nSize, LYRIC_PARSE_TYPE nType);
 
 // 让歌词窗口失效, 然后重画
 // isUpdate = 为true的时候始终重画, 为false的时候会判断是否需要绘画

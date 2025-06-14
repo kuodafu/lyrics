@@ -42,10 +42,10 @@ bool lyric_wnd_call_evt(LYRIC_DESKTOP_INFO& wnd_info, int id)
 {
     switch (id)
     {
-    case LYRIC_DESKTOP_BUTTON_ID_TRANSLATE2:    // 音译按钮
-    case LYRIC_DESKTOP_BUTTON_ID_TRANSLATE2_SEL:// 音译按钮, 选中模式
-    case LYRIC_DESKTOP_BUTTON_ID_TRANSLATE1:    // 翻译按钮
-    case LYRIC_DESKTOP_BUTTON_ID_TRANSLATE1_SEL:// 翻译按钮, 选中模式
+    case LYRIC_DESKTOP_BUTTON_ID_TRANSLATEYY:    // 音译按钮
+    case LYRIC_DESKTOP_BUTTON_ID_TRANSLATEYY_SEL:// 音译按钮, 选中模式
+    case LYRIC_DESKTOP_BUTTON_ID_TRANSLATEFY:    // 翻译按钮
+    case LYRIC_DESKTOP_BUTTON_ID_TRANSLATEFY_SEL:// 翻译按钮, 选中模式
         return lrc_click_translate(wnd_info, id);
 
     case LYRIC_DESKTOP_BUTTON_ID_LRCWRONG:      // 歌词不对
@@ -131,7 +131,7 @@ LYRIC_DESKTOP_BUTTON_INFO* lrc_click_get_item(LYRIC_DESKTOP_INFO& wnd_info, int 
 
 void lrc_click_wrong(LYRIC_DESKTOP_INFO& wnd_info, int id)
 {
-    MessageBoxW(wnd_info.hWnd, L"这里需要弹出一个搜索歌词的窗口, 应该由外部去实现", L"提示", MB_OK);
+    //MessageBoxW(wnd_info.hWnd, L"这里需要弹出一个搜索歌词的窗口, 应该由外部去实现", L"提示", MB_OK);
 }
 
 bool lrc_click_translate(LYRIC_DESKTOP_INFO& wnd_info, int id)
@@ -144,22 +144,22 @@ bool lrc_click_translate(LYRIC_DESKTOP_INFO& wnd_info, int id)
 
     switch (id)
     {
-    case LYRIC_DESKTOP_BUTTON_ID_TRANSLATE2:    // 音译按钮
-        item.id = LYRIC_DESKTOP_BUTTON_ID_TRANSLATE2_SEL;
+    case LYRIC_DESKTOP_BUTTON_ID_TRANSLATEYY:    // 音译按钮
+        item.id = LYRIC_DESKTOP_BUTTON_ID_TRANSLATEYY_SEL;
         wnd_info.add_mode(LYRIC_DESKTOP_MODE::TRANSLATION_YY);
-        lrc_click_translate(wnd_info, LYRIC_DESKTOP_BUTTON_ID_TRANSLATE1_SEL);
+        lrc_click_translate(wnd_info, LYRIC_DESKTOP_BUTTON_ID_TRANSLATEFY_SEL);
         break;
-    case LYRIC_DESKTOP_BUTTON_ID_TRANSLATE2_SEL:// 音译按钮, 选中模式
-        item.id = LYRIC_DESKTOP_BUTTON_ID_TRANSLATE2;
+    case LYRIC_DESKTOP_BUTTON_ID_TRANSLATEYY_SEL:// 音译按钮, 选中模式
+        item.id = LYRIC_DESKTOP_BUTTON_ID_TRANSLATEYY;
         wnd_info.del_mode(LYRIC_DESKTOP_MODE::TRANSLATION_YY);
         break;
-    case LYRIC_DESKTOP_BUTTON_ID_TRANSLATE1:    // 翻译按钮
-        item.id = LYRIC_DESKTOP_BUTTON_ID_TRANSLATE1_SEL;
+    case LYRIC_DESKTOP_BUTTON_ID_TRANSLATEFY:    // 翻译按钮
+        item.id = LYRIC_DESKTOP_BUTTON_ID_TRANSLATEFY_SEL;
         wnd_info.add_mode(LYRIC_DESKTOP_MODE::TRANSLATION_FY);
-        lrc_click_translate(wnd_info, LYRIC_DESKTOP_BUTTON_ID_TRANSLATE2_SEL);
+        lrc_click_translate(wnd_info, LYRIC_DESKTOP_BUTTON_ID_TRANSLATEYY_SEL);
         break;
-    case LYRIC_DESKTOP_BUTTON_ID_TRANSLATE1_SEL:// 翻译按钮, 选中模式
-        item.id = LYRIC_DESKTOP_BUTTON_ID_TRANSLATE1;
+    case LYRIC_DESKTOP_BUTTON_ID_TRANSLATEFY_SEL:// 翻译按钮, 选中模式
+        item.id = LYRIC_DESKTOP_BUTTON_ID_TRANSLATEFY;
         wnd_info.del_mode(LYRIC_DESKTOP_MODE::TRANSLATION_FY);
         break;
     default:

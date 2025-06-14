@@ -54,54 +54,16 @@ HWND LYRICCALL lyric_desktop_create(const char* arg, PFN_LYRIC_DESKTOP_COMMAND p
 /// 歌词窗口加载歌词数据, 歌词是什么类型在 nType 参数里指定
 /// </summary>
 /// <param name="hWindowLyric">lyric_wnd_create() 返回的窗口句柄</param>
-/// <param name="pKrcData">krc文件数据指针</param>
-/// <param name="nKrcDataLen">krc文件数据尺寸</param>
+/// <param name="pData">输入, 执行要解析的歌词数据, 是指向文件还是数据根据nType决定, 如果传递的文本有BOM, 则忽略编码标志位, 使用BOM的编码方式</param>
+/// <param name="nSize">输入, pData 的长度, 不管传递什么数据, 单位都是字节</param>
 /// <param name="nType">解析类型, 见 LYRIC_PARSE_TYPE 定义</param>
 /// <returns>返回是否加载成功</returns>
-bool LYRICCALL lyric_desktop_load_lyric(HWND hWindowLyric, LPCVOID pKrcData, int nKrcDataLen, LYRIC_PARSE_TYPE nType)
+bool LYRICCALL lyric_desktop_load_lyric(HWND hWindowLyric, LPCVOID pData, int nSize, LYRIC_PARSE_TYPE nType)
 {
-    PLYRIC_DESKTOP_INFO pWndInfo = lyric_wnd_get_data(hWindowLyric);
+    PLYRIC_DESKTOP_INFO pWndInfo = _lyric_desktop_get_data(hWindowLyric);
     if (!pWndInfo)
         return false;
-    CCriticalSection cs(pWndInfo->pCritSec);    // 上锁, 防止这里不是窗口线程调用, 窗口线程会不停的访问歌词结构
-
-    lyric_destroy(pWndInfo->hLyric);
-    pWndInfo->hLyric = nullptr;
-
-    LYRIC_DESKTOP_INFO& wnd_info = *pWndInfo;
-
-    wnd_info.hLyric = lyric_parse(pKrcData, nKrcDataLen, nType);
-    pWndInfo->nTimeOffset = lyric_behind_ahead(wnd_info.hLyric, 0);
-    pWndInfo->line1.clear();
-    pWndInfo->line2.clear();
-
-    int language = lyric_get_language(wnd_info.hLyric);
-    lyric_wnd_set_state_translate(*pWndInfo, language);
-
-    if (language)
-        wnd_info.add_mode(LYRIC_DESKTOP_MODE::EXISTTRANS);
-    else
-        wnd_info.del_mode(LYRIC_DESKTOP_MODE::EXISTTRANS);
-
-    if (!wnd_info.hLyric)
-        return false;
-
-    // 必须得用小数记, 不然歌词字多了会相差出很多个像素
-    lyric_calc_text(wnd_info.hLyric, [](void* pUserData, LPCWSTR pText, int nTextLen, float* pRetHeight) -> float
-                          {
-                              LYRIC_DESKTOP_INFO* pWndInfo = (LYRIC_DESKTOP_INFO*)pUserData;
-                              D2DRender& pRender = *pWndInfo->dx.pRender;
-                              // 没有创建字体就创建一个, 字体是设备无关对象, 不需要从渲染对象里创建
-                              if (!pWndInfo->dx.hFont)
-                                  pWndInfo->dx.re_create_font(pWndInfo);
-
-                              CComPtr<IDWriteTextLayout> pTextLayout;
-                              lyric_wnd_create_text_layout(pText, nTextLen, pWndInfo->dx.hFont->GetDWTextFormat(), 0, 0, &pTextLayout);
-                              float width = _lyric_wnd_load_krc_calc_text(pWndInfo, pTextLayout, pRetHeight);
-                              return width;
-                          }, pWndInfo);
-
-    return true;
+    return _lyric_desktop_load_lyric(pWndInfo, pData, nSize, nType);
 }
 
 /// <summary>
@@ -112,7 +74,7 @@ bool LYRICCALL lyric_desktop_load_lyric(HWND hWindowLyric, LPCVOID pKrcData, int
 /// <returns>返回是否更新成功</returns>
 bool LYRICCALL lyric_desktop_update(HWND hWindowLyric, int nCurrentTimeMS)
 {
-    PLYRIC_DESKTOP_INFO pWndInfo = lyric_wnd_get_data(hWindowLyric);
+    PLYRIC_DESKTOP_INFO pWndInfo = _lyric_desktop_get_data(hWindowLyric);
     if (!pWndInfo)
         return false;
 
@@ -131,7 +93,7 @@ bool LYRICCALL lyric_desktop_update(HWND hWindowLyric, int nCurrentTimeMS)
 /// <returns>返回配置json信息</returns>
 char* LYRICCALL lyric_desktop_get_config(HWND hWindowLyric)
 {
-    PLYRIC_DESKTOP_INFO pWndInfo = lyric_wnd_get_data(hWindowLyric);
+    PLYRIC_DESKTOP_INFO pWndInfo = _lyric_desktop_get_data(hWindowLyric);
     if (!pWndInfo)
         return nullptr;
     return pWndInfo->config.to_json(pWndInfo);
@@ -145,7 +107,7 @@ char* LYRICCALL lyric_desktop_get_config(HWND hWindowLyric)
 /// <returns>返回影响了多少个配置, 失败返回0</returns>
 int LYRICCALL lyric_desktop_set_config(HWND hWindowLyric, const char* argJson)
 {
-    PLYRIC_DESKTOP_INFO pWndInfo = lyric_wnd_get_data(hWindowLyric);
+    PLYRIC_DESKTOP_INFO pWndInfo = _lyric_desktop_get_data(hWindowLyric);
     if (!pWndInfo)
         return 0;
     return pWndInfo->config.parse(argJson, pWndInfo);
@@ -159,7 +121,7 @@ int LYRICCALL lyric_desktop_set_config(HWND hWindowLyric, const char* argJson)
 /// <returns>返回是否调用成功</returns>
 bool LYRICCALL lyric_desktop_call_event(HWND hWindowLyric, LYRIC_DESKTOP_BUTTON_ID id)
 {
-    PLYRIC_DESKTOP_INFO pWndInfo = lyric_wnd_get_data(hWindowLyric);
+    PLYRIC_DESKTOP_INFO pWndInfo = _lyric_desktop_get_data(hWindowLyric);
     if (!pWndInfo)
         return false;
     return lyric_desktop::lyric_wnd_call_evt(*pWndInfo, id);
@@ -174,7 +136,7 @@ bool LYRICCALL lyric_desktop_call_event(HWND hWindowLyric, LYRIC_DESKTOP_BUTTON_
 /// <returns>返回是否调用成功</returns>
 bool LYRICCALL lyric_desktop_set_button_state(HWND hWindowLyric, LYRIC_DESKTOP_BUTTON_ID id, LYRIC_DESKTOP_BUTTON_STATE state)
 {
-    PLYRIC_DESKTOP_INFO pWndInfo = lyric_wnd_get_data(hWindowLyric);
+    PLYRIC_DESKTOP_INFO pWndInfo = _lyric_desktop_get_data(hWindowLyric);
     if (!pWndInfo)
         return false;
     return lyric_desktop::lyric_wnd_set_btn_state(*pWndInfo, id, state);
@@ -188,7 +150,7 @@ bool LYRICCALL lyric_desktop_set_button_state(HWND hWindowLyric, LYRIC_DESKTOP_B
 /// <returns>返回按钮状态</returns>
 LYRIC_DESKTOP_BUTTON_STATE LYRICCALL lyric_desktop_get_button_state(HWND hWindowLyric, LYRIC_DESKTOP_BUTTON_ID id)
 {
-    PLYRIC_DESKTOP_INFO pWndInfo = lyric_wnd_get_data(hWindowLyric);
+    PLYRIC_DESKTOP_INFO pWndInfo = _lyric_desktop_get_data(hWindowLyric);
     if (!pWndInfo)
         return LYRIC_DESKTOP_BUTTON_STATE_ERROR;
     return lyric_desktop::lyric_wnd_get_btn_state(*pWndInfo, id);

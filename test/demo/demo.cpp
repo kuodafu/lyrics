@@ -1,9 +1,18 @@
-﻿#include <control/WndControl6_0.h>
+﻿#if defined _M_IX86
+#pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='x86' publicKeyToken='6595b64144ccf1df' language='*'\"")
+#elif defined _M_IA64
+#pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='ia64' publicKeyToken='6595b64144ccf1df' language='*'\"")
+#elif defined _M_X64
+#pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='amd64' publicKeyToken='6595b64144ccf1df' language='*'\"")
+#else
+#pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
+#endif
 
 #include <SDKDDKVer.h>
 #define WIN32_LEAN_AND_MEAN             // 从 Windows 头文件中排除极少使用的内容
 // Windows 头文件
 #include <windows.h>
+#include <CommCtrl.h>
 // C 运行时头文件
 #include <stdlib.h>
 #include <malloc.h>
@@ -13,67 +22,25 @@
 #include <random>
 #include <thread>
 #include <mutex>
-
-#include <read_file.h>
-#include <kuodafu_lyric.h>
-#include <control/WndBase.h>
-#include <control/CListView.h>
-#include <kuodafu_lyric_desktop.h>
-#include <assist/assist.h>
-#include <charset_stl.h>
-#include <cJSON/cJSON.h>
 #include "bass.h"
-#include <d2d/Color.h>
 
-#pragma comment(lib, "Ws2_32.lib")
-#pragma comment(lib, "Crypt32.lib")
-#pragma comment(lib, "Bcrypt.lib")
-
+#include <kuodafu_lyric_desktop.h>
 
 #ifdef _WIN64
-#   pragma comment(lib, "lib/x64/bass.lib")
+#   pragma comment(lib, "../x64/bass.lib")
+#   pragma comment(lib, "../x64/lyric_desktop.lib")
 #else
-#   pragma comment(lib, "lib/x86/bass.lib")
+#   pragma comment(lib, "../x86/bass.lib")
+#   pragma comment(lib, "../x86/lyric_desktop.lib")
 #endif
 
-// 是否使用静态库
-#define USING_LIB 0
-
-#if USING_LIB
-#   ifdef _WIN64
-#      ifdef _DEBUG
-#          pragma comment(lib, "output/x64/lyric_desktop_libD.lib")
-#      else
-#          pragma comment(lib, "output/x64/lyric_desktop_lib.lib")
-#      endif
-#   else
-#      ifdef _DEBUG
-#          pragma comment(lib, "output/x86/lyric_desktop_libD.lib")
-#      else
-#          pragma comment(lib, "output/x86/lyric_desktop_lib.lib")
-#      endif
-#   endif
-#else
-#   ifdef _WIN64
-#      ifdef _DEBUG
-#          pragma comment(lib, "output/x64/lyric_desktopD.lib")
-#      else
-#          pragma comment(lib, "output/x64/lyric_desktop.lib")
-#      endif
-#   else
-#      ifdef _DEBUG
-#          pragma comment(lib, "output/x86/lyric_desktopD.lib")
-#      else
-#          pragma comment(lib, "output/x86/lyric_desktop.lib")
-#      endif
-#   endif
-#endif
 
 #define ID_LOCK 5000
 #define ID_SHOW 5001
 
 #define ID_UPDATE_MP3 5010
 #define ID_UPDATE_LRC 5011
+
 
 // 全局变量:
 static HINSTANCE hInst;         // 当前实例
@@ -114,11 +81,10 @@ LRESULT CALLBACK OnNotify_lrc_list(HWND hWnd, UINT message, WPARAM wParam, LPARA
 void find_krc(const std::wstring& name, std::vector<LIST_DATA_LRC>& arr);
 void EnumerateMP3Files(const std::wstring& directory);
 
-
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
-                      _In_opt_ HINSTANCE hPrevInstance,
-                      _In_ LPWSTR    lpCmdLine,
-                      _In_ int       nCmdShow)
+                     _In_opt_ HINSTANCE hPrevInstance,
+                     _In_ LPWSTR    lpCmdLine,
+                     _In_ int       nCmdShow)
 {
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
@@ -145,30 +111,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 
 
-
-_NODISCARD inline UINT _hash_str(const char* _First) noexcept
-{
-    UINT _FNV_offset_basis = 2166136261U;
-    constexpr UINT _FNV_prime = 16777619U;
-    while (*_First)
-    {
-        _FNV_offset_basis ^= static_cast<UINT>(*_First++);
-        _FNV_offset_basis *= _FNV_prime;
-    }
-
-    return _FNV_offset_basis;
-}
-
-//
-//   函数: InitInstance(HINSTANCE, int)
-//
-//   目标: 保存实例句柄并创建主窗口
-//
-//   注释:
-//
-//        在此函数中，我们在全局变量中保存实例句柄并
-//        创建和显示主程序窗口。
-//
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
     hInst = hInstance; // 将实例句柄存储在全局变量中
@@ -188,11 +130,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
     wcex.lpszClassName = szWindowClass;
     wcex.hIconSm = wcex.hIcon;
 
-    auto author = (LPCSTR)u8"kuodafu QQ: 121007124, group: 20752843";
-    auto xxx = _hash_str(author);
-
     RegisterClassExW(&wcex);
-
     HWND hWnd = CreateWindowW(wcex.lpszClassName, L"测试调用歌词", WS_OVERLAPPEDWINDOW,
                               CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
 
@@ -204,10 +142,8 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
     ShowWindow(hWnd, nCmdShow);
     UpdateWindow(hWnd);
 
-    return TRUE;
+   return TRUE;
 }
-
-
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -290,7 +226,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         pfn_create(next_left + _8, btn_top, _100, _32, ID_SHOW, L"歌词可视");
 
         m_static_state = CreateWindowExW(0, WC_STATICW, L"这里把上一首/下一首按钮的功能改成了快进快退", WS_CHILD | WS_VISIBLE,
-                                         next_left + _8, btn_top, _800, _24, hWnd, 0, hInst, nullptr);
+                                         next_left + _8, btn_top, scale(1000), _24, hWnd, 0, hInst, nullptr);
         SendMessageW(m_static_state, WM_SETFONT, (WPARAM)hFont, TRUE);
 
         auto pfn_create_list = [&](int left, int top, int width, int height)
@@ -332,103 +268,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         // 调用事件, 刷新歌曲目录
         OnCommand(hWnd, ID_UPDATE_MP3, 0);
 
-        char* json_config = nullptr;
-        {
-            // 横向窗口一些默认值, 有高度用高度
-            // 左边: (屏幕宽度 - 窗口宽度) / 2
-            // 顶边: 屏幕底边 - 窗口高度 - 100
-            // 宽度: 800
-            // 高度: 高度不允许设置, 内部根据字体大小自动调整
-
-            cJSON* json = cJSON_CreateObject();
-
-            cJSON_AddNumberToObject(json, "refreshRate", 144);
-            cJSON_AddBoolToObject(json, "bVertical", false);
-            cJSON_AddBoolToObject(json, "bSingleLine", false);
-            cJSON_AddBoolToObject(json, "bSelfy", false);
-            cJSON_AddBoolToObject(json, "bSelyy", false);
-
-
-            cJSON_AddStringToObject(json, "szDefText", (LPCSTR)u8"没有歌词时的默认文本, 可以做广告之类的");
-            cJSON_AddNumberToObject(json, "padding_text", 5);
-            cJSON_AddNumberToObject(json, "padding_wnd", 8);
-            cJSON_AddNumberToObject(json, "strokeWidth", 2.2);
-            cJSON_AddNumberToObject(json, "strokeWidth_div", 0);
-            cJSON_AddBoolToObject(json, "fillBeforeDraw", false);
-            cJSON_AddNumberToObject(json, "nLineSpace", 2);
-
-            // 歌词模式, 对齐方式
-            cJSON* lyric_mode = cJSON_AddObjectToObject(json, "lyric_mode");
-            cJSON* line1 = cJSON_AddObjectToObject(lyric_mode, "line1");
-            cJSON* line2 = cJSON_AddObjectToObject(lyric_mode, "line2");
-            cJSON_AddNumberToObject(line1, "align", 0);
-            cJSON_AddNumberToObject(line2, "align", 2);
-
-            cJSON_AddStringToObject(json, "szFontName", (LPCSTR)u8"微软雅黑");
-            cJSON_AddNumberToObject(json, "nFontSize", 24);
-            cJSON_AddNumberToObject(json, "lfWeight", 700);
-
-            cJSON* rect_v = cJSON_AddObjectToObject(json, "rect_v");
-            cJSON* rect_h = cJSON_AddObjectToObject(json, "rect_h");
-            cJSON_AddNumberToObject(rect_v, "left", 1700);
-            cJSON_AddNumberToObject(rect_v, "top", 100);
-            cJSON_AddNumberToObject(rect_v, "right", 2000);
-            cJSON_AddNumberToObject(rect_v, "bottom", 800);
-            cJSON_AddNumberToObject(rect_h, "left", 300);
-            cJSON_AddNumberToObject(rect_h, "top", 800);
-            cJSON_AddNumberToObject(rect_h, "right", 1000);
-            cJSON_AddNumberToObject(rect_h, "bottom", 1000);
-
-            cJSON* clrNormal = cJSON_AddArrayToObject(json, "clrNormal");
-            cJSON* clrNormal_GradientStop = cJSON_AddArrayToObject(json, "clrNormal_GradientStop");
-            cJSON* clrLight = cJSON_AddArrayToObject(json, "clrLight");
-            cJSON* clrLight_GradientStop = cJSON_AddArrayToObject(json, "clrLight_GradientStop");
-            cJSON_AddItemToArray(clrNormal, cJSON_CreateNumber(MAKEARGB(255, 0, 109, 178)));
-            cJSON_AddItemToArray(clrNormal, cJSON_CreateNumber(MAKEARGB(255, 3, 189, 241)));
-            cJSON_AddItemToArray(clrNormal, cJSON_CreateNumber(MAKEARGB(255, 3, 202, 252)));
-
-            cJSON_AddItemToArray(clrLight, cJSON_CreateNumber(MAKEARGB(255, 255,255,255)));
-            cJSON_AddItemToArray(clrLight, cJSON_CreateNumber(MAKEARGB(255, 130,247,253)));
-            cJSON_AddItemToArray(clrLight, cJSON_CreateNumber(MAKEARGB(255, 3, 233, 252)));
-
-            cJSON_AddItemToArray(clrNormal_GradientStop, cJSON_CreateNumber(0));
-            cJSON_AddItemToArray(clrNormal_GradientStop, cJSON_CreateNumber(0.5));
-            cJSON_AddItemToArray(clrNormal_GradientStop, cJSON_CreateNumber(1));
-
-            cJSON_AddItemToArray(clrLight_GradientStop, cJSON_CreateNumber(0));
-            cJSON_AddItemToArray(clrLight_GradientStop, cJSON_CreateNumber(0.5));
-            cJSON_AddItemToArray(clrLight_GradientStop, cJSON_CreateNumber(1));
-
-            cJSON_AddNumberToObject(json, "clrBorderNormal", MAKEARGB(255, 33, 33, 33));
-            cJSON_AddNumberToObject(json, "clrBorderLight", MAKEARGB(255, 33, 33, 33));
-            cJSON_AddNumberToObject(json, "clrWndBack", MAKEARGB(100, 0, 0, 0));
-            cJSON_AddNumberToObject(json, "clrWndBorder", MAKEARGB(200, 0, 0, 0));
-            cJSON_AddNumberToObject(json, "clrLine", MAKEARGB(100, 255, 255, 255));
-
-
-
-            cJSON* debug = cJSON_AddObjectToObject(json, "debug");
-            //cJSON_AddNumberToObject(debug, "clrTextBackNormal", MAKEARGB(200, 0, 255, 0));
-            //cJSON_AddNumberToObject(debug, "clrTextBackLight", MAKEARGB(200, 255, 0, 0));
-            cJSON_AddNumberToObject(debug, "clrTextBackNormal", 0);
-            cJSON_AddNumberToObject(debug, "clrTextBackLight", 0);
-            cJSON_AddBoolToObject(debug, "alwaysFillBack", 0);
-            cJSON_AddBoolToObject(debug, "alwaysDraw", 0);
-            cJSON_AddBoolToObject(debug, "alwaysCache", 0);
-            cJSON_AddBoolToObject(debug, "alwaysCache1", 0);
-
-            json_config = cJSON_PrintUnformatted(json);
-            cJSON_Delete(json);
-
-            //_str base = wstr::base64_encode(json_config);
-            //SetClipboard(base.c_str());
-        }
-
-
-        m_hLyricWindow = lyric_desktop_create(json_config, OnLyricCommand, 0);
-        if (json_config)
-            cJSON_free(json_config);
-
+        m_hLyricWindow = lyric_desktop_create(nullptr, OnLyricCommand, 0);
 
         // 更新bass cpu占用率
         SetTimer(hWnd, 100, 1000, [](HWND hWnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
@@ -448,9 +288,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                      lyric_desktop_update(m_hLyricWindow, static_cast<int>(pos));
                  });
 
-
         break;
     }
+
     case WM_COMMAND:
     {
         if (OnCommand(hWnd, wParam, lParam))
@@ -472,7 +312,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         DestroyWindow(m_hLyricWindow);
         PostQuitMessage(0);
         break;
-    case WM_CTLCOLOR:
     case WM_CTLCOLORMSGBOX:
     case WM_CTLCOLOREDIT:
     case WM_CTLCOLORLISTBOX:
@@ -480,14 +319,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_CTLCOLORDLG:
     case WM_CTLCOLORSCROLLBAR:
     case WM_CTLCOLORSTATIC:
-    {
-        HDC hdc = (HDC)wParam;
-        HWND hWndChild = (HWND)lParam;
         return (LRESULT)GetStockObject(WHITE_BRUSH);
-    }
+    
     case WM_NOTIFY:
     {
-        LPNMHDR pnmh = (LPNMHDR)lParam;
+        auto pnmh = (LPNMHDR)lParam;
         if (pnmh->hwndFrom == m_list)
             return OnNotify_mp3_list(hWnd, message, wParam, lParam);
         if (pnmh->hwndFrom == m_listlrc)
@@ -553,7 +389,7 @@ LRESULT CALLBACK OnNotify_mp3_list(HWND hWnd, UINT message, WPARAM wParam, LPARA
         auto pItem = (LPNMITEMACTIVATE)lParam;
         int index = pItem->iItem;
         auto& item = m_data[index];
-        
+
         const std::wstring& filePath = item.szPath;
         m_datalrc = &item.lrc_arr;
 
@@ -564,7 +400,6 @@ LRESULT CALLBACK OnNotify_mp3_list(HWND hWnd, UINT message, WPARAM wParam, LPARA
         if (m_datalrc->empty())
         {
             std::wstring find_name = item.szName;
-
             find_name.erase(find_name.rfind(L'.'));
             for (wchar_t& ch : find_name)
                 ch = towlower(ch);
@@ -579,6 +414,7 @@ LRESULT CALLBACK OnNotify_mp3_list(HWND hWnd, UINT message, WPARAM wParam, LPARA
             pData = m_datalrc->front().szPath.c_str();
 
         ListView_SetItemCountEx(m_listlrc, (int)size, LVSICF_NOSCROLL);
+
 
         int nType = LYRIC_PARSE_TYPE_KRC | LYRIC_PARSE_TYPE_UTF16 | LYRIC_PARSE_TYPE_PATH;
         lyric_desktop_load_lyric(m_hLyricWindow, pData, -1, static_cast<LYRIC_PARSE_TYPE>(nType));
@@ -608,7 +444,7 @@ LRESULT CALLBACK OnNotify_mp3_list(HWND hWnd, UINT message, WPARAM wParam, LPARA
     }
     case LVN_COLUMNCLICK:
     {
-        LPNMLISTVIEW pNMLV = (LPNMLISTVIEW)lParam;
+        auto pNMLV = (LPNMLISTVIEW)lParam;
         int iSubItem = pNMLV->iSubItem;
         static bool bAscending = true;
         std::sort(m_data.begin(), m_data.end(), [iSubItem](const LIST_DAT& a, const LIST_DAT& b)
@@ -660,7 +496,7 @@ LRESULT CALLBACK OnNotify_mp3_list(HWND hWnd, UINT message, WPARAM wParam, LPARA
 // “关于”框的消息处理程序。
 bool OnCommand(HWND hWnd, WPARAM wParam, LPARAM lParam)
 {
-    HWND hChild = (HWND)lParam;
+    auto hChild = (HWND)lParam;
     const int id = LOWORD(wParam);
     const int code = HIWORD(wParam);
     const bool isCheck = SendMessageW(hChild, BM_GETCHECK, 0, 0) == BST_CHECKED;
@@ -838,7 +674,7 @@ int CALLBACK OnLyricCommand(HWND hWindowLyric, int id, LPARAM lParam)
     }
     case LYRIC_DESKTOP_BUTTON_ID_LRCCOLOR:
     {
-        set_state(L"桌面歌词按下了 歌词配色按钮, ID: %d, 酷狗这个按钮是让用户选择歌词字体配色, 可以弹窗口让用户设置颜色, 然后设置桌面歌词配置", id);
+        set_state(L"桌面歌词按下了 歌词配色按钮, ID: %d, 酷狗这个按钮是让用户选择歌词字体配色, 可以弹窗口让用户设置颜色, 然后设置配置", id);
         break;
     }
     case LYRIC_DESKTOP_BUTTON_ID_MENU:
@@ -851,7 +687,6 @@ int CALLBACK OnLyricCommand(HWND hWindowLyric, int id, LPARAM lParam)
     }
     return 0;
 }
-
 
 void find_krc(const std::wstring& name, std::vector<LIST_DATA_LRC>& arr)
 {
@@ -919,4 +754,3 @@ void EnumerateMP3Files(const std::wstring& directory)
 
     FindClose(hFind);
 }
-

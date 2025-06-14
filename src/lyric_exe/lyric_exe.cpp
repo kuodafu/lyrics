@@ -1,7 +1,7 @@
 ﻿#include "lyric_exe.h"
 #include <winsock2.h>
 #include <mutex>
-#include "../charset_stl.h"
+#include <charset_stl.h>
 #include <kuodafu_lyric_desktop.h>
 
 #pragma comment(lib, "Crypt32.lib")
@@ -26,12 +26,15 @@
 HINSTANCE   g_hInst;
 HWND        g_hWnd;         // 消息窗口, 处理一些消息, 还有把一些特定事件转到窗口线程执行
 HWND        g_hWndReceive;  // 消息通知窗口, 窗口有效的时候有消息会通知到这里
+UINT        g_nReceiveMsg;  // 通知的消息值, 没有的话就默认为 WM_USER + 1
+std::string g_json_config;  // 配置信息数据
 
 static std::mutex m_mtx_message;
 static HWND m_hLyricWindow;
+static bool m_notify_click = true;
 
 HWND lrc_exe_create_msg_window();
-void ws_OnMessage(cJSON* data, LPCSTR type);
+void ws_OnMessage(cJSON* params, LPCSTR type, LPCSTR id, PFN_WS_SEND_MESSAGE pfnSend);
 int CALLBACK OnLyricCommand(HWND hWindowLyric, int id, LPARAM lParam);
 
 
@@ -56,26 +59,31 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         MessageBoxW(0, buf, L"WebSokect初始化失败", MB_ICONERROR);
         return 0;
     }
+
     lyric_desktop_init();
+    lrc_exe_init_cmdline();
 
-    LYRIC_DESKTOP_ARG arg{};
-    lyric_desktop_get_default_arg(&arg);
-    arg.rcWindow = { 300, 800, 1000, 1000 };
-    //arg.pszFontName = L"黑体";
-    m_hLyricWindow = lyric_desktop_create(&arg, OnLyricCommand, 0);
+    // 命令行初始化成功, 开始创建窗口
+    m_hLyricWindow = lyric_desktop_create(g_json_config.c_str(), OnLyricCommand, 0);
 
-    if (lrc_exe_create_msg_window() && lrc_exe_init_cmdline())
+    if (m_hLyricWindow && lrc_exe_create_msg_window())
     {
-        MSG msg;
-        while (GetMessageW(&msg, nullptr, 0, 0))
+        // 创建窗口后再初始化websocket
+        if (lrc_exe_init_cmdline_ws())
         {
-            TranslateMessage(&msg);
-            DispatchMessageW(&msg);
+            lrc_exe_ws_client_try_connect(g_hWnd);
+            MSG msg;
+            while (GetMessageW(&msg, nullptr, 0, 0))
+            {
+                TranslateMessage(&msg);
+                DispatchMessageW(&msg);
+            }
         }
     }
+    
 
-    WSACleanup();
     lyric_desktop_uninit();
+    WSACleanup();
     return 0;
 }
 
@@ -112,7 +120,7 @@ HWND lrc_exe_create_msg_window()
                            NULL);
 }
 
-void ws_OnMessageReceived(LPCSTR message, size_t len, bool binary)
+void ws_OnMessageReceived(LPCSTR message, size_t len, bool binary, PFN_WS_SEND_MESSAGE pfnSend)
 {
     if (binary)
     {
@@ -121,48 +129,143 @@ void ws_OnMessageReceived(LPCSTR message, size_t len, bool binary)
     }
 
     cJSON* json = cJSON_Parse(message);
-    LPCSTR type = cJSON_GetStringValue(cJSON_GetObjectItem(json, "type"));
-    cJSON* data = cJSON_GetObjectItem(json, "data");
-    if (type && *type && data)
-        ws_OnMessage(data, type);
+    LPCSTR id = cJSON_GetStringValue(cJSON_GetObjectItem(json, "id"));
+    LPCSTR type = cJSON_GetStringValue(cJSON_GetObjectItem(json, "method"));
+    cJSON* params = cJSON_GetObjectItem(json, "params");
+    if (type && *type && params)
+        ws_OnMessage(params, type, id, pfnSend);
     cJSON_Delete(json);
 }
 
-void ws_OnMessage(cJSON* data, LPCSTR type)
+template<typename _Ty>
+inline void _ws_ret_data(LPCSTR id, _Ty data, PFN_WS_SEND_MESSAGE pfnSend)
+{
+    if (!id || !*id || !pfnSend)
+        return;
+
+    cJSON* ret_json = cJSON_CreateObject();
+    cJSON_AddStringToObject(ret_json, "id", id);
+    cJSON* result = cJSON_AddObjectToObject(ret_json, "result");
+
+    if constexpr (std::is_same_v<_Ty, LPCSTR> || std::is_same_v<_Ty, LPSTR>)
+    {
+        cJSON_AddStringToObject(result, "result", data);
+    }
+    else if constexpr (std::is_same_v<_Ty, int>)
+    {
+        cJSON_AddNumberToObject(result, "result", data);
+    }
+    else if constexpr (std::is_same_v<_Ty, bool>)
+    {
+        cJSON_AddBoolToObject(result, "result", data);
+    }
+    else
+        throw std::exception("not support type");
+
+    char* str_msg = cJSON_PrintUnformatted(ret_json);
+    pfnSend(str_msg);
+    cJSON_Delete(ret_json);
+    cJSON_free(str_msg);
+}
+
+void ws_OnMessage(cJSON* params, LPCSTR type, LPCSTR id, PFN_WS_SEND_MESSAGE pfnSend)
 {
     // 歌词这个不是线程安全, 得加锁处理
     std::lock_guard<std::mutex> lock(m_mtx_message);
-
 #define _cmp(_s) (_stricmp(type, _s) == 0)
-    if (_cmp("lyrics"))
+
+    if (_cmp("lyric_desktop_exit"))
     {
-        double currentTime = cJSON_GetNumberValue(cJSON_GetObjectItem(data, "currentTime"));
-        LPCSTR lyricsData = cJSON_GetStringValue(cJSON_GetObjectItem(data, "lyricsData"));
-        auto w = charset_stl::U2W(lyricsData);
-        lyric_desktop_load_lyric(m_hLyricWindow, w.c_str(), (int)w.size(), LYRIC_PARSE_TYPE_DECRYPT);
-        lyric_desktop_update(m_hLyricWindow, (int)(currentTime * 1000.));
+        DestroyWindow(m_hLyricWindow);
+        DestroyWindow(g_hWnd);
+        return;
+    }
+    if (_cmp("lyric_desktop_load_lyric"))
+    {
+        LPCSTR data = cJSON_GetStringValue(cJSON_GetObjectItem(params, "data"));
+        LPCSTR file = cJSON_GetStringValue(cJSON_GetObjectItem(params, "file"));
+        LPCSTR lyric = cJSON_GetStringValue(cJSON_GetObjectItem(params, "lyric"));
+        if (!lyric || !*lyric) lyric = "krc";
+        bool bRet = false;
+        int nType = LYRIC_PARSE_TYPE_KRC;
+        if (_stricmp(lyric, "qrc") == 0)
+            nType = LYRIC_PARSE_TYPE_QRC;
+        else if (_stricmp(lyric, "lrc") == 0)
+            nType = LYRIC_PARSE_TYPE_LRC;
 
-        //SYSTEMTIME st;
-        //GetLocalTime(&st);
-        //char buf[260];
-        //sprintf_s(buf, "[%02d:%02d:%02d.%03d] currentTime = %f\n",
-        //          st.wHour, st.wMinute, st.wSecond, st.wMilliseconds,
-        //          currentTime);
-        //OutputDebugStringA(buf);
+        if (data && *data)
+        {
+            nType |= LYRIC_PARSE_TYPE_UTF8 | LYRIC_PARSE_TYPE_DECRYPT;
+            bRet = lyric_desktop_load_lyric(m_hLyricWindow, data, -1, static_cast<LYRIC_PARSE_TYPE>(nType));
+        }
+        else if(file && *file)
+        {
+            nType |= LYRIC_PARSE_TYPE_UTF8 | LYRIC_PARSE_TYPE_PATH;
+            bRet = lyric_desktop_load_lyric(m_hLyricWindow, file, -1, static_cast<LYRIC_PARSE_TYPE>(nType));
+        }
 
+        _ws_ret_data(id, bRet, pfnSend);
         return;
     }
 
-    if (_cmp("playerState"))
+    if (_cmp("lyric_desktop_update"))
     {
-        bool isPlaying = cJSON_IsTrue(cJSON_GetObjectItem(data, "isPlaying"));
-        if (isPlaying)
-            lyric_desktop_call_event(m_hLyricWindow, LYRIC_WND_BUTTON_ID_PLAY);
-        else
-            lyric_desktop_call_event(m_hLyricWindow, LYRIC_WND_BUTTON_ID_PAUSE);
-
+        double time = cJSON_GetNumberValue(cJSON_GetObjectItem(params, "time"));
+        bool bRet = lyric_desktop_update(m_hLyricWindow, static_cast<int>(time));
+        _ws_ret_data(id, bRet, pfnSend);
         return;
     }
+
+    if (_cmp("lyric_desktop_get_config"))
+    {
+        char* str_config = lyric_desktop_get_config(m_hLyricWindow);
+        _ws_ret_data(id, str_config, pfnSend);
+        lyric_desktop_free(str_config);
+        return;
+    }
+    if (_cmp("lyric_desktop_set_config"))
+    {
+        LPCSTR str_config = cJSON_GetStringValue(cJSON_GetObjectItem(params, "config"));
+        int nRet = lyric_desktop_set_config(m_hLyricWindow, str_config);
+        _ws_ret_data(id, nRet, pfnSend);
+        return;
+    }
+    if (_cmp("lyric_desktop_call_event"))
+    {
+        double btn_id = cJSON_GetNumberValue(cJSON_GetObjectItem(params, "id"));
+        bool bRet = lyric_desktop_call_event(m_hLyricWindow, static_cast<LYRIC_DESKTOP_BUTTON_ID>(btn_id));
+        _ws_ret_data(id, bRet, pfnSend);
+        return;
+    }
+    if (_cmp("lyric_desktop_set_button_state"))
+    {
+        double btn_id = cJSON_GetNumberValue(cJSON_GetObjectItem(params, "id"));
+        double state = cJSON_GetNumberValue(cJSON_GetObjectItem(params, "state"));
+        bool bRet = lyric_desktop_set_button_state(m_hLyricWindow,
+                                                   static_cast<LYRIC_DESKTOP_BUTTON_ID>(btn_id),
+                                                   static_cast<LYRIC_DESKTOP_BUTTON_STATE>(state));
+        _ws_ret_data(id, bRet, pfnSend);
+        return;
+    }
+    if (_cmp("lyric_desktop_get_button_state"))
+    {
+        double btn_id = cJSON_GetNumberValue(cJSON_GetObjectItem(params, "id"));
+        auto state = lyric_desktop_get_button_state(m_hLyricWindow,
+                                                    static_cast<LYRIC_DESKTOP_BUTTON_ID>(btn_id));
+        _ws_ret_data(id, static_cast<int>(state), pfnSend);
+        return;
+    }
+    if (_cmp("lyric_desktop_disable"))
+    {
+        m_notify_click = false;
+        return;
+    }
+    if (_cmp("lyric_desktop_enable"))
+    {
+        m_notify_click = true;
+        return;
+    }
+
 #undef _cmp
 }
 
@@ -177,64 +280,116 @@ static bool SetCheck(HWND hWnd, bool isCheck)
 }
 int CALLBACK OnLyricCommand(HWND hWindowLyric, int id, LPARAM lParam)
 {
+    LPCSTR command = "";
     switch (id)
     {
-    case LYRIC_WND_BUTTON_ID_LOCK:
+    case LYRIC_DESKTOP_BUTTON_ID_TRANSLATEYY:
+        command = "yy";
         break;
-    case LYRIC_WND_BUTTON_ID_UNLOCK:
+    case LYRIC_DESKTOP_BUTTON_ID_TRANSLATEYY_SEL:
+        command = "yy_sel";
         break;
-    case LYRIC_WND_BUTTON_ID_SHOW:
+    case LYRIC_DESKTOP_BUTTON_ID_TRANSLATEFY:
+        command = "fy";
         break;
-    case LYRIC_WND_BUTTON_ID_CLOSE:
+    case LYRIC_DESKTOP_BUTTON_ID_TRANSLATEFY_SEL:
+        command = "fy_sel";
         break;
-    case LYRIC_WND_BUTTON_ID_NEXT:
-    case LYRIC_WND_BUTTON_ID_PREV:
-    case LYRIC_WND_BUTTON_ID_PLAY:
-    case LYRIC_WND_BUTTON_ID_PAUSE:
-    {
-        //if (!g_ws_connected)
-        //    break;
-        LPCSTR command = "";
-        switch (id)
-        {
-        case LYRIC_WND_BUTTON_ID_NEXT:
-            command = "next";
-            break;
-        case LYRIC_WND_BUTTON_ID_PREV:
-            command = "prev";
-            break;
-        case LYRIC_WND_BUTTON_ID_PLAY:
-        case LYRIC_WND_BUTTON_ID_PAUSE:
-            command = "toggle";
-            break;
-        default:
-            break;
-        }
-
-        cJSON* json = cJSON_CreateObject();
-        cJSON_AddStringToObject(json, "type", "control");
-        cJSON* data = cJSON_AddObjectToObject(json, "data");
-        cJSON_AddStringToObject(data, "command", command);
-        char* str = cJSON_PrintUnformatted(json);
-
-        //TODO 把消息发送出去
-        std::string str_msg = str;
-
-        lrc_exe_ws_client_send(str_msg);
-        lrc_exe_ws_server_send(str_msg);
-        if (g_hWndReceive)
-        {
-            // 给窗口通知消息
-            //SendMessageW(g_hWndReceive, LM_XXX, 0, 0);
-        }
-
-        cJSON_Delete(json);
-        cJSON_free(str);
+    case LYRIC_DESKTOP_BUTTON_ID_LRCWRONG:
+        command = "lrcwrong";
         break;
-    }
+    case LYRIC_DESKTOP_BUTTON_ID_VERTICAL:
+        command = "vertical";
+        break;
+    case LYRIC_DESKTOP_BUTTON_ID_MAKELRC:
+        command = "makelrc";
+        break;
+    case LYRIC_DESKTOP_BUTTON_ID_FONT_DOWN:
+        command = "font_down";
+        break;
+    case LYRIC_DESKTOP_BUTTON_ID_FONT_UP:
+        command = "font_up";
+        break;
+    case LYRIC_DESKTOP_BUTTON_ID_BEHIND:
+        command = "behind";
+        break;
+    case LYRIC_DESKTOP_BUTTON_ID_AHEAD:
+        command = "ahead";
+        break;
+    case LYRIC_DESKTOP_BUTTON_ID_SETTING:
+        command = "setting";
+        break;
+    case LYRIC_DESKTOP_BUTTON_ID_LRCCOLOR:
+        command = "lrccolor";
+        break;
+    case LYRIC_DESKTOP_BUTTON_ID_MENU:
+        command = "menu";
+        break;
+    case LYRIC_DESKTOP_BUTTON_ID_LRCWRONG_V:
+        command = "lrcwrong_v";
+        break;
+    case LYRIC_DESKTOP_BUTTON_ID_HORIZONTAL:
+        command = "horizontal";
+        break;
+    case LYRIC_DESKTOP_BUTTON_ID_MAKELRC_V:
+        command = "makelrc_v";
+        break;
+    case LYRIC_DESKTOP_BUTTON_ID_LOCK:
+        command = "lock";
+        break;
+    case LYRIC_DESKTOP_BUTTON_ID_UNLOCK:
+        command = "unlock";
+        break;
+    case LYRIC_DESKTOP_BUTTON_ID_SHOW:
+        command = "show";
+        break;
+    case LYRIC_DESKTOP_BUTTON_ID_CLOSE:
+        command = "close";
+        break;
+    case LYRIC_DESKTOP_BUTTON_ID_NEXT:
+        command = "next";
+        break;
+    case LYRIC_DESKTOP_BUTTON_ID_PREV:
+        command = "prev";
+        break;
+    case LYRIC_DESKTOP_BUTTON_ID_PLAY:
+        command = "play";
+        break;
+    case LYRIC_DESKTOP_BUTTON_ID_PAUSE:
+        command = "pause";
+        break;
     default:
-        break;
+        return 0;
     }
+
+
+    // 优先判断窗口消息, 如果没有再处理ws消息
+    if (IsWindow(g_hWndReceive))
+    {
+        // 给窗口通知消息
+        UINT msg = g_nReceiveMsg ? g_nReceiveMsg : WM_USER + 1;
+        int r = (int)SendMessageW(g_hWndReceive, msg, id, 0);
+        return r;
+    }
+
+    if (!m_notify_click)
+        return 0;
+
+    cJSON* json = cJSON_CreateObject();
+    cJSON_AddStringToObject(json, "method", "button-click");
+    cJSON* data = cJSON_AddObjectToObject(json, "params");
+    cJSON_AddNumberToObject(data, "id", id);
+    cJSON_AddStringToObject(data, "id_str", command);
+    char* str = cJSON_PrintUnformatted(json);
+
+    std::string str_msg = str;
+    cJSON_Delete(json);
+    cJSON_free(str);
+
+    // 把消息发送出去, 这里不是同步的, 所以不管返回值, 默认都是允许
+    if (!lrc_exe_ws_client_send(str_msg))
+        lrc_exe_ws_server_send(str_msg);
+
     return 0;
 }
 

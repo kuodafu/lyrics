@@ -21,19 +21,27 @@
 extern HINSTANCE    g_hInst;
 extern HWND         g_hWnd;         // 消息窗口, 处理一些消息, 还有把一些特定事件转到窗口线程执行
 extern HWND         g_hWndReceive;  // 消息通知窗口, 窗口有效的时候有消息会通知到这里
+extern UINT         g_nReceiveMsg;  // 通知的消息值, 没有的话就默认为 WM_USER + 1
+extern std::string  g_json_config;  // 配置信息数据
+
+using PFN_WS_SEND_MESSAGE = bool(*)(const std::string& text);
 
 LRESULT CALLBACK MessageWindowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
-using PFN_ON_MESSAGE_RECEIVED = void(*)(LPCSTR message, size_t len, bool binary);
+using PFN_ON_MESSAGE_RECEIVED = void(*)(LPCSTR message, size_t len, bool binary, PFN_WS_SEND_MESSAGE pfnSend);
 
 // ws的消息回调函数, 客户端/服务端处理都一样, 都是等消息, 无非是谁给谁发而已
-void ws_OnMessageReceived(LPCSTR message, size_t len, bool binary);
+void ws_OnMessageReceived(LPCSTR message, size_t len, bool binary, PFN_WS_SEND_MESSAGE pfnSend);
 
 
 // 初始化命令行, 根据命令行来决定开启哪些服务, 没有窗口, 全都是通过交互来控制
 bool lrc_exe_init_cmdline();
 
+bool lrc_exe_init_cmdline_ws();
+
 // 创建ws客户端, 然后连接到指定的服务器, 有消息会通过回调函数来处理, 断开后会自动重连
 bool lrc_exe_ws_client(const std::wstring& server_ip, PFN_ON_MESSAGE_RECEIVED on_message_received);
+// 创建一个时钟来尝试连接服务器
+void lrc_exe_ws_client_try_connect(HWND hWnd);
 // 关闭ws客户端
 bool lrc_exe_ws_client_close();
 bool lrc_exe_ws_client_send(const std::string& text);

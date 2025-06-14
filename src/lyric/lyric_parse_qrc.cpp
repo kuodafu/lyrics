@@ -114,6 +114,9 @@ bool _lrc_decrypt_qrc(const void* pData, size_t nSize, wchar_t** ppLyricText)
 
     uint8_t* src = pStart + 11;
     size_t srcSize = nSize - 11;
+    if (srcSize % 8 != 0)
+        return false;
+
     std::vector<uint8_t> data(srcSize);
 
     const uint8_t QQKey[] = "!@#)(*$%123ZXC!@!@#)(NHL";

@@ -143,8 +143,8 @@ void __krc_parse_text(PINSIDE_LYRIC_INFO pLyric, LPWSTR pStart, LPWSTR pEnd)
             words.duration = pfn_get_num();
             duration += words.duration;
             words.t3 = pfn_get_num();
-            if (words.t3 != 0)
-                __debugbreak();
+            //if (words.t3 != 0)
+            //    __debugbreak();
             words.text = pStart;
             LPWSTR apos_pos = nullptr;
             while (pStart < pEnd)

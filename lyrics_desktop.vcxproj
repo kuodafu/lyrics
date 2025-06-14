@@ -108,7 +108,7 @@
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)include;I:\cpp\_git_works\CommonCode;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)include;I:\cpp\_git_works\CommonCode</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -126,7 +126,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)include;I:\cpp\_git_works\CommonCode;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)include;I:\cpp\_git_works\CommonCode</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -145,7 +145,7 @@
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)include;I:\cpp\_git_works\CommonCode;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)include;I:\cpp\_git_works\CommonCode</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -163,7 +163,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)include;I:\cpp\_git_works\CommonCode;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)include;I:\cpp\_git_works\CommonCode</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -188,6 +188,7 @@
     <ClInclude Include="..\..\cpp\_git_works\CommonCode\d2d\d2d_interface.h" />
     <ClInclude Include="include\kuodafu_lyric.h" />
     <ClInclude Include="include\kuodafu_lyric_desktop.h" />
+    <ClInclude Include="resource1.h" />
     <ClInclude Include="src\lyric_desktop\lyric_desktop_config.h" />
     <ClInclude Include="src\lyric_desktop\lyric_desktop_function.h" />
     <ClInclude Include="src\lyric_desktop\lyric_desktop_header.h" />
@@ -205,6 +206,7 @@
     <ClCompile Include="src\lyric_desktop\lyric_desktop_button_hover.cpp" />
     <ClCompile Include="src\lyric_desktop\lyric_desktop_button_image.cpp" />
     <ClCompile Include="src\lyric_desktop\lyric_desktop_config.cpp" />
+    <ClCompile Include="src\lyric_desktop\lyric_desktop_custom_message.cpp" />
     <ClCompile Include="src\lyric_desktop\lyric_desktop_d2d_init.cpp" />
     <ClCompile Include="src\lyric_desktop\lyric_desktop_draw_button.cpp" />
     <ClCompile Include="src\lyric_desktop\lyric_desktop_draw_line.cpp" />
@@ -221,12 +223,15 @@
     <ClCompile Include="src\lyric_desktop\lyric_desktop_shadow_image.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="lyrics.vcxproj">
-      <Project>{066db818-4c7f-4cbc-a6ef-3cfb6848576b}</Project>
+    <None Include="src\lyric_desktop\lyric_desktop_export.def" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="lyric_lib.vcxproj">
+      <Project>{e08fedcf-5f71-46af-ab17-89b384d11e27}</Project>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="src\lyric_desktop\lyric_desktop_export.def" />
+    <ResourceCompile Include="lyric_desktop.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

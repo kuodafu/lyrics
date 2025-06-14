@@ -18,10 +18,33 @@ bool lyric_wnd_load_image_recalc(LYRIC_DESKTOP_INFO& wnd_info)
     if (!wnd_info.dx.image_button)
         return false;
 
-    size_t oldSize = wnd_info.button.rcBtn.size();
-    int old_play_id = 0;
-    if (oldSize > 0)
-        old_play_id = wnd_info.button.rcBtn[2].id;
+    struct OLD_BUTTON_ID
+    {
+        int id;
+        int old_id;
+        int index;
+    };
+
+    // 保存几个按钮原来的状态
+    OLD_BUTTON_ID old_id[] =
+    {
+        { LYRIC_DESKTOP_BUTTON_ID_PLAY, 0, -1 },
+        { LYRIC_DESKTOP_BUTTON_ID_PAUSE, 0, -1 },
+        { LYRIC_DESKTOP_BUTTON_ID_TRANSLATEFY, 0, -1 },
+        { LYRIC_DESKTOP_BUTTON_ID_TRANSLATEYY, 0, -1 },
+        { LYRIC_DESKTOP_BUTTON_ID_TRANSLATEFY_SEL, 0, -1 },
+        { LYRIC_DESKTOP_BUTTON_ID_TRANSLATEYY_SEL, 0, -1 },
+    };
+
+    int index = -1;
+    for (auto& item : wnd_info.button.rcBtn)
+    {
+        index++;
+        auto it = std::find_if(&old_id[0], &old_id[0] + _countof(old_id), [&item](const OLD_BUTTON_ID& s) { return s.id == item.id; });
+        if (it != &old_id[0] + _countof(old_id))
+            it->old_id = item.id, it->index = index;
+    }
+
     
 #define _MAKE(_s) { _s, 0, 0, {}, nullptr }
     // 这里就是定义按钮绘画的顺序索引, 加载的时候定义一次, 点击的时候会更改id, 
@@ -44,8 +67,8 @@ bool lyric_wnd_load_image_recalc(LYRIC_DESKTOP_INFO& wnd_info)
             _MAKE(0 ),   // 加个分割条
             _MAKE(LYRIC_DESKTOP_BUTTON_ID_LRCWRONG_V),// 歌词不对
             _MAKE(0 ),   // 加个分割条
-            _MAKE(LYRIC_DESKTOP_BUTTON_ID_TRANSLATE1),// 翻译按钮
-            _MAKE(LYRIC_DESKTOP_BUTTON_ID_TRANSLATE2),// 音译按钮
+            _MAKE(LYRIC_DESKTOP_BUTTON_ID_TRANSLATEFY),// 翻译按钮
+            _MAKE(LYRIC_DESKTOP_BUTTON_ID_TRANSLATEYY),// 音译按钮
             _MAKE(0 ),   // 加个分割条
             _MAKE(LYRIC_DESKTOP_BUTTON_ID_LOCK      ),// 锁定按钮
             _MAKE(LYRIC_DESKTOP_BUTTON_ID_CLOSE     ),// 关闭按钮
@@ -70,8 +93,8 @@ bool lyric_wnd_load_image_recalc(LYRIC_DESKTOP_INFO& wnd_info)
             _MAKE(0 ),   // 加个分割条
             _MAKE(LYRIC_DESKTOP_BUTTON_ID_LRCWRONG  ),// 歌词不对
             _MAKE(0 ),   // 加个分割条
-            _MAKE(LYRIC_DESKTOP_BUTTON_ID_TRANSLATE1),// 翻译按钮
-            _MAKE(LYRIC_DESKTOP_BUTTON_ID_TRANSLATE2),// 音译按钮
+            _MAKE(LYRIC_DESKTOP_BUTTON_ID_TRANSLATEFY),// 翻译按钮
+            _MAKE(LYRIC_DESKTOP_BUTTON_ID_TRANSLATEYY),// 音译按钮
             _MAKE(0 ),   // 加个分割条
             _MAKE(LYRIC_DESKTOP_BUTTON_ID_LOCK      ),// 锁定按钮
             _MAKE(LYRIC_DESKTOP_BUTTON_ID_CLOSE     ),// 关闭按钮
@@ -81,8 +104,11 @@ bool lyric_wnd_load_image_recalc(LYRIC_DESKTOP_INFO& wnd_info)
 
 #undef _MAKE
 
-    if (oldSize > 0)
-        wnd_info.button.rcBtn[2].id = old_play_id;
+    for (auto& item : old_id)
+    {
+        if(item.index != -1)
+            wnd_info.button.rcBtn[item.index].id = item.old_id;
+    }
 
     if (wnd_info.button.rcSrc.empty())
     {

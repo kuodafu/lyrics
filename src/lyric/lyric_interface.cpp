@@ -173,6 +173,9 @@ bool LYRICCALL lyric_calc(HLYRIC hLyric, int time, LYRIC_CALC_STRUCT* pRet)
 
     time += pLyric->nTimeOffset;
     int size = (int)pLyric->lines.size();
+    if (!size)
+        return false;
+
     int index = _lrc_find_line(pLyric, time);
     if (index > size || index < 0)
     {
@@ -362,8 +365,8 @@ bool LYRICCALL lyric_get_line(HLYRIC hLyric, int indexLine, PLYRIC_LINE_STRUCT p
         if (indexLine >= 0 && indexLine < (int)pLyric->lines.size())
         {
             auto& line = pLyric->lines[indexLine];
-            auto* line_fy = __query(pRet->nType, LYRIC_LANGUAGE_TYPE_FY) ? &pLyric->lines_fy[indexLine] : nullptr;
-            auto* line_yy = __query(pRet->nType, LYRIC_LANGUAGE_TYPE_YY) ? &pLyric->lines_yy[indexLine] : nullptr;
+            auto* line_fy = (__query(pRet->nType, LYRIC_LANGUAGE_TYPE_FY) && !pLyric->lines_fy.empty()) ? &pLyric->lines_fy[indexLine] : nullptr;
+            auto* line_yy = (__query(pRet->nType, LYRIC_LANGUAGE_TYPE_YY) && !pLyric->lines_yy.empty()) ? &pLyric->lines_yy[indexLine] : nullptr;
 
             if (line.width == 0 && pLyric->pfnCalcText)
             {
@@ -636,8 +639,9 @@ wchar_t* LYRICCALL lyric_to_lrc(HLYRIC hLyric)
     if (!lrc.empty())
     {
         size_t len = lrc.size() + 1;
-        auto ret = (wchar_t*)malloc(len * 2);
-        memcpy(ret, lrc.c_str(), len * 2);
+        auto ret = (wchar_t*)malloc(len * sizeof(wchar_t));
+        if (ret)
+            memcpy(ret, lrc.c_str(), len * sizeof(wchar_t));
         return ret;
     }
 

@@ -53,7 +53,7 @@ void lyric_wnd_draw_double_row(LYRIC_DESKTOP_INFO& wnd_info, LYRIC_CALC_STRUCT& 
     bool isSwitchLine_V = nLightHeight > arg.line.nHeight * 0.3;
 
     LYRIC_DESKTOP_DRAWTEXT_INFO* pLine1 = nullptr, * pLine2 = nullptr;
-    if (arg.indexLine % 2 == 1)
+    if (arg.indexLine % 2 == 0)
     {
         pLine1 = &wnd_info.line1;
         pLine2 = &wnd_info.line2;

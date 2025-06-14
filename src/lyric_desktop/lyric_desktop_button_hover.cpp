@@ -22,16 +22,16 @@ void lyric_wnd_button_hover(LYRIC_DESKTOP_INFO& wnd_info)
 
     switch (id)
     {
-    case LYRIC_DESKTOP_BUTTON_ID_TRANSLATE2:    // 音译按钮
+    case LYRIC_DESKTOP_BUTTON_ID_TRANSLATEYY:    // 音译按钮
         pszTips = L"点击切换到音译模式";
         break;
-    case LYRIC_DESKTOP_BUTTON_ID_TRANSLATE2_SEL:// 音译按钮, 选中模式
+    case LYRIC_DESKTOP_BUTTON_ID_TRANSLATEYY_SEL:// 音译按钮, 选中模式
         pszTips = L"点击关闭音译模式";
         break;
-    case LYRIC_DESKTOP_BUTTON_ID_TRANSLATE1:    // 翻译按钮
+    case LYRIC_DESKTOP_BUTTON_ID_TRANSLATEFY:    // 翻译按钮
         pszTips = L"点击切换到翻译模式";
         break;
-    case LYRIC_DESKTOP_BUTTON_ID_TRANSLATE1_SEL:// 翻译按钮, 选中模式
+    case LYRIC_DESKTOP_BUTTON_ID_TRANSLATEFY_SEL:// 翻译按钮, 选中模式
         pszTips = L"点击关闭翻译模式";
         break;
     case LYRIC_DESKTOP_BUTTON_ID_LRCWRONG:      // 歌词不对

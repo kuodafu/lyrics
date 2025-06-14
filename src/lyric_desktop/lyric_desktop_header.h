@@ -200,7 +200,8 @@ typedef struct LYRIC_DESKTOP_INFO
     int         nLineTop2;      // 第二行歌词的顶部位置
     RECT        rcWindow;       // 歌词窗口的位置, 整个窗口都是客户区, 这里记录的是屏幕位置, 绘画时的位置, 不保证是当前窗口的位置
     RECT        rcMonitor;      // 所有显示器合并后的矩形
-    
+    UINT        author_hash;
+
     float       shadowRadius;   // 阴影半径
     LYRIC_DESKTOP_MODE  mode;   // 歌词显示模式, LYRIC_DESKTOP_MODE 枚举类型
 

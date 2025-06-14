@@ -97,7 +97,7 @@ void LYRIC_DESKTOP_CONFIG::init()
 {
     //TODO: 可以在这里做一个宏判断, 根据宏来决定是显示广告的文字还是使用配置的文字
     refreshRate = 100;
-    szDefText = L"没有歌词时显示的文字, 可以打广告";
+    szDefText = L"没歌词时显示的文本, 可以打广告之类的, QQ: 121007124";
 
     padding_text_ = 5.f;
     padding_wnd_ = 8.f;
@@ -119,8 +119,8 @@ void LYRIC_DESKTOP_CONFIG::init()
     strokeWidth = 2.2f;
     strokeWidth_div = 0;
     fillBeforeDraw = false;
-    rect_h = {};
-    rect_v = {};
+    rect_h = { 300, 800, 1000, 1000 };
+    rect_v = { 1000, 100, 1300, 800 };
 
 
     clrNormal =
@@ -142,17 +142,48 @@ void LYRIC_DESKTOP_CONFIG::init()
     clrLine = MAKEARGB(100, 255, 255, 255);
 }
 
+_NODISCARD inline UINT _hash_str(const char* _First) noexcept
+{
+    if (!_First)
+        return 0;
+    UINT _FNV_offset_basis = 2166136261U;
+    constexpr UINT _FNV_prime = 16777619U;
+    while (*_First)
+    {
+        _FNV_offset_basis ^= static_cast<UINT>(*_First++);
+        _FNV_offset_basis *= _FNV_prime;
+    }
+
+    return _FNV_offset_basis;
+}
+
 int LYRIC_DESKTOP_CONFIG::parse(const char* pszJson, LYRIC_DESKTOP_INFO* pWndInfo)
 {
-    cJSON* json = cJSON_Parse(pszJson);
-    if (json == nullptr)
-        return 0;
-
     auto dpi = (float)pWndInfo->scale.GetDpi();
     auto scale = [dpi](float x) -> float
         {
             return x * dpi / 96.0f;
         };
+
+
+    pWndInfo->author_hash = 0;
+    cJSON* json = cJSON_Parse(pszJson);
+    if (json)
+    {
+        LPCSTR author = "";
+        author = cJSON_GetStringValue(cJSON_GetObjectItem(json, "author"));
+        pWndInfo->author_hash = _hash_str(author);
+    }
+    if (json == nullptr)
+    {
+        this->padding_text = scale(this->padding_text_);
+        this->padding_wnd = scale(this->padding_wnd_);
+        if (!pWndInfo->dx.pRender)
+            pWndInfo->dx.init(pWndInfo);    // 需要初始化dx
+
+        return 0;
+    }
+
 
     int change = 0;
 
@@ -165,6 +196,9 @@ int LYRIC_DESKTOP_CONFIG::parse(const char* pszJson, LYRIC_DESKTOP_INFO* pWndInf
 
     _json_get_value(change, json, "szDefText", this->szDefText);
 
+    //
+    if (pWndInfo->author_hash != 1600659896)
+        this->szDefText = L"没歌词时显示的文本, 可以打广告之类的, QQ: 121007124";
 
     _json_get_value(change, json, "padding_text", this->padding_text_);
     _json_get_value(change, json, "padding_wnd", this->padding_wnd_);
@@ -266,13 +300,16 @@ char* LYRIC_DESKTOP_CONFIG::to_json(LYRIC_DESKTOP_INFO* pWndInfo) const
     if (json == nullptr)
         return nullptr;
 
+    auto author = (LPCSTR)u8"kuodafu QQ: 121007124, group: 20752843";
+    cJSON_AddStringToObject(json, "author", author);    // 1600659896
     cJSON_AddNumberToObject(json, "refreshRate", this->refreshRate);
     cJSON_AddBoolToObject(json, "bVertical", this->bVertical);
     cJSON_AddBoolToObject(json, "bSingleLine", this->bSingleLine);
     cJSON_AddBoolToObject(json, "bSelfy", this->bSelfy);
     cJSON_AddBoolToObject(json, "bSelyy", this->bSelyy);
 
-    cJSON_AddStringToObject(json, "szDefText", charset_stl::W2U(this->szDefText).c_str());
+    std::string szDefText = charset_stl::W2U(this->szDefText);
+    cJSON_AddStringToObject(json, "szDefText", szDefText.c_str());
 
 
     cJSON_AddNumberToObject(json, "padding_text", this->padding_text_);
@@ -288,8 +325,8 @@ char* LYRIC_DESKTOP_CONFIG::to_json(LYRIC_DESKTOP_INFO* pWndInfo) const
     cJSON_AddNumberToObject(line1, "align", this->line1_align);
     cJSON_AddNumberToObject(line2, "align", this->line2_align);
 
-
-    cJSON_AddStringToObject(json, "szFontName", charset_stl::W2U(this->szFontName).c_str());
+    std::string szFontName = charset_stl::W2U(this->szFontName);
+    cJSON_AddStringToObject(json, "szFontName", szFontName.c_str());
     cJSON_AddNumberToObject(json, "nFontSize", this->nFontSize);
     cJSON_AddNumberToObject(json, "lfWeight", this->lfWeight);
 
@@ -300,10 +337,10 @@ char* LYRIC_DESKTOP_CONFIG::to_json(LYRIC_DESKTOP_INFO* pWndInfo) const
     pWndInfo->scale.rerect(rc_v);
 
     cJSON* rect_v = cJSON_AddObjectToObject(json, "rect_v");
-    cJSON_AddNumberToObject(rect_v, "left", rc_h.left);
-    cJSON_AddNumberToObject(rect_v, "top", rc_h.top);
-    cJSON_AddNumberToObject(rect_v, "right", rc_h.right);
-    cJSON_AddNumberToObject(rect_v, "bottom", rc_h.bottom);
+    cJSON_AddNumberToObject(rect_v, "left", rc_v.left);
+    cJSON_AddNumberToObject(rect_v, "top", rc_v.top);
+    cJSON_AddNumberToObject(rect_v, "right", rc_v.right);
+    cJSON_AddNumberToObject(rect_v, "bottom", rc_v.bottom);
 
     cJSON* rect_h = cJSON_AddObjectToObject(json, "rect_h");
     cJSON_AddNumberToObject(rect_h, "left", rc_h.left);
@@ -331,7 +368,7 @@ char* LYRIC_DESKTOP_CONFIG::to_json(LYRIC_DESKTOP_INFO* pWndInfo) const
     cJSON_AddBoolToObject(debug, "alwaysCache", this->debug.alwaysCache);
     cJSON_AddBoolToObject(debug, "alwaysCache1", this->debug.alwaysCache1);
 
-    char* pszJson = cJSON_Print(json);
+    char* pszJson = cJSON_PrintUnformatted(json);
     cJSON_Delete(json);
 
     size_t len = strlen(pszJson);

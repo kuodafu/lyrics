@@ -1,15 +1,19 @@
 ﻿#include "lyric_exe.h"
 #include <shellapi.h>
+#include <wincrypt.h>
+#include <read_file.h>
 
+#pragma comment(lib, "Crypt32.lib")
 #pragma comment(lib, "shell32.lib")
+#define _cmp(_s) (_wcsicmp(pName, (_s)) == 0)
 
 // 获取命令行参数, 解析后记录到map里
 bool lrc_exe_get_cmdline(std::unordered_map<std::wstring, std::wstring>& cmdLine);
+static std::unordered_map<std::wstring, std::wstring> cmdLine;
 
 
 bool lrc_exe_init_cmdline()
 {
-    std::unordered_map<std::wstring, std::wstring> cmdLine;
     auto pfn_err = []()
     {
         std::wstring text(1024, 0);
@@ -20,7 +24,7 @@ bool lrc_exe_init_cmdline()
         text.append(L"或者用 --hwnd=窗口句柄\r\n");
         text.append(L"程序必须有一个端能跟本进程通讯\r\n");
         text.append(L"更详细的信息请查看SDK\r\n");
-        MessageBoxW(0, text.c_str(), L"命令行参数错误", MB_ICONERROR);
+        MessageBoxW(nullptr, text.c_str(), L"命令行参数错误", MB_ICONERROR);
         return false;
     };
     if (!lrc_exe_get_cmdline(cmdLine))
@@ -28,33 +32,13 @@ bool lrc_exe_init_cmdline()
 
     bool bRet = false;
 
-#define _cmp(_s) (_wcsicmp(pName, (_s)) == 0)
     for (auto& it : cmdLine)
     {
         const std::wstring& name = it.first;
         const std::wstring& value = it.second;
         LPCWSTR pName = name.c_str();
         LPCWSTR pValue = value.c_str();
-        if (_cmp(L"ws_client"))
-        {
-            // 连接ws服务器, value就是服务器地址
-            // 连接失败不管, 会创建个时钟一直尝试连接
-            lrc_exe_ws_client(value, ws_OnMessageReceived);
-            bRet = true;
-        }
-        else if (_cmp(L"ws_server"))
-        {
-            // 开启ws服务器, value就是服务器端口
-            if (!lrc_exe_ws_server(value, ws_OnMessageReceived))
-            {
-                wchar_t szMsg[1024];
-                swprintf_s(szMsg, L"开启ws服务器失败, 不能交互, 无法继续执行\r\nws服务器地址: %s", pValue);
-                MessageBoxW(0, szMsg, L"开启ws服务器失败", MB_ICONERROR);
-                return false;   // 服务端开启失败就不能往下执行了, 没法提供服务
-            }
-            bRet = true;
-        }
-        else if (_cmp(L"hwnd"))
+        if (_cmp(L"receive-hwnd"))
         {
             // 通过窗口消息接收通知, 可以和ws共存
             if (pValue[0] == L'0' && (pValue[1] == L'x' || pValue[1] == L'X'))
@@ -63,11 +47,71 @@ bool lrc_exe_init_cmdline()
                 g_hWndReceive = (HWND)std::stoull(value, nullptr, 10);
             bRet = true;
         }
+        else if (_cmp(L"receive-message"))
+        {
+            // 通过窗口消息接收通知, 可以和ws共存
+            if (pValue[0] == L'0' && (pValue[1] == L'x' || pValue[1] == L'X'))
+                g_nReceiveMsg = (UINT)std::stoul(pValue + 2, nullptr, 16);
+            else
+                g_nReceiveMsg = (UINT)std::stoul(value, nullptr, 10);
+            bRet = true;
+        }
+        else if (_cmp(L"config"))
+        {
+            // 第一次调用：获取输出缓冲区大小
+            DWORD binarySize = 0;
+            if (CryptStringToBinaryW(pValue, 0, CRYPT_STRING_BASE64, nullptr, &binarySize, nullptr, nullptr))
+            {
+                g_json_config.resize(binarySize);
+                // 第二次调用：实际解码
+                if (CryptStringToBinaryW(pValue, 0, CRYPT_STRING_BASE64, reinterpret_cast<LPBYTE>(&g_json_config[0]), &binarySize, nullptr, nullptr))
+                {
+                    bRet = true;
+                }
+            }
+        }
+        else if (_cmp(L"config-file"))
+        {
+            bRet = read_file(pValue, g_json_config) != 0;
+        }
 
     }
-#undef _cmp
+    bRet = true;
     if (!bRet)
         return pfn_err();   // 没有正确的命令行参数, 返回
+    return bRet;
+}
+
+bool lrc_exe_init_cmdline_ws()
+{
+    bool bRet = false;
+
+    for (auto& it : cmdLine)
+    {
+        const std::wstring& name = it.first;
+        const std::wstring& value = it.second;
+        LPCWSTR pName = name.c_str();
+        LPCWSTR pValue = value.c_str();
+        if (_cmp(L"ws-client"))
+        {
+            // 连接ws服务器, value就是服务器地址
+            // 连接失败不管, 会创建个时钟一直尝试连接
+            lrc_exe_ws_client(value, ws_OnMessageReceived);
+            bRet = true;
+        }
+        else if (_cmp(L"ws-server"))
+        {
+            // 开启ws服务器, value就是服务器端口
+            if (!lrc_exe_ws_server(value, ws_OnMessageReceived))
+            {
+                wchar_t szMsg[1024];
+                swprintf_s(szMsg, L"开启ws服务器失败, 不能交互, 无法继续执行\r\nws服务器地址: %s", pValue);
+                MessageBoxW(nullptr, szMsg, L"开启ws服务器失败", MB_ICONERROR);
+                return false;   // 服务端开启失败就不能往下执行了, 没法提供服务
+            }
+            bRet = true;
+        }
+    }
     return bRet;
 }
 
@@ -114,3 +158,4 @@ bool lrc_exe_get_cmdline(std::unordered_map<std::wstring, std::wstring>& cmdLine
 }
 
 
+#undef _cmp

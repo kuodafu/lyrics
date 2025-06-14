@@ -1,0 +1,185 @@
+﻿// 歌词窗口按钮ID, 目前就这几个默认按钮
+enum LYRIC_DESKTOP_BUTTON_ID
+{
+    LYRIC_DESKTOP_BUTTON_ID_TRANSLATEYY     = 1001, // 音译按钮
+    LYRIC_DESKTOP_BUTTON_ID_TRANSLATEYY_SEL = 1002, // 音译按钮, 选中模式
+    LYRIC_DESKTOP_BUTTON_ID_TRANSLATEFY     = 1003, // 翻译按钮
+    LYRIC_DESKTOP_BUTTON_ID_TRANSLATEFY_SEL = 1004, // 翻译按钮, 选中模式
+    LYRIC_DESKTOP_BUTTON_ID_LRCWRONG        = 1005, // 歌词不对
+    LYRIC_DESKTOP_BUTTON_ID_VERTICAL        = 1006, // 竖屏按钮
+    LYRIC_DESKTOP_BUTTON_ID_MAKELRC         = 1007, // 制作歌词
+
+    LYRIC_DESKTOP_BUTTON_ID_FONT_DOWN       = 1008, // 字体减小
+    LYRIC_DESKTOP_BUTTON_ID_FONT_UP         = 1009, // 字体增加
+    LYRIC_DESKTOP_BUTTON_ID_BEHIND          = 1010, // 歌词延后
+    LYRIC_DESKTOP_BUTTON_ID_AHEAD           = 1011, // 歌词提前
+    LYRIC_DESKTOP_BUTTON_ID_LOCK            = 1012, // 锁定按钮
+    LYRIC_DESKTOP_BUTTON_ID_SETTING         = 1013, // 设置按钮
+    LYRIC_DESKTOP_BUTTON_ID_UNLOCK          = 1014, // 解锁按钮
+    LYRIC_DESKTOP_BUTTON_ID_CLOSE           = 1015, // 关闭按钮
+    LYRIC_DESKTOP_BUTTON_ID_LRCCOLOR        = 1016, // 设置字体颜色, 田字的按钮图标
+    LYRIC_DESKTOP_BUTTON_ID_MENU            = 1017, // 菜单按钮
+
+    LYRIC_DESKTOP_BUTTON_ID_LRCWRONG_V      = 1018, // 歌词不对, 纵向的按钮图标
+    LYRIC_DESKTOP_BUTTON_ID_HORIZONTAL      = 1019, // 横屏按钮
+    LYRIC_DESKTOP_BUTTON_ID_PLAY            = 1020, // 播放, 回调函数返回0后会变成暂停按钮
+    LYRIC_DESKTOP_BUTTON_ID_PAUSE           = 1021, // 暂停, 回调函数返回0后会变成播放按钮
+    LYRIC_DESKTOP_BUTTON_ID_PREV            = 1022, // 上一首
+    LYRIC_DESKTOP_BUTTON_ID_NEXT            = 1023, // 下一首
+
+    LYRIC_DESKTOP_BUTTON_ID_MAKELRC_V       = 1024, // 制作歌词, 纵向按钮, 这个没弄对..... 目前也用不上
+    LYRIC_DESKTOP_BUTTON_ID_SHOW            = 1025, // 显示歌词, 没这个按钮, 但是有这个事件, 可以让外部调用, 内部没这个按钮, 内部不会主动触发
+
+};
+
+// 桌面歌词窗口按钮状态
+enum LYRIC_DESKTOP_BUTTON_STATE
+{
+    LYRIC_DESKTOP_BUTTON_STATE_NORMAL   = 0,    // 正常状态
+    LYRIC_DESKTOP_BUTTON_STATE_HOVER    = 1,    // 鼠标悬停
+    LYRIC_DESKTOP_BUTTON_STATE_PUSHED   = 2,    // 鼠标按下
+    LYRIC_DESKTOP_BUTTON_STATE_DISABLE  = 4,    // 禁用状态
+
+    LYRIC_DESKTOP_BUTTON_STATE_ERROR    = -1,   // 获取失败
+};
+
+调用桌面歌词方法
+    id: 消息id, 把返回值发送给调用方的id, 如果没有消息id, 则不把结果返回给调用方
+    method: 调用方法, 支持以下方法
+        lyric_desktop_exit              退出进程
+        lyric_desktop_load_lyric        加载歌词
+        lyric_desktop_update            更新播放位置
+        lyric_desktop_get_config        获取配置
+        lyric_desktop_set_config        设置配置
+        lyric_desktop_call_event        调用事件
+        lyric_desktop_set_button_state  设置按钮状态
+        lyric_desktop_get_button_state  获取按钮状态
+        lyric_desktop_disable           禁用事件通知, 默认是开启的
+        lyric_desktop_enable            启用事件通知
+    params: 调用命令的参数, 不同命令参数不一样
+    整体的调用例子, 所有数据都必须是UTF8编码
+    {
+        "id": "消息id, 可以随意定义, 有返回值的时候会通过这个消息id把返回值发送回去",
+        "method": "调用命令",
+        "params":
+        {
+            "xxx": "不同命令不同的参数"
+        }
+    }
+
+返回消息, 调用方传递了消息id后, 桌面歌词程序通过消息id把返回值发送给调用方
+    result.result 根据调用命令的返回值决定是什么值, 一般情况下都是文本或者数值或者逻辑型
+    目前 result.result 暂时没有返回对象的
+    {
+        "id": "调用方发送过来的消息id",
+        "result":
+        {
+            "result": 返回值
+        }
+    }
+
+事件通知, 目前只有桌面歌词窗口按钮被点击的事件
+    params.id是按钮id, 请参考 LYRIC_DESKTOP_BUTTON_ID 枚举常量
+    {
+        "method": "button-click",
+        "params": 
+        {
+            id: 123
+        }
+    }
+
+
+运行exe需要传递命令行, 需要在命令行中给出连接的ws地址, 或者开启ws服务器的端口
+命令行必须是两个减号开头, --名字=值, 或者 --名字="值", 支持以下命令行:
+    --config="值"  桌面歌词的配置信息, 这里的值需要base64编码
+    --config-file="文件路径"  桌面歌词的配置信息, 这里指向路径, --config 和 这个命令行谁写在后面用谁
+    --ws-client="ws服务器地址"  地址:端口, 比如 127.0.0.1:1234, 这里是作为客户端去连接
+    --ws-server="端口"  开启ws服务端的端口, 开启后需要连接上这个服务端进行通讯
+    
+
+
+**lyric_desktop_exit** 退出桌面歌词进程, 没有参数没有返回值, 不处理id
+{
+    "method": "lyric_desktop_exit"
+}
+
+**lyric_desktop_load_lyric** 加载歌词, 返回是否加载成功
+{
+    "id": "消息id",
+    "method": "lyric_desktop_load_lyric",
+    "params":
+    {
+        "data": "已经解密的歌词明文数据",
+        "file": "歌词文件的完整路径, file 和 data 2选1, 两个都有的情况优先使用 data",
+        "lyric": "data或者file 歌词的类型, 目前支持 krc, qrc, lrc 这3种"
+    }
+}
+
+**lyric_desktop_update** 更新歌词高亮位置, params.time是当前播放时间, 单位是毫秒, 返回是否调用成功
+{
+    "id": "消息id",
+    "method": "lyric_desktop_update",
+    "params":
+    {
+        "time": 123
+    }
+}
+
+**lyric_desktop_get_config** 获取配置, 没有params, 返回配置的json文本
+{
+    "id": "消息id",
+    "method": "lyric_desktop_get_config"
+}
+
+**lyric_desktop_set_config** 设置配置, 返回影响配置项的数量
+{
+    "id": "消息id",
+    "method": "lyric_desktop_set_config",
+    "params":
+    {
+        "config": "配置信息json文本"
+    }
+}
+
+
+**lyric_desktop_call_event** 调用事件, params.id 是数值型, ID请参考 LYRIC_DESKTOP_BUTTON_ID 枚举常量, 返回是否调用成功
+{
+    "id": "消息id",
+    "method": "lyric_desktop_call_event",
+    "params":
+    {
+        "id": 123
+    }
+}
+
+**lyric_desktop_set_button_state** 设置按钮状态, params.id是按钮id, params.state 是按钮状态, 请参考 LYRIC_DESKTOP_BUTTON_STATE 枚举常量, 返回是否调用成功
+{
+    "id": "消息id",
+    "method": "lyric_desktop_set_button_state",
+    "params":
+    {
+        "id": 123,
+        "state": 123
+    }
+}
+
+**lyric_desktop_get_button_state** 获取按钮状态, params.id是按钮id, 返回按钮状态, 状态参考 LYRIC_DESKTOP_BUTTON_STATE 枚举常量
+{
+    "id": "消息id",
+    "method": "lyric_desktop_get_button_state",
+    "params":
+    {
+        "id": 123
+    }
+}
+
+**lyric_desktop_disable** 禁用通知事件, 无参数无返回值
+{
+    "method": "lyric_desktop_disable",
+}
+
+**lyric_desktop_enable** 启用通知事件, 无参数无返回值
+{
+    "method": "lyric_desktop_enable",
+}
+

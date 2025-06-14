@@ -8,6 +8,7 @@
 #pragma comment(lib, "dwmapi.lib")
 #pragma comment(lib, "dxguid.lib")
 
+#define _LIB
 
 #ifdef _LIB
 #   ifdef _WIN64
@@ -267,17 +268,58 @@ PLYRIC_DESKTOP_INFO _ld_create_layered_window(const char* arg, PFN_LYRIC_DESKTOP
     if (rc.left < rcDesk.left)
         rc.left = (cxScreen - width) / 2, rc.right = rc.left + width;
 
-    MoveWindow(hWnd, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, TRUE);
 
     // 创建高精度定时器, 需要10毫秒以内的精度, 时钟最低只能10ms, 不满足要求
+    //TODO 要是在意效率的话应该是有需要重画的时候投递消息然后再处理
+    // 不过处理起来会麻烦一点, 干脆就内部一直处理重画吧
     _ld_start_high_precision_timer(pWndInfo);
 
-    if (pWndInfo->nMinHeight)
-        MoveWindow(hWnd, rc.left, rc.top, rc.right - rc.left, pWndInfo->nMinHeight, TRUE);
+    MoveWindow(hWnd, rc.left, rc.top, rc.right - rc.left, pWndInfo->nMinHeight, TRUE);
 
     return pWndInfo;
 }
 
+bool _lyric_desktop_load_lyric(PLYRIC_DESKTOP_INFO pWndInfo, LPCVOID pData, int nSize, LYRIC_PARSE_TYPE nType)
+{
+    CCriticalSection cs(pWndInfo->pCritSec);    // 上锁, 防止这里不是窗口线程调用, 窗口线程会不停的访问歌词结构
+
+    lyric_destroy(pWndInfo->hLyric);
+    pWndInfo->hLyric = nullptr;
+
+    LYRIC_DESKTOP_INFO& wnd_info = *pWndInfo;
+
+    wnd_info.hLyric = lyric_parse(pData, nSize, nType);
+    pWndInfo->nTimeOffset = lyric_behind_ahead(wnd_info.hLyric, 0);
+    pWndInfo->line1.clear();
+    pWndInfo->line2.clear();
+
+    int language = lyric_get_language(wnd_info.hLyric);
+    lyric_wnd_set_state_translate(*pWndInfo, language);
+
+    if (language)
+        wnd_info.add_mode(LYRIC_DESKTOP_MODE::EXISTTRANS);
+    else
+        wnd_info.del_mode(LYRIC_DESKTOP_MODE::EXISTTRANS);
+
+    if (!wnd_info.hLyric)
+        return false;
+
+    // 必须得用小数记, 不然歌词字多了会相差出很多个像素
+    lyric_calc_text(wnd_info.hLyric, [](void* pUserData, LPCWSTR pText, int nTextLen, float* pRetHeight) -> float
+                    {
+                        auto pWndInfo = (LYRIC_DESKTOP_INFO*)pUserData;
+                        D2DRender& pRender = *pWndInfo->dx.pRender;
+                        // 没有创建字体就创建一个, 字体是设备无关对象, 不需要从渲染对象里创建
+                        if (!pWndInfo->dx.hFont)
+                            pWndInfo->dx.re_create_font(pWndInfo);
+
+                        CComPtr<IDWriteTextLayout> pTextLayout;
+                        lyric_wnd_create_text_layout(pText, nTextLen, pWndInfo->dx.hFont->GetDWTextFormat(), 0, 0, &pTextLayout);
+                        float width = _lyric_wnd_load_krc_calc_text(pWndInfo, pTextLayout, pRetHeight);
+                        return width;
+                    }, pWndInfo);
+    return true;
+}
 
 
 bool lyric_wnd_invalidate(LYRIC_DESKTOP_INFO& wnd_info)
@@ -339,12 +381,12 @@ bool lyric_wnd_invalidate(LYRIC_DESKTOP_INFO& wnd_info)
     return SUCCEEDED(hr);
 }
 
-
 LRESULT CALLBACK lyric_wnd_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    PLYRIC_DESKTOP_INFO pWndInfo = lyric_wnd_get_data(hWnd);
+    PLYRIC_DESKTOP_INFO pWndInfo = _lyric_desktop_get_data(hWnd);
     if (!pWndInfo)
         return DefWindowProcW(hWnd, message, wParam, lParam);
+
 
     //return DefWindowProcW(hWnd, message, wParam, lParam);
 
@@ -360,7 +402,7 @@ LRESULT CALLBACK lyric_wnd_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
     {
         if (wParam == 121007124 && lParam == 20752843)
         {
-            PLYRIC_DESKTOP_INFO pWndInfo = lyric_wnd_get_data(hWnd);
+            PLYRIC_DESKTOP_INFO pWndInfo = _lyric_desktop_get_data(hWnd);
             lyric_wnd_invalidate(*pWndInfo);
             return 0;
         }
@@ -522,7 +564,12 @@ LRESULT CALLBACK lyric_wnd_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
     case WM_NCHITTEST:
         return lyric_wnd_OnHitTest(*pWndInfo, message, wParam, lParam);
     default:
+    {
+        LRESULT ret = 0;
+        if (lyric_wnd_proc_custom_message(pWndInfo, message, wParam, lParam, ret))
+            return ret;
         return DefWindowProcW(hWnd, message, wParam, lParam);
+    }
     }
     return 0;
 }

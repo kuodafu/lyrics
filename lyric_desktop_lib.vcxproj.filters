@@ -2,106 +2,142 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="d2d">
-      <UniqueIdentifier>{26894bf7-17bf-4a9b-af7f-2593518d687d}</UniqueIdentifier>
+      <UniqueIdentifier>{5cc34c66-3f42-41a0-affc-a4ed81e122b3}</UniqueIdentifier>
     </Filter>
-    <Filter Include="接口声明">
-      <UniqueIdentifier>{09066d3d-2754-4b49-aae3-75a61cd7e9ac}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="头文件">
-      <UniqueIdentifier>{0cba928d-c2b7-4439-b004-c9987a99552e}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="源文件">
-      <UniqueIdentifier>{fd251081-32b8-41fe-90bc-9c97d9f7cb55}</UniqueIdentifier>
+    <Filter Include="绘画相关">
+      <UniqueIdentifier>{b093787c-be0a-45b6-97d1-48cce4a96109}</UniqueIdentifier>
     </Filter>
     <Filter Include="接口定义">
-      <UniqueIdentifier>{b47a7406-b4e9-47ad-a91b-87034ee2fd46}</UniqueIdentifier>
+      <UniqueIdentifier>{54d03168-905f-4dbe-a6f6-d6dbc23fb915}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="接口声明">
+      <UniqueIdentifier>{8236d501-5783-4fba-91b4-b79e675e546c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="配置">
+      <UniqueIdentifier>{0cc8d876-1239-49df-a435-12e4b14ead3c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="事件部分">
+      <UniqueIdentifier>{3ee29d92-4c8a-4375-9f8d-58729e99139d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件">
+      <UniqueIdentifier>{e8f8c0d2-f0f1-4287-b010-9c4f93f7ae54}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件">
+      <UniqueIdentifier>{0381c3c8-3c21-4d11-8cc6-114bdf745608}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\lyric_desktop\CCustomTextRenderer.cpp">
+    <ClCompile Include="..\..\cpp\_git_works\CommonCode\d2d\CD2DBrush.cpp">
       <Filter>d2d</Filter>
     </ClCompile>
-    <ClCompile Include="src\lyric_desktop\CD2DFont.cpp">
+    <ClCompile Include="..\..\cpp\_git_works\CommonCode\d2d\CD2DFont.cpp">
       <Filter>d2d</Filter>
     </ClCompile>
-    <ClCompile Include="src\lyric_desktop\d2d.cpp">
+    <ClCompile Include="..\..\cpp\_git_works\CommonCode\d2d\CD2DImage.cpp">
       <Filter>d2d</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\cpp\_git_works\CommonCode\d2d\CD2DRender.cpp">
+      <Filter>d2d</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\cpp\_git_works\CommonCode\d2d\d2d.cpp">
+      <Filter>d2d</Filter>
+    </ClCompile>
+    <ClCompile Include="src\lyric_desktop\lyric_desktop_d2d_init.cpp">
+      <Filter>绘画相关</Filter>
+    </ClCompile>
+    <ClCompile Include="src\lyric_desktop\lyric_desktop_draw_button.cpp">
+      <Filter>绘画相关</Filter>
+    </ClCompile>
+    <ClCompile Include="src\lyric_desktop\lyric_desktop_draw_line.cpp">
+      <Filter>绘画相关</Filter>
+    </ClCompile>
+    <ClCompile Include="src\lyric_desktop\lyric_desktop_draw_line_hori.cpp">
+      <Filter>绘画相关</Filter>
+    </ClCompile>
+    <ClCompile Include="src\lyric_desktop\lyric_desktop_draw_line_vert.cpp">
+      <Filter>绘画相关</Filter>
+    </ClCompile>
+    <ClCompile Include="src\lyric_desktop\lyric_desktop_draw_text_glow.cpp">
+      <Filter>绘画相关</Filter>
+    </ClCompile>
+    <ClCompile Include="src\lyric_desktop\lyric_desktop_draw_text_geometry.cpp">
+      <Filter>绘画相关</Filter>
+    </ClCompile>
+    <ClCompile Include="src\lyric_desktop\lyric_desktop_OnPaint.cpp">
+      <Filter>绘画相关</Filter>
+    </ClCompile>
+    <ClCompile Include="src\lyric_desktop\lyric_desktop_shadow_image.cpp">
+      <Filter>绘画相关</Filter>
     </ClCompile>
     <ClCompile Include="src\lyric_desktop\lyric_desktop_interface.cpp">
       <Filter>接口定义</Filter>
     </ClCompile>
-    <ClCompile Include="src\lyric_desktop\lyric_desktop.cpp">
-      <Filter>源文件</Filter>
+    <ClCompile Include="src\lyric_desktop\lyric_desktop_config.cpp">
+      <Filter>配置</Filter>
     </ClCompile>
     <ClCompile Include="src\lyric_desktop\lyric_desktop_button_click.cpp">
-      <Filter>源文件</Filter>
+      <Filter>事件部分</Filter>
     </ClCompile>
     <ClCompile Include="src\lyric_desktop\lyric_desktop_button_hover.cpp">
+      <Filter>事件部分</Filter>
+    </ClCompile>
+    <ClCompile Include="src\lyric_desktop\lyric_desktop_button_image.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="src\lyric_desktop\lyric_desktop_draw_button.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="src\lyric_desktop\lyric_desktop_draw_line.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="src\lyric_desktop\lyric_desktop_draw_line_hori.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="src\lyric_desktop\lyric_desktop_draw_line_vert.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="src\lyric_desktop\lyric_desktop_draw_text_geometry.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="src\lyric_desktop\lyric_desktop_draw_text_glow.cpp">
+    <ClCompile Include="src\lyric_desktop\lyric_desktop_custom_message.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="src\lyric_desktop\lyric_desktop_function.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="src\lyric_desktop\lyric_desktop_header.cpp">
+    <ClCompile Include="src\lyric_desktop\lyric_desktop_load_image.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="src\lyric_desktop\lyric_desktop_load_image.cpp">
+    <ClCompile Include="src\lyric_desktop\lyric_desktop_header.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="src\lyric_desktop\lyric_desktop_main.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="src\lyric_desktop\lyric_desktop_OnPaint.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\cpp\_git_works\CommonCode\d2d\CCustomTextRenderer.h">
+      <Filter>d2d</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\cpp\_git_works\CommonCode\d2d\CD2DBrush.h">
+      <Filter>d2d</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\cpp\_git_works\CommonCode\d2d\CD2DFont.h">
+      <Filter>d2d</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\cpp\_git_works\CommonCode\d2d\CD2DImage.h">
+      <Filter>d2d</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\cpp\_git_works\CommonCode\d2d\CD2DRender.h">
+      <Filter>d2d</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\cpp\_git_works\CommonCode\d2d\Color.h">
       <Filter>d2d</Filter>
     </ClInclude>
-    <ClInclude Include="src\lyric_desktop\CCustomTextRenderer.h">
+    <ClInclude Include="..\..\cpp\_git_works\CommonCode\d2d\d2d.h">
       <Filter>d2d</Filter>
     </ClInclude>
-    <ClInclude Include="src\lyric_desktop\CD2DFont.h">
-      <Filter>d2d</Filter>
-    </ClInclude>
-    <ClInclude Include="src\lyric_desktop\d2d.h">
+    <ClInclude Include="..\..\cpp\_git_works\CommonCode\d2d\d2d_interface.h">
       <Filter>d2d</Filter>
     </ClInclude>
     <ClInclude Include="include\kuodafu_lyric.h">
       <Filter>接口声明</Filter>
     </ClInclude>
-    <ClInclude Include="src\lyric_desktop\CD2DBrush.h">
+    <ClInclude Include="include\kuodafu_lyric_desktop.h">
+      <Filter>接口声明</Filter>
+    </ClInclude>
+    <ClInclude Include="src\lyric_desktop\lyric_desktop_config.h">
+      <Filter>配置</Filter>
+    </ClInclude>
+    <ClInclude Include="src\lyric_desktop\lyric_desktop_function.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="src\lyric_desktop\CD2DImage.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="src\lyric_desktop\CD2DRender.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="src\lyric_desktop\lyric_wnd_function.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="src\lyric_desktop\lyric_wnd_header.h">
+    <ClInclude Include="src\lyric_desktop\lyric_desktop_header.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="src\lyric_desktop\resource.h">
@@ -113,8 +149,10 @@
     <ClInclude Include="src\lyric_desktop\tinyxml2.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="include\kuodafu_lyric_desktop.h">
-      <Filter>接口声明</Filter>
-    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="src\lyric_desktop\lyric_desktop_export.def">
+      <Filter>源文件</Filter>
+    </None>
   </ItemGroup>
 </Project>

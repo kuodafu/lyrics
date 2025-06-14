@@ -149,7 +149,7 @@ void lyric_wnd_set_data(HWND hWnd, PLYRIC_DESKTOP_INFO pWndInfo)
 }
 
 // 从窗口获取歌词窗口数据
-PLYRIC_DESKTOP_INFO lyric_wnd_get_data(HWND hWnd)
+PLYRIC_DESKTOP_INFO _lyric_desktop_get_data(HWND hWnd)
 {
     return (PLYRIC_DESKTOP_INFO)GetWindowLongPtrW(hWnd, 0);
 }
@@ -191,10 +191,10 @@ int lyric_wnd_set_state_translate(LYRIC_DESKTOP_INFO& wnd_info, int language)
 {
     LYRIC_DESKTOP_BUTTON_STATE b1 = __query(language, 1) ? LYRIC_DESKTOP_BUTTON_STATE_NORMAL : LYRIC_DESKTOP_BUTTON_STATE_DISABLE;
     LYRIC_DESKTOP_BUTTON_STATE b2 = __query(language, 2) ? LYRIC_DESKTOP_BUTTON_STATE_NORMAL : LYRIC_DESKTOP_BUTTON_STATE_DISABLE;
-    lyric_wnd_set_btn_state(wnd_info, LYRIC_DESKTOP_BUTTON_ID_TRANSLATE1, b1);
-    lyric_wnd_set_btn_state(wnd_info, LYRIC_DESKTOP_BUTTON_ID_TRANSLATE2, b2);
-    lyric_wnd_set_btn_state(wnd_info, LYRIC_DESKTOP_BUTTON_ID_TRANSLATE1_SEL, b1);
-    lyric_wnd_set_btn_state(wnd_info, LYRIC_DESKTOP_BUTTON_ID_TRANSLATE2_SEL, b2);
+    lyric_wnd_set_btn_state(wnd_info, LYRIC_DESKTOP_BUTTON_ID_TRANSLATEFY, b1);
+    lyric_wnd_set_btn_state(wnd_info, LYRIC_DESKTOP_BUTTON_ID_TRANSLATEYY, b2);
+    lyric_wnd_set_btn_state(wnd_info, LYRIC_DESKTOP_BUTTON_ID_TRANSLATEFY_SEL, b1);
+    lyric_wnd_set_btn_state(wnd_info, LYRIC_DESKTOP_BUTTON_ID_TRANSLATEYY_SEL, b2);
     return 0;
 }
 

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>MP3 播放器 + WebSocket 同步</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    label { display: block; margin-top: 10px; }
+    input[type="text"] { width: 500px; }
+    button { margin: 5px; }
+  </style>
+</head>
+<body>
+  <h2>🎵 MP3 播放器 + WebSocket 同步</h2>
+
+  <label>MP3文件路径:
+    <input type="text" id="mp3Path" placeholder="http://localhost/test.mp3" value="I:\音乐\Marian Hill - Got It.mp3">
+  </label>
+
+  <label>歌词文件路径:
+    <input type="text" id="lyricPath" placeholder="http://localhost/test.lrc" value="J:\cahce\kugou\Lyric\Marian Hill - Got It-7ac6d1947f09459f4ed321d9992a2f53-167848927-00000000.krc">
+  </label>
+
+  <div style="margin-top: 10px;">
+    <button id="playButton" onclick="togglePlay()">▶ 播放</button>
+    <button onclick="seek(-5)">⏪ 快退5秒</button>
+    <button onclick="seek(5)">⏩ 快进5秒</button>
+  </div>
+
+  <p>当前播放时间：<span id="timeDisplay">0.00s</span></p>
+
+  <audio id="audio" preload="auto"></audio>
+  <pre id="wsState" style="white-space: pre-wrap; background: #f0f0f0; padding: 10px; height: 50px; overflow-y: auto; font-size: 24px;"></pre>
+  <div>
+    <h3>收到的 WS 消息：</h3>
+    <pre id="wsMessages" style="white-space: pre-wrap; background: #f0f0f0; padding: 10px; height: 100px; overflow-y: auto; font-size: 24px;"></pre>
+  </div>
+  <script>
+    const audio = document.getElementById('audio');
+    const mp3PathInput = document.getElementById('mp3Path');
+    const timeDisplay = document.getElementById('timeDisplay');
+    const playButton = document.getElementById('playButton');
+
+    let ws = null;
+    let timer = null;
+    let isPlaying = false;
+    let hasLoaded = false;
+
+    function connectWebSocket() {
+      ws = new WebSocket("ws://localhost:6520");
+      const wsMessages = document.getElementById('wsMessages');
+      const wsState = document.getElementById('wsState');
+      let reconnectInterval = 1000; // 1秒后重连
+      
+      ws.onopen = () => {
+        wsState.textContent = "✅ WebSocket 已连接";
+      };
+      ws.onmessage = e => {
+        wsMessages.textContent = event.data;
+      };
+      ws.onerror = e => {
+        wsState.textContent = "❌ WebSocket 错误:" + e.message;
+      };
+
+      ws.onclose = () => {
+        wsState.textContent = "🔌 WebSocket 已断开, 1秒后尝试重连";
+        setTimeout(connectWebSocket, reconnectInterval);
+      };
+    }
+
+    const lyricPathInput = document.getElementById('lyricPath');
+
+    function togglePlay() {
+      if (!hasLoaded) {
+        const url = mp3PathInput.value.trim();
+        if (!url) {
+          alert("请输入 MP3 路径！");
+          return;
+        }
+        audio.src = url;
+        hasLoaded = true;
+      }
+
+      if (isPlaying) {
+        audio.pause();
+        clearInterval(timer);
+        playButton.textContent = "▶ 播放";
+        isPlaying = false;
+      } else {
+        audio.play().then(() => {
+          // 播放成功，发送歌词加载消息
+          const lyricFile = lyricPathInput.value.trim();
+
+          if (ws && ws.readyState === WebSocket.OPEN && lyricFile) {
+            ws.send(JSON.stringify({
+              method: "lyric_desktop_load_lyric",
+              params: {
+                file: lyricFile,
+                lyric: "krc"
+              }
+            }));
+          }
+        }).catch(e => alert("播放失败：" + e));
+
+        timer = setInterval(() => {
+          const time = Math.floor(audio.currentTime * 1000);
+          timeDisplay.textContent = time + "ms";
+
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({
+              method: "lyric_desktop_update",
+              params: {
+                time: time
+              }
+            }));
+          }
+        }, 10);
+
+        playButton.textContent = "⏸ 暂停";
+        isPlaying = true;
+      }
+    }
+
+    function seek(offset) {
+      audio.currentTime += offset;
+    }
+
+    // 播放结束后重置按钮
+    audio.addEventListener('ended', () => {
+      clearInterval(timer);
+      playButton.textContent = "▶ 播放";
+      isPlaying = false;
+    });
+
+    window.onload = connectWebSocket;
+  </script>
+</body>
+</html>

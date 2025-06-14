@@ -1,6 +1,6 @@
 ﻿#include "lyric_exe.h"
 #include "ixwebsocket/IXWebSocketServer.h"
-#include "../charset_stl.h"
+#include <charset_stl.h>
 
 
 #ifdef _WIN64
@@ -63,6 +63,8 @@ static void broadcast_message(const std::string& msg)
 
 bool lrc_exe_ws_server_send(const std::string& text)
 {
+    if (!s_ws_start)
+        return false;
     broadcast_message(text);
     return true;
 }
@@ -117,7 +119,7 @@ bool lrc_exe_ws_server_start(const std::wstring& ip_or_port)
             auto ws = webSocket.lock();
             if (msg->type == ix::WebSocketMessageType::Message)
             {
-                s_on_message_received(msg->str.c_str(), msg->str.size(), msg->binary);
+                s_on_message_received(msg->str.c_str(), msg->str.size(), msg->binary, lrc_exe_ws_server_send);
             }
             else if (msg->type == ix::WebSocketMessageType::Open)
             {
@@ -142,6 +144,6 @@ bool lrc_exe_ws_server_start(const std::wstring& ip_or_port)
     }
     // 开始服务
     ws_srv->start();
-
+    s_ws_start = true;
     return true;
 }

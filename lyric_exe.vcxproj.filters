@@ -21,6 +21,9 @@
     <ClInclude Include="src\lyric_exe\lyric_exe.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\lyric_exe\lyric_exe.cpp">
@@ -38,5 +41,10 @@
     <ClCompile Include="src\lyric_exe\lyric_exe_init_cmdline.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="lyric_exe.rc">
+      <Filter>资源文件</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>

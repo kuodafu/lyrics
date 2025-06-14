@@ -12,7 +12,10 @@ float _lyric_wnd_load_krc_calc_text(PLYRIC_DESKTOP_INFO pWndInfo, IDWriteTextLay
 // 设置歌词窗口数据到窗口
 void lyric_wnd_set_data(HWND hWnd, PLYRIC_DESKTOP_INFO pWndInfo);
 // 从窗口获取歌词窗口数据
-PLYRIC_DESKTOP_INFO lyric_wnd_get_data(HWND hWnd);
+PLYRIC_DESKTOP_INFO _lyric_desktop_get_data(HWND hWnd);
+
+// 处理自定义消息
+bool lyric_wnd_proc_custom_message(PLYRIC_DESKTOP_INFO pWndInfo, UINT message, WPARAM wParam, LPARAM lParam, LRESULT& ret);
 
 // 初始化桌面窗口
 bool _lyric_dwsktop_init();

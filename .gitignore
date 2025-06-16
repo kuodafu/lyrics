@@ -34,3 +34,6 @@ packages/
 output/
 /src/lyric_exe/ixwebsocket
 /res/QRC
+!/test/x64/*.lib
+!/test/x86/*.lib
+/test/*.zip

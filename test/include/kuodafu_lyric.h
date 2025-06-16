@@ -26,9 +26,7 @@
 
 #pragma once
 
-#define DECLARE_HANDLE(name) struct name##__{int unused;}; typedef struct name##__ *name
-DECLARE_HANDLE(HLYRIC);
-#undef DECLARE_HANDLE
+struct HLYRIC__ { int unused; }; typedef struct HLYRIC__* HLYRIC;
 
 #define LYRICCALL __stdcall
 

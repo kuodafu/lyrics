@@ -95,6 +95,7 @@ bool lyric_wnd_call_evt(LYRIC_DESKTOP_INFO& wnd_info, int id)
     default:
         return false;
     }
+    wnd_info.update();  // 只要是按钮点击事件, 都需要更新一下界面
     return true;
 }
 

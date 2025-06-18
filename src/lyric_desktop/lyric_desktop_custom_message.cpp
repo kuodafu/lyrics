@@ -44,7 +44,6 @@ public:
 
 bool lyric_wnd_proc_custom_message(PLYRIC_DESKTOP_INFO pWndInfo, UINT message, WPARAM wParam, LPARAM lParam, LRESULT& ret)
 {
-    return false;
     switch (message)
     {
     case LD_LOADLYRIC:
@@ -61,20 +60,18 @@ bool lyric_wnd_proc_custom_message(PLYRIC_DESKTOP_INFO pWndInfo, UINT message, W
     case LD_UPDATE:
     {
         pWndInfo->nCurrentTimeMS = static_cast<int>(wParam);
+        pWndInfo->update();
         ret = 1;
         break;
     }
     case LD_GETCONFIG:
     {
-        LyricMapFile map(MAPFILE_NAME_GETCONFIG);
-        LPCVOID pData = map.read();
-        if (!pData)
-            break;
         char* pConfig = pWndInfo->config.to_json(pWndInfo);
         if (!pConfig)
             break;
         size_t nSize = strlen(pConfig);
         ret = static_cast<LRESULT>(nSize);
+        LyricMapFile map(MAPFILE_NAME_GETCONFIG);
         map.write(pConfig, nSize + 1);
         free(pConfig);
         break;

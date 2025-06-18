@@ -341,7 +341,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             // 高度: 高度不允许设置, 内部根据字体大小自动调整
 
             cJSON* json = cJSON_CreateObject();
-
+            auto author = (LPCSTR)u8"kuodafu QQ: 121007124, group: 20752843";
+            cJSON_AddStringToObject(json, "author", author);    // 1600659896
             cJSON_AddNumberToObject(json, "refreshRate", 144);
             cJSON_AddBoolToObject(json, "bVertical", false);
             cJSON_AddBoolToObject(json, "bSingleLine", false);

@@ -177,6 +177,41 @@ struct LYRIC_DESKTOP_DRAWTEXT_INFO
     }
 };
 
+class CHighPrecisionTimer
+{
+public:
+    CHighPrecisionTimer()
+    {
+        QueryPerformanceFrequency(&m_frequency);
+        reset();
+    }
+
+    // 重置起点时间
+    void reset()
+    {
+        QueryPerformanceCounter(&m_start);
+    }
+
+    // 设置当前时间为起点
+    void start()
+    {
+        QueryPerformanceCounter(&m_start);
+    }
+
+    // 返回从 start 到现在的毫秒数
+    ULONG64 end() const
+    {
+        LARGE_INTEGER now;
+        QueryPerformanceCounter(&now);
+        return static_cast<ULONG64>(
+            (now.QuadPart - m_start.QuadPart) * 1000 / m_frequency.QuadPart
+            );
+    }
+
+private:
+    LARGE_INTEGER m_frequency{};  // 频率
+    LARGE_INTEGER m_start{};      // 起始时间点
+};
 
 // 歌词窗口 USERDATA 里存放的是这个结构
 typedef struct LYRIC_DESKTOP_INFO
@@ -239,6 +274,7 @@ typedef struct LYRIC_DESKTOP_INFO
     LYRIC_DESKTOP_DX            dx;         // dx相关的对象
     CScale                      scale;      // 缩放比例
     std::vector<RECT>           rcMonitors; // 所有显示器的矩形, 记录每个屏幕的位置, 限制窗口移动范围
+    CHighPrecisionTimer         updateTime; // 记录更新时间, 低于多少不处理
 
     // 初始化结构, 初始化配置, 初始化DX, 后续所有操作都是从这个结构进行的
     // hWnd = 显示桌面歌词的窗口句柄
@@ -291,6 +327,8 @@ typedef struct LYRIC_DESKTOP_INFO
     float get_lyric_line_height() const;
     // 传递歌词文本宽度/高度, 返回画布需要的宽度, 
     float get_lyric_line_width(float vl) const;
+
+    void update(bool isSend = false);
 
 
 }*PLYRIC_DESKTOP_INFO;

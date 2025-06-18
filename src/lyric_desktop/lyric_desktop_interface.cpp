@@ -82,6 +82,7 @@ bool LYRICCALL lyric_desktop_update(HWND hWindowLyric, int nCurrentTimeMS)
     wnd_info.nCurrentTimeMS = nCurrentTimeMS;
     //InvalidateRect(hWindowLyric, 0, 0);   // 使用这个方式会卡, 不知道啥情况, 直接调用重画吧
     //lyric_wnd_invalidate(wnd_info);
+    pWndInfo->update();
     return true;
 }
 

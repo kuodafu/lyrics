@@ -44,7 +44,6 @@ void LYRIC_DESKTOP_INFO::init(HWND hWnd, const char* argJson, PFN_LYRIC_DESKTOP_
     this->shadowRadius      = 10.f; // 固定死, 现在阴影图片就是10个像素
     this->mode              = LYRIC_DESKTOP_MODE::DOUBLE_ROW;
 
-
     // 许可证, 加载歌词那需要进入, 显示歌词的时候也需要进入
     // 一个线程在加载一个线程在显示的情况下不加锁会崩溃
     pCritSec = new CRITICAL_SECTION;
@@ -133,6 +132,25 @@ float LYRIC_DESKTOP_INFO::get_lyric_line_width(float vl) const
         return (vl ? vl : nLineDefHeight) + config.padding_text * 2;
     
     return (vl ? vl : nLineDefWidth) + config.padding_text * 2;
+}
+
+
+
+void LYRIC_DESKTOP_INFO::update(bool isSend)
+{
+    // 限制更新频率, 更新频率太快要限制一下
+    // 最高200帧, 应该是完全足够用了, 60帧的时候就已经很流畅了
+    if (updateTime.end() < 5)
+        return;
+
+    updateTime.start();
+    PostMessageW(hWnd, WM_USER, 121007124, 20752843);
+
+    return;
+    if (isSend)
+        SendMessageW(hWnd, WM_USER, 121007124, 20752843);
+    else
+        PostMessageW(hWnd, WM_USER, 121007124, 20752843);
 }
 
 

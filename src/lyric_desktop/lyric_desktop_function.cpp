@@ -272,7 +272,7 @@ PLYRIC_DESKTOP_INFO _ld_create_layered_window(const char* arg, PFN_LYRIC_DESKTOP
     // 创建高精度定时器, 需要10毫秒以内的精度, 时钟最低只能10ms, 不满足要求
     //TODO 要是在意效率的话应该是有需要重画的时候投递消息然后再处理
     // 不过处理起来会麻烦一点, 干脆就内部一直处理重画吧
-    _ld_start_high_precision_timer(pWndInfo);
+    //_ld_start_high_precision_timer(pWndInfo);
 
     MoveWindow(hWnd, rc.left, rc.top, rc.right - rc.left, pWndInfo->nMinHeight, TRUE);
 
@@ -402,7 +402,9 @@ LRESULT CALLBACK lyric_wnd_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
     {
         if (wParam == 121007124 && lParam == 20752843)
         {
-            PLYRIC_DESKTOP_INFO pWndInfo = _lyric_desktop_get_data(hWnd);
+            //char s[100];
+            //sprintf_s(s, "更新歌词位置: %d\n", pWndInfo->nCurrentTimeMS);
+            //OutputDebugStringA(s);
             lyric_wnd_invalidate(*pWndInfo);
             return 0;
         }
@@ -422,6 +424,7 @@ LRESULT CALLBACK lyric_wnd_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
             pWndInfo->isFillBack = true;
             pWndInfo->change_wnd = true;
             SetTimer(hWnd, TIMER_ID_LEAVE, 50, 0);
+            pWndInfo->update();
         }
         return ret;
     }
@@ -441,6 +444,8 @@ LRESULT CALLBACK lyric_wnd_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 
         // 直接获取, 省事, 一行代码搞定
         GetWindowRect(hWnd, rect);
+        if (message == WM_SIZE)
+            pWndInfo->update(false);
 
         //if (message == WM_MOVE)
         //{
@@ -594,6 +599,7 @@ LRESULT lyric_wnd_OnTimer(LYRIC_DESKTOP_INFO& wnd_info, UINT message, WPARAM wPa
             wnd_info.change_wnd = true;
             KillTimer(hWnd, TIMER_ID_LEAVE);
             lyric_wnd_button_leave(wnd_info);
+            wnd_info.update();
         }
         break;
     }

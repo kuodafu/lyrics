@@ -122,9 +122,10 @@ void lyric_wnd_button_hover(LYRIC_DESKTOP_INFO& wnd_info)
         pszTips = L"下一首";
         break;
     default:
-        break;
+        return;
     }
     lyric_wnd_set_tips(wnd_info, pszTips);
+    wnd_info.update();  // 只要是鼠标移动到按钮上的事件, 都需要更新一下界面
 
 }
 
